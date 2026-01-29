@@ -96,10 +96,15 @@ export default function UploadBook() {
         year: metadata.year ? String(metadata.year) : '',
       }));
 
-      // Set extracted cover if no cover was manually selected
-      if (metadata.coverBase64 && !coverFile && !coverPreview) {
+      // Always update cover with new file's extracted cover (unless user manually selected one)
+      if (metadata.coverBase64) {
+        setCoverFile(null); // Clear any manually selected cover
         setExtractedCoverBase64(metadata.coverBase64);
         setCoverPreview(metadata.coverBase64);
+      } else {
+        // New file has no cover - clear previous extracted cover
+        setExtractedCoverBase64(null);
+        setCoverPreview(null);
       }
 
       const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64;
