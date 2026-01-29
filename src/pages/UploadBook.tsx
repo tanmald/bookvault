@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FileUpload } from '@/components/upload/FileUpload';
@@ -19,7 +19,16 @@ import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Image } from 'lucide-react';
+import { Loader2, Upload, Sparkles } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+
+interface ExtractedMetadata {
+  title: string | null;
+  author: string | null;
+  description: string | null;
+  year: number | null;
+  coverBase64: string | null;
+}
 
 export default function UploadBook() {
   const navigate = useNavigate();
@@ -31,7 +40,9 @@ export default function UploadBook() {
   const [file, setFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [extractedCoverBase64, setExtractedCoverBase64] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -42,11 +53,94 @@ export default function UploadBook() {
     isbn: '',
   });
 
-  const handleCoverSelect = (file: File) => {
-    setCoverFile(file);
+  const extractMetadata = useCallback(async (selectedFile: File) => {
+    const fileName = selectedFile.name.toLowerCase();
+    const supportedFormats = ['.epub', '.pdf'];
+    const isSupported = supportedFormats.some(ext => fileName.endsWith(ext));
+    
+    if (!isSupported) {
+      return;
+    }
+
+    setIsExtractingMetadata(true);
+    
+    try {
+      const formDataPayload = new FormData();
+      formDataPayload.append('file', selectedFile);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-metadata`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: formDataPayload,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to extract metadata');
+      }
+
+      const metadata: ExtractedMetadata = await response.json();
+
+      // Only fill empty fields (don't overwrite user edits)
+      setFormData(prev => ({
+        ...prev,
+        title: prev.title || metadata.title || '',
+        author: prev.author || metadata.author || '',
+        description: prev.description || metadata.description || '',
+        year: prev.year || (metadata.year ? String(metadata.year) : ''),
+      }));
+
+      // Set extracted cover if no cover was manually selected
+      if (metadata.coverBase64 && !coverFile && !coverPreview) {
+        setExtractedCoverBase64(metadata.coverBase64);
+        setCoverPreview(metadata.coverBase64);
+      }
+
+      const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64;
+      
+      if (hasMetadata) {
+        toast({
+          title: 'Metadados extraídos',
+          description: 'Os campos foram preenchidos automaticamente',
+        });
+      } else {
+        toast({
+          title: 'Sem metadados',
+          description: 'Não foram encontrados metadados neste ficheiro',
+          variant: 'default',
+        });
+      }
+    } catch (error) {
+      console.error('Error extracting metadata:', error);
+      // Silently fail - user can still fill in manually
+    } finally {
+      setIsExtractingMetadata(false);
+    }
+  }, [coverFile, coverPreview, toast]);
+
+  const handleFileSelect = useCallback((selectedFile: File) => {
+    setFile(selectedFile);
+    extractMetadata(selectedFile);
+  }, [extractMetadata]);
+
+  const handleCoverSelect = (coverFileSelected: File) => {
+    setCoverFile(coverFileSelected);
+    setExtractedCoverBase64(null); // Clear extracted cover when user selects one
     const reader = new FileReader();
     reader.onload = (e) => setCoverPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(coverFileSelected);
+  };
+
+  const handleClearCover = () => {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setExtractedCoverBase64(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,7 +183,7 @@ export default function UploadBook() {
 
       let coverUrl: string | undefined;
 
-      // Upload cover if provided
+      // Upload cover if provided (either user-selected file or extracted from ebook)
       if (coverFile) {
         const coverExt = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
         const coverName = `${user.id}/${crypto.randomUUID()}.${coverExt}`;
@@ -97,6 +191,32 @@ export default function UploadBook() {
         const { error: coverError } = await supabase.storage
           .from('covers')
           .upload(coverName, coverFile);
+
+        if (coverError) throw coverError;
+
+        const { data: coverData } = supabase.storage
+          .from('covers')
+          .getPublicUrl(coverName);
+
+        coverUrl = coverData.publicUrl;
+      } else if (extractedCoverBase64) {
+        // Convert base64 to blob and upload
+        const base64Data = extractedCoverBase64.split(',')[1];
+        const mimeType = extractedCoverBase64.split(';')[0].split(':')[1] || 'image/jpeg';
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+        
+        const ext = mimeType.split('/')[1] || 'jpg';
+        const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+        const { error: coverError } = await supabase.storage
+          .from('covers')
+          .upload(coverName, blob);
 
         if (coverError) throw coverError;
 
@@ -151,13 +271,22 @@ export default function UploadBook() {
                 Seleciona o ficheiro do ebook
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <FileUpload
-                onFileSelect={setFile}
+                onFileSelect={handleFileSelect}
                 selectedFile={file}
                 onClear={() => setFile(null)}
-                isUploading={isUploading}
+                isUploading={isUploading || isExtractingMetadata}
               />
+              {isExtractingMetadata && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                  <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">A extrair metadados...</p>
+                    <Progress value={undefined} className="h-1 mt-1" />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -265,10 +394,7 @@ export default function UploadBook() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      setCoverFile(null);
-                      setCoverPreview(null);
-                    }}
+                    onClick={handleClearCover}
                     disabled={isUploading}
                   >
                     Remover
