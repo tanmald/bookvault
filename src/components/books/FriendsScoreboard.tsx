@@ -143,7 +143,7 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center gap-2">
         <Trophy className="h-5 w-5 text-primary" />
-        <CardTitle className="text-lg">Scoreboard da Jamigaz</CardTitle>
+        <CardTitle className="text-lg">Scoreboard dajamigaz</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
