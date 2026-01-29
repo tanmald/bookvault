@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Re-export from languages lib for backward compatibility
+export { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
+export type { LanguageCode } from '@/lib/languages';
+
 export interface BookFile {
   id: string;
   book_id: string;
@@ -50,25 +54,6 @@ export interface AddBookFileInput {
   file_url: string;
   file_type: string;
   file_size?: number;
-}
-
-export const SUPPORTED_LANGUAGES = [
-  { code: 'pt', name: 'Português' },
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'nl', name: 'Nederlands' },
-  { code: 'ru', name: 'Русский' },
-  { code: 'zh', name: '中文' },
-  { code: 'ja', name: '日本語' },
-] as const;
-
-export type LanguageCode = typeof SUPPORTED_LANGUAGES[number]['code'];
-
-export function getLanguageName(code: string): string {
-  return SUPPORTED_LANGUAGES.find(l => l.code === code)?.name || code.toUpperCase();
 }
 
 export function useBooks() {

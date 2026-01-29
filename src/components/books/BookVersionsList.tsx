@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import type { BookFile } from '@/hooks/useBooks';
-import { getLanguageName } from '@/hooks/useBooks';
+import { getLanguageName } from '@/lib/languages';
 
 interface BookVersionsListProps {
   files: BookFile[];
