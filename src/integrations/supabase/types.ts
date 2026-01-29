@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_files: {
+        Row: {
+          book_id: string
+          created_at: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          language: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          language?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          language?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_files_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_tags: {
         Row: {
           book_id: string

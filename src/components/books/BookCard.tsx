@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, FileText } from 'lucide-react';
+import { BookOpen, Globe } from 'lucide-react';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,9 @@ const statusColors = {
 
 export function BookCard({ book, progress }: BookCardProps) {
   const status = progress?.status ?? 'to_read';
+  
+  // Count available language versions
+  const languageCount = book.book_files?.length ?? (book.file_url ? 1 : 0);
 
   return (
     <Link to={`/book/${book.id}`}>
@@ -55,6 +58,17 @@ export function BookCard({ book, progress }: BookCardProps) {
             {statusLabels[status]}
           </Badge>
 
+          {/* Language count badge */}
+          {languageCount > 1 && (
+            <Badge
+              variant="secondary"
+              className="absolute top-2 left-2 text-xs"
+            >
+              <Globe className="mr-1 h-3 w-3" />
+              {languageCount}
+            </Badge>
+          )}
+
           {/* Progress bar */}
           {status === 'reading' && progress && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
@@ -72,10 +86,6 @@ export function BookCard({ book, progress }: BookCardProps) {
             <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
           )}
           <div className="mt-2 flex items-center gap-2">
-            <FileText className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground uppercase">
-              {book.file_type}
-            </span>
             {book.genre && (
               <Badge variant="outline" className="text-xs">
                 {book.genre.name}
