@@ -19,6 +19,7 @@ interface BookFiltersProps {
   genreFilter: string | 'all';
   onGenreChange: (value: string | 'all') => void;
   onClearFilters: () => void;
+  hideStatusFilter?: boolean;
 }
 
 export function BookFilters({
@@ -29,10 +30,11 @@ export function BookFilters({
   genreFilter,
   onGenreChange,
   onClearFilters,
+  hideStatusFilter = false,
 }: BookFiltersProps) {
   const { data: genres } = useGenres();
 
-  const hasActiveFilters = search || statusFilter !== 'all' || genreFilter !== 'all';
+  const hasActiveFilters = search || (!hideStatusFilter && statusFilter !== 'all') || genreFilter !== 'all';
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -46,17 +48,19 @@ export function BookFilters({
         />
       </div>
 
-      <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as ReadingStatus | 'all')}>
-        <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Estado" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="to_read">Para Ler</SelectItem>
-          <SelectItem value="reading">A Ler</SelectItem>
-          <SelectItem value="read">Lido</SelectItem>
-        </SelectContent>
-      </Select>
+      {!hideStatusFilter && (
+        <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as ReadingStatus | 'all')}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="to_read">Para Ler</SelectItem>
+            <SelectItem value="reading">A Ler</SelectItem>
+            <SelectItem value="read">Lido</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
 
       <Select value={genreFilter} onValueChange={(v) => onGenreChange(v)}>
         <SelectTrigger className="w-full sm:w-40">
