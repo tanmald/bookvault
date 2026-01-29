@@ -18,6 +18,9 @@ interface BookFiltersProps {
   onStatusChange: (value: ReadingStatus | 'all') => void;
   genreFilter: string | 'all';
   onGenreChange: (value: string | 'all') => void;
+  authorFilter: string | 'all';
+  onAuthorChange: (value: string | 'all') => void;
+  authors: string[];
   onClearFilters: () => void;
   hideStatusFilter?: boolean;
 }
@@ -29,12 +32,15 @@ export function BookFilters({
   onStatusChange,
   genreFilter,
   onGenreChange,
+  authorFilter,
+  onAuthorChange,
+  authors,
   onClearFilters,
   hideStatusFilter = false,
 }: BookFiltersProps) {
   const { data: genres } = useGenres();
 
-  const hasActiveFilters = search || (!hideStatusFilter && statusFilter !== 'all') || genreFilter !== 'all';
+  const hasActiveFilters = search || (!hideStatusFilter && statusFilter !== 'all') || genreFilter !== 'all' || authorFilter !== 'all';
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -75,6 +81,22 @@ export function BookFilters({
           ))}
         </SelectContent>
       </Select>
+
+      {authors.length > 0 && (
+        <Select value={authorFilter} onValueChange={(v) => onAuthorChange(v)}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Autor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os autores</SelectItem>
+            {authors.map((author) => (
+              <SelectItem key={author} value={author}>
+                {author}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {hasActiveFilters && (
         <Button variant="ghost" size="icon" onClick={onClearFilters}>
