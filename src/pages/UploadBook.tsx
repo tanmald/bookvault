@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBooks, SUPPORTED_LANGUAGES, getLanguageName } from '@/hooks/useBooks';
+import { useBooks } from '@/hooks/useBooks';
+import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
