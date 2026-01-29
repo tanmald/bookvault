@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -14,12 +15,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBooks } from '@/hooks/useBooks';
+import { useBooks, SUPPORTED_LANGUAGES, getLanguageName } from '@/hooks/useBooks';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Sparkles } from 'lucide-react';
+import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 interface ExtractedMetadata {
@@ -29,12 +30,13 @@ interface ExtractedMetadata {
   year: number | null;
   coverBase64: string | null;
   genreSlug: string | null;
+  detectedLanguage: string | null;
 }
 
 export default function UploadBook() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { createBook } = useBooks();
+  const { books, createBook, addBookFile } = useBooks();
   const { data: genres } = useGenres();
   const { toast } = useToast();
 
@@ -44,6 +46,11 @@ export default function UploadBook() {
   const [extractedCoverBase64, setExtractedCoverBase64] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
+
+  // Mode: 'new' for new book, 'existing' for adding to existing book
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [selectedBookId, setSelectedBookId] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('pt');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -96,32 +103,50 @@ export default function UploadBook() {
         }
       }
 
-      // Always overwrite with new file's metadata (user can edit after)
-      setFormData(prev => ({
-        ...prev,
-        title: metadata.title || '',
-        author: metadata.author || '',
-        description: metadata.description || '',
-        year: metadata.year ? String(metadata.year) : '',
-        genre_id: detectedGenreId,
-      }));
-
-      // Always update cover with new file's extracted cover
-      if (metadata.coverBase64) {
-        setCoverFile(null);
-        setExtractedCoverBase64(metadata.coverBase64);
-        setCoverPreview(metadata.coverBase64);
-      } else {
-        setExtractedCoverBase64(null);
-        setCoverPreview(null);
+      // Set detected language
+      if (metadata.detectedLanguage) {
+        setSelectedLanguage(metadata.detectedLanguage);
       }
 
-      const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64 || metadata.genreSlug;
+      // Only update form data if we're creating a new book
+      if (mode === 'new') {
+        setFormData(prev => ({
+          ...prev,
+          title: metadata.title || '',
+          author: metadata.author || '',
+          description: metadata.description || '',
+          year: metadata.year ? String(metadata.year) : '',
+          genre_id: detectedGenreId,
+        }));
+
+        // Update cover with new file's extracted cover
+        if (metadata.coverBase64) {
+          setCoverFile(null);
+          setExtractedCoverBase64(metadata.coverBase64);
+          setCoverPreview(metadata.coverBase64);
+        } else {
+          setExtractedCoverBase64(null);
+          setCoverPreview(null);
+        }
+      }
+
+      const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64 || metadata.genreSlug || metadata.detectedLanguage;
       
       if (hasMetadata) {
+        const detectedInfo = [];
+        if (metadata.detectedLanguage) {
+          detectedInfo.push(`Língua: ${getLanguageName(metadata.detectedLanguage)}`);
+        }
+        if (metadata.genreSlug) {
+          const genre = genres?.find(g => g.slug === metadata.genreSlug);
+          if (genre) detectedInfo.push(`Género: ${genre.name}`);
+        }
+        
         toast({
           title: 'Metadados extraídos',
-          description: 'Os campos foram preenchidos automaticamente',
+          description: detectedInfo.length > 0 
+            ? detectedInfo.join(' • ') 
+            : 'Os campos foram preenchidos automaticamente',
         });
       } else {
         toast({
@@ -132,11 +157,10 @@ export default function UploadBook() {
       }
     } catch (error) {
       console.error('Error extracting metadata:', error);
-      // Silently fail - user can still fill in manually
     } finally {
       setIsExtractingMetadata(false);
     }
-  }, [genres, toast]);
+  }, [genres, toast, mode]);
 
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
@@ -145,7 +169,7 @@ export default function UploadBook() {
 
   const handleCoverSelect = (coverFileSelected: File) => {
     setCoverFile(coverFileSelected);
-    setExtractedCoverBase64(null); // Clear extracted cover when user selects one
+    setExtractedCoverBase64(null);
     const reader = new FileReader();
     reader.onload = (e) => setCoverPreview(e.target?.result as string);
     reader.readAsDataURL(coverFileSelected);
@@ -155,6 +179,17 @@ export default function UploadBook() {
     setCoverFile(null);
     setCoverPreview(null);
     setExtractedCoverBase64(null);
+  };
+
+  const handleModeChange = (isExisting: boolean) => {
+    setMode(isExisting ? 'existing' : 'new');
+    if (isExisting) {
+      // Clear form data when switching to existing book mode
+      setFormData({ title: '', author: '', description: '', genre_id: '', year: '' });
+      setCoverFile(null);
+      setCoverPreview(null);
+      setExtractedCoverBase64(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,11 +204,20 @@ export default function UploadBook() {
       return;
     }
 
-    if (!formData.title.trim()) {
+    if (mode === 'new' && !formData.title.trim()) {
       toast({
         variant: 'destructive',
         title: 'Erro',
         description: 'O título é obrigatório',
+      });
+      return;
+    }
+
+    if (mode === 'existing' && !selectedBookId) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Por favor seleciona um livro existente',
       });
       return;
     }
@@ -195,65 +239,74 @@ export default function UploadBook() {
         .from('books')
         .getPublicUrl(fileName);
 
-      let coverUrl: string | undefined;
+      if (mode === 'existing') {
+        // Add file to existing book
+        await addBookFile.mutateAsync({
+          book_id: selectedBookId,
+          language: selectedLanguage,
+          file_url: fileData.publicUrl,
+          file_type: fileExt.toUpperCase(),
+          file_size: file.size,
+        });
+      } else {
+        // Create new book
+        let coverUrl: string | undefined;
 
-      // Upload cover if provided (either user-selected file or extracted from ebook)
-      if (coverFile) {
-        const coverExt = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const coverName = `${user.id}/${crypto.randomUUID()}.${coverExt}`;
+        if (coverFile) {
+          const coverExt = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+          const coverName = `${user.id}/${crypto.randomUUID()}.${coverExt}`;
 
-        const { error: coverError } = await supabase.storage
-          .from('covers')
-          .upload(coverName, coverFile);
+          const { error: coverError } = await supabase.storage
+            .from('covers')
+            .upload(coverName, coverFile);
 
-        if (coverError) throw coverError;
+          if (coverError) throw coverError;
 
-        const { data: coverData } = supabase.storage
-          .from('covers')
-          .getPublicUrl(coverName);
+          const { data: coverData } = supabase.storage
+            .from('covers')
+            .getPublicUrl(coverName);
 
-        coverUrl = coverData.publicUrl;
-      } else if (extractedCoverBase64) {
-        // Convert base64 to blob and upload
-        const base64Data = extractedCoverBase64.split(',')[1];
-        const mimeType = extractedCoverBase64.split(';')[0].split(':')[1] || 'image/jpeg';
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+          coverUrl = coverData.publicUrl;
+        } else if (extractedCoverBase64) {
+          const base64Data = extractedCoverBase64.split(',')[1];
+          const mimeType = extractedCoverBase64.split(';')[0].split(':')[1] || 'image/jpeg';
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: mimeType });
+          
+          const ext = mimeType.split('/')[1] || 'jpg';
+          const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+          const { error: coverError } = await supabase.storage
+            .from('covers')
+            .upload(coverName, blob);
+
+          if (coverError) throw coverError;
+
+          const { data: coverData } = supabase.storage
+            .from('covers')
+            .getPublicUrl(coverName);
+
+          coverUrl = coverData.publicUrl;
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        
-        const ext = mimeType.split('/')[1] || 'jpg';
-        const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-        const { error: coverError } = await supabase.storage
-          .from('covers')
-          .upload(coverName, blob);
-
-        if (coverError) throw coverError;
-
-        const { data: coverData } = supabase.storage
-          .from('covers')
-          .getPublicUrl(coverName);
-
-        coverUrl = coverData.publicUrl;
+        await createBook.mutateAsync({
+          title: formData.title.trim(),
+          author: formData.author.trim() || undefined,
+          description: formData.description.trim() || undefined,
+          genre_id: formData.genre_id || undefined,
+          year: formData.year ? parseInt(formData.year) : undefined,
+          file_url: fileData.publicUrl,
+          file_type: fileExt.toUpperCase(),
+          file_size: file.size,
+          cover_url: coverUrl,
+          language: selectedLanguage,
+        });
       }
-
-      // Create book record
-      await createBook.mutateAsync({
-        title: formData.title.trim(),
-        author: formData.author.trim() || undefined,
-        description: formData.description.trim() || undefined,
-        genre_id: formData.genre_id || undefined,
-        year: formData.year ? parseInt(formData.year) : undefined,
-        
-        file_url: fileData.publicUrl,
-        file_type: fileExt.toUpperCase(),
-        file_size: file.size,
-        cover_url: coverUrl,
-      });
 
       navigate('/');
     } catch (error: any) {
@@ -267,17 +320,73 @@ export default function UploadBook() {
     }
   };
 
+  // Filter books that belong to the current user
+  const userBooks = books.filter(b => b.owner_id === user?.id);
+
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold mb-1">Adicionar Livro</h1>
           <p className="text-muted-foreground">
-            Faz upload de um novo livro para a tua biblioteca
+            Faz upload de um novo livro ou adiciona uma versão a um livro existente
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Mode Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Tipo de Upload</CardTitle>
+              <CardDescription>
+                Escolhe se queres criar um novo livro ou adicionar uma versão a um existente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="mode"
+                    checked={mode === 'existing'}
+                    onCheckedChange={handleModeChange}
+                  />
+                  <Label htmlFor="mode" className="cursor-pointer">
+                    Adicionar a livro existente
+                  </Label>
+                </div>
+              </div>
+
+              {mode === 'existing' && (
+                <div className="mt-4 space-y-2">
+                  <Label>Selecionar Livro</Label>
+                  <Select value={selectedBookId} onValueChange={setSelectedBookId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolher livro..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userBooks.map((book) => (
+                        <SelectItem key={book.id} value={book.id}>
+                          <div className="flex items-center gap-2">
+                            <BookCopy className="h-4 w-4 text-muted-foreground" />
+                            <span>{book.title}</span>
+                            {book.author && (
+                              <span className="text-muted-foreground">— {book.author}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {userBooks.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Ainda não tens livros. Cria um novo primeiro.
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Ficheiro do Livro</CardTitle>
@@ -285,13 +394,14 @@ export default function UploadBook() {
                 Seleciona o ficheiro do ebook
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <FileUpload
                 onFileSelect={handleFileSelect}
                 selectedFile={file}
                 onClear={() => setFile(null)}
                 isUploading={isUploading || isExtractingMetadata}
               />
+              
               {isExtractingMetadata && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
                   <Sparkles className="h-4 w-4 text-primary animate-pulse" />
@@ -301,126 +411,149 @@ export default function UploadBook() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações do Livro</CardTitle>
-              <CardDescription>
-                Preenche os detalhes do livro
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              {/* Language Selection */}
               <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Nome do livro"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="author">Autor</Label>
-                <Input
-                  id="author"
-                  value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                  placeholder="Nome do autor"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="genre">Género</Label>
-                  <Select
-                    value={formData.genre_id}
-                    onValueChange={(v) => setFormData({ ...formData, genre_id: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genres?.map((genre) => (
-                        <SelectItem key={genre.id} value={genre.id}>
-                          {genre.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="year">Ano</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    min="1000"
-                    max={new Date().getFullYear()}
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                    placeholder="2024"
-                  />
-                </div>
-              </div>
-
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Sinopse ou descrição do livro..."
-                  rows={4}
-                />
+                <Label>Língua do Ficheiro</Label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar língua" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  A língua é detetada automaticamente, mas podes alterar se necessário
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Capa do Livro</CardTitle>
-              <CardDescription>
-                Opcional - adiciona uma imagem de capa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {coverPreview ? (
-                <div className="flex items-start gap-4">
-                  <img
-                    src={coverPreview}
-                    alt="Pré-visualização da capa"
-                    className="w-32 h-48 object-cover rounded-md"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleClearCover}
-                    disabled={isUploading}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              ) : (
-                <FileUpload
-                  onFileSelect={handleCoverSelect}
-                  accept={{
-                    'image/jpeg': ['.jpg', '.jpeg'],
-                    'image/png': ['.png'],
-                    'image/webp': ['.webp'],
-                  }}
-                  maxSize={5 * 1024 * 1024}
-                  label="Arrasta uma imagem de capa"
-                  description="JPG, PNG ou WebP até 5MB"
-                  isUploading={isUploading}
-                />
-              )}
-            </CardContent>
-          </Card>
+          {mode === 'new' && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informações do Livro</CardTitle>
+                  <CardDescription>
+                    Preenche os detalhes do livro
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título *</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Nome do livro"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="author">Autor</Label>
+                    <Input
+                      id="author"
+                      value={formData.author}
+                      onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                      placeholder="Nome do autor"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="genre">Género</Label>
+                      <Select
+                        value={formData.genre_id}
+                        onValueChange={(v) => setFormData({ ...formData, genre_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genres?.map((genre) => (
+                            <SelectItem key={genre.id} value={genre.id}>
+                              {genre.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="year">Ano</Label>
+                      <Input
+                        id="year"
+                        type="number"
+                        min="1000"
+                        max={new Date().getFullYear()}
+                        value={formData.year}
+                        onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                        placeholder="2024"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Sinopse ou descrição do livro..."
+                      rows={4}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Capa do Livro</CardTitle>
+                  <CardDescription>
+                    Opcional - adiciona uma imagem de capa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {coverPreview ? (
+                    <div className="flex items-start gap-4">
+                      <img
+                        src={coverPreview}
+                        alt="Pré-visualização da capa"
+                        className="w-32 h-48 object-cover rounded-md"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClearCover}
+                        disabled={isUploading}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      onFileSelect={handleCoverSelect}
+                      accept={{
+                        'image/jpeg': ['.jpg', '.jpeg'],
+                        'image/png': ['.png'],
+                        'image/webp': ['.webp'],
+                      }}
+                      maxSize={5 * 1024 * 1024}
+                      label="Arrasta uma imagem de capa"
+                      description="JPG, PNG ou WebP até 5MB"
+                      isUploading={isUploading}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
 
           <div className="flex gap-3">
             <Button
@@ -432,11 +565,20 @@ export default function UploadBook() {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={!file || isUploading} className="flex-1">
+            <Button 
+              type="submit" 
+              disabled={!file || isUploading || (mode === 'existing' && !selectedBookId)} 
+              className="flex-1"
+            >
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   A carregar...
+                </>
+              ) : mode === 'existing' ? (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Versão
                 </>
               ) : (
                 <>

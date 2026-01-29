@@ -1,8 +1,7 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -26,16 +25,17 @@ import {
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
+import { BookVersionsList } from '@/components/books/BookVersionsList';
 import {
   ArrowLeft,
-  Download,
   Trash2,
   BookOpen,
   Calendar,
-  FileText,
   User,
   Tag,
   Loader2,
+  Plus,
+  Globe,
 } from 'lucide-react';
 
 const statusLabels: Record<ReadingStatus, string> = {
@@ -48,7 +48,7 @@ export default function BookDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { books, isLoading, deleteBook } = useBooks();
+  const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress } = useReadingProgress(id);
 
   const book = books.find((b) => b.id === id);
@@ -74,11 +74,24 @@ export default function BookDetails() {
     navigate('/');
   };
 
-  const handleDownload = () => {
-    if (book?.file_url) {
-      window.open(book.file_url, '_blank');
-    }
+  const handleDeleteFile = async (fileId: string) => {
+    await deleteBookFile.mutateAsync(fileId);
   };
+
+  // Get files from book_files relation, fallback to legacy file fields
+  const bookFiles = book?.book_files && book.book_files.length > 0 
+    ? book.book_files 
+    : book?.file_url 
+      ? [{ 
+          id: 'legacy', 
+          book_id: book.id, 
+          language: 'pt', 
+          file_url: book.file_url, 
+          file_type: book.file_type, 
+          file_size: book.file_size,
+          created_at: book.created_at 
+        }] 
+      : [];
 
   if (isLoading) {
     return (
@@ -131,11 +144,6 @@ export default function BookDetails() {
             )}
           </div>
 
-          <Button onClick={handleDownload} className="w-full">
-            <Download className="mr-2 h-4 w-4" />
-            Descarregar {book.file_type}
-          </Button>
-
           {isOwner && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -187,11 +195,36 @@ export default function BookDetails() {
                 {book.year}
               </Badge>
             )}
-            <Badge variant="outline">
-              <FileText className="mr-1 h-3 w-3" />
-              {book.file_type}
-            </Badge>
+            {bookFiles.length > 0 && (
+              <Badge variant="outline">
+                <Globe className="mr-1 h-3 w-3" />
+                {bookFiles.length} {bookFiles.length === 1 ? 'versão' : 'versões'}
+              </Badge>
+            )}
           </div>
+
+          {/* Book Versions Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Versões Disponíveis</CardTitle>
+              {isOwner && (
+                <Link to={`/upload?bookId=${book.id}`}>
+                  <Button size="sm" variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar
+                  </Button>
+                </Link>
+              )}
+            </CardHeader>
+            <CardContent>
+              <BookVersionsList
+                files={bookFiles}
+                isOwner={isOwner}
+                onDeleteFile={handleDeleteFile}
+                isDeleting={deleteBookFile.isPending}
+              />
+            </CardContent>
+          </Card>
 
           {/* Reading Progress Card */}
           <Card>
@@ -262,22 +295,6 @@ export default function BookDetails() {
               <CardTitle className="text-lg">Informações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {book.isbn && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">ISBN:</span>
-                  <span>{book.isbn}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Formato:</span>
-                <span>{book.file_type}</span>
-              </div>
-              {book.file_size && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tamanho:</span>
-                  <span>{(book.file_size / (1024 * 1024)).toFixed(1)} MB</span>
-                </div>
-              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Adicionado em:</span>
                 <span>{new Date(book.created_at).toLocaleDateString('pt-PT')}</span>

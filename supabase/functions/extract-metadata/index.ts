@@ -27,6 +27,20 @@ const GENRES = [
   { slug: "thriller", name: "Thriller" },
 ];
 
+// Supported languages for detection
+const LANGUAGES = [
+  { code: "pt", name: "Português" },
+  { code: "en", name: "English" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+  { code: "de", name: "Deutsch" },
+  { code: "it", name: "Italiano" },
+  { code: "nl", name: "Nederlands" },
+  { code: "ru", name: "Русский" },
+  { code: "zh", name: "中文" },
+  { code: "ja", name: "日本語" },
+];
+
 interface ExtractedMetadata {
   title: string | null;
   author: string | null;
@@ -34,6 +48,7 @@ interface ExtractedMetadata {
   year: number | null;
   coverBase64: string | null;
   genreSlug: string | null;
+  detectedLanguage: string | null;
 }
 
 // Parse XML and extract text content from a tag
@@ -52,6 +67,20 @@ function getTagContent(xml: string, tagName: string): string | null {
   return null;
 }
 
+// Get language attribute from XML
+function getLanguageAttr(xml: string): string | null {
+  // Look for dc:language tag
+  const langContent = getTagContent(xml, "dc:language") || getTagContent(xml, "language");
+  if (langContent) {
+    // Normalize language code (e.g., "en-US" -> "en", "pt-BR" -> "pt")
+    const code = langContent.toLowerCase().split("-")[0].split("_")[0];
+    if (LANGUAGES.some((l) => l.code === code)) {
+      return code;
+    }
+  }
+  return null;
+}
+
 // Extract year from date string
 function extractYear(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -59,25 +88,31 @@ function extractYear(dateStr: string | null): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
-async function detectGenreWithAI(
+async function detectWithAI(
   title: string | null,
   author: string | null,
-  description: string | null
-): Promise<string | null> {
-  if (!title && !description) return null;
+  description: string | null,
+  textSample: string | null
+): Promise<{ genreSlug: string | null; language: string | null }> {
+  const result = { genreSlug: null as string | null, language: null as string | null };
+  
+  if (!title && !description && !textSample) return result;
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
-    console.log("LOVABLE_API_KEY not configured, skipping genre detection");
-    return null;
+    console.log("LOVABLE_API_KEY not configured, skipping AI detection");
+    return result;
   }
 
   try {
     const genreList = GENRES.map((g) => g.slug).join(", ");
+    const langList = LANGUAGES.map((l) => l.code).join(", ");
+    
     const bookInfo = [
       title ? `Título: ${title}` : "",
       author ? `Autor: ${author}` : "",
-      description ? `Descrição: ${description.substring(0, 500)}` : "",
+      description ? `Descrição: ${description.substring(0, 300)}` : "",
+      textSample ? `Amostra de texto: ${textSample.substring(0, 500)}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -95,9 +130,12 @@ async function detectGenreWithAI(
           messages: [
             {
               role: "system",
-              content: `Você é um classificador de livros. Dado informações sobre um livro, responda APENAS com o slug do género mais apropriado da lista. Não adicione explicações nem pontuação.
+              content: `Você é um classificador de livros. Dado informações sobre um livro, classifique o género e detecte a língua do conteúdo.
 
-Géneros disponíveis: ${genreList}`,
+Géneros disponíveis: ${genreList}
+Línguas disponíveis: ${langList}
+
+Analise o texto fornecido para determinar a língua baseando-se no conteúdo, não apenas nos metadados.`,
             },
             {
               role: "user",
@@ -108,8 +146,8 @@ Géneros disponíveis: ${genreList}`,
             {
               type: "function",
               function: {
-                name: "classify_genre",
-                description: "Classifica o género do livro",
+                name: "classify_book",
+                description: "Classifica o género e detecta a língua do livro",
                 parameters: {
                   type: "object",
                   properties: {
@@ -118,21 +156,26 @@ Géneros disponíveis: ${genreList}`,
                       enum: GENRES.map((g) => g.slug),
                       description: "O slug do género do livro",
                     },
+                    language_code: {
+                      type: "string",
+                      enum: LANGUAGES.map((l) => l.code),
+                      description: "O código ISO da língua do conteúdo do livro",
+                    },
                   },
-                  required: ["genre_slug"],
+                  required: ["genre_slug", "language_code"],
                   additionalProperties: false,
                 },
               },
             },
           ],
-          tool_choice: { type: "function", function: { name: "classify_genre" } },
+          tool_choice: { type: "function", function: { name: "classify_book" } },
         }),
       }
     );
 
     if (!response.ok) {
-      console.error("AI genre detection failed:", response.status);
-      return null;
+      console.error("AI detection failed:", response.status);
+      return result;
     }
 
     const data = await response.json();
@@ -140,19 +183,60 @@ Géneros disponíveis: ${genreList}`,
     
     if (toolCall?.function?.arguments) {
       const args = JSON.parse(toolCall.function.arguments);
-      const detectedSlug = args.genre_slug;
       
-      // Validate the slug exists
-      if (GENRES.some((g) => g.slug === detectedSlug)) {
-        return detectedSlug;
+      // Validate genre slug
+      if (args.genre_slug && GENRES.some((g) => g.slug === args.genre_slug)) {
+        result.genreSlug = args.genre_slug;
+      }
+      
+      // Validate language code
+      if (args.language_code && LANGUAGES.some((l) => l.code === args.language_code)) {
+        result.language = args.language_code;
       }
     }
 
-    return null;
+    return result;
   } catch (error) {
-    console.error("Error detecting genre with AI:", error);
-    return null;
+    console.error("Error with AI detection:", error);
+    return result;
   }
+}
+
+// Extract text sample from EPUB for language detection
+async function extractTextSample(zip: JSZip, opfPath: string, opfContent: string): Promise<string | null> {
+  try {
+    // Find first content file (usually chapter 1)
+    const itemMatches = [...opfContent.matchAll(/<item[^>]*href="([^"]+)"[^>]*media-type="application\/xhtml\+xml"/gi)];
+    
+    if (itemMatches.length === 0) return null;
+    
+    const opfDir = opfPath.substring(0, opfPath.lastIndexOf("/") + 1);
+    
+    // Try the first few content files to get a text sample
+    for (let i = 0; i < Math.min(3, itemMatches.length); i++) {
+      const href = itemMatches[i][1];
+      const contentPath = href.startsWith("/") ? href.substring(1) : opfDir + href;
+      
+      const contentFile = zip.file(contentPath);
+      if (contentFile) {
+        const content = await contentFile.async("string");
+        // Strip HTML tags and get text
+        const textContent = content
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        
+        if (textContent.length > 100) {
+          return textContent.substring(0, 1000);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error extracting text sample:", error);
+  }
+  return null;
 }
 
 async function extractEpubMetadata(
@@ -165,7 +249,10 @@ async function extractEpubMetadata(
     year: null,
     coverBase64: null,
     genreSlug: null,
+    detectedLanguage: null,
   };
+
+  let textSample: string | null = null;
 
   try {
     const zip = await JSZip.loadAsync(fileBuffer);
@@ -205,6 +292,12 @@ async function extractEpubMetadata(
     const dateStr =
       getTagContent(opfContent, "dc:date") || getTagContent(opfContent, "date");
     result.year = extractYear(dateStr);
+
+    // Try to get language from metadata first
+    result.detectedLanguage = getLanguageAttr(opfContent);
+
+    // Extract text sample for AI language detection
+    textSample = await extractTextSample(zip, opfPath, opfContent);
 
     // Try to find cover image
     const coverIdMatch = opfContent.match(
@@ -271,6 +364,25 @@ async function extractEpubMetadata(
     console.error("Error extracting EPUB metadata:", error);
   }
 
+  // Use AI to detect genre and language (if not found in metadata)
+  if (result.title || result.description || textSample) {
+    const aiResult = await detectWithAI(
+      result.title,
+      result.author,
+      result.description,
+      textSample
+    );
+    
+    if (aiResult.genreSlug) {
+      result.genreSlug = aiResult.genreSlug;
+    }
+    
+    // Prefer AI-detected language if metadata didn't have one
+    if (!result.detectedLanguage && aiResult.language) {
+      result.detectedLanguage = aiResult.language;
+    }
+  }
+
   return result;
 }
 
@@ -284,6 +396,7 @@ async function extractPdfMetadata(
     year: null,
     coverBase64: null,
     genreSlug: null,
+    detectedLanguage: null,
   };
 
   try {
@@ -299,8 +412,28 @@ async function extractPdfMetadata(
     if (creationDate) {
       result.year = creationDate.getFullYear();
     }
+
+    // For PDFs, we rely more on AI for language detection
+    // since PDF metadata rarely includes language info
   } catch (error) {
     console.error("Error extracting PDF metadata:", error);
+  }
+
+  // Use AI to detect genre and language
+  if (result.title || result.description) {
+    const aiResult = await detectWithAI(
+      result.title,
+      result.author,
+      result.description,
+      null
+    );
+    
+    if (aiResult.genreSlug) {
+      result.genreSlug = aiResult.genreSlug;
+    }
+    if (aiResult.language) {
+      result.detectedLanguage = aiResult.language;
+    }
   }
 
   return result;
@@ -339,16 +472,8 @@ serve(async (req) => {
         year: null,
         coverBase64: null,
         genreSlug: null,
+        detectedLanguage: null,
       };
-    }
-
-    // Use AI to detect genre based on extracted metadata
-    if (metadata.title || metadata.description) {
-      metadata.genreSlug = await detectGenreWithAI(
-        metadata.title,
-        metadata.author,
-        metadata.description
-      );
     }
 
     return new Response(JSON.stringify(metadata), {
