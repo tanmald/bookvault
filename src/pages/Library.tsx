@@ -18,6 +18,7 @@ export default function Library() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [genreFilter, setGenreFilter] = useState<string | 'all'>('all');
+  const [authorFilter, setAuthorFilter] = useState<string | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
 
   const progressMap = useMemo(() => {
@@ -25,6 +26,14 @@ export default function Library() {
     progress.forEach((p) => map.set(p.book_id, p));
     return map;
   }, [progress]);
+
+  // Extract unique authors from books
+  const uniqueAuthors = useMemo(() => {
+    const authors = books
+      .map((book) => book.author)
+      .filter((author): author is string => !!author);
+    return [...new Set(authors)].sort((a, b) => a.localeCompare(b));
+  }, [books]);
 
   const filteredBooks = useMemo(() => {
     return books.filter((book) => {
@@ -48,14 +57,20 @@ export default function Library() {
         if (book.genre_id !== genreFilter) return false;
       }
 
+      // Author filter
+      if (authorFilter !== 'all') {
+        if (book.author !== authorFilter) return false;
+      }
+
       return true;
     });
-  }, [books, search, statusFilter, genreFilter, progressMap, viewMode]);
+  }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode]);
 
   const clearFilters = () => {
     setSearch('');
     setStatusFilter('all');
     setGenreFilter('all');
+    setAuthorFilter('all');
   };
 
   return (
@@ -103,6 +118,9 @@ export default function Library() {
         onStatusChange={setStatusFilter}
         genreFilter={genreFilter}
         onGenreChange={setGenreFilter}
+        authorFilter={authorFilter}
+        onAuthorChange={setAuthorFilter}
+        authors={uniqueAuthors}
         onClearFilters={clearFilters}
         hideStatusFilter={viewMode === 'kanban'}
       />
