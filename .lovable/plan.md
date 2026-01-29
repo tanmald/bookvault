@@ -1,156 +1,113 @@
 
 
-## Agrupar Livros por Língua numa Unica Obra
+## Scoreboard da Jamigaz (Friends Scoreboard)
 
-Vou implementar um sistema que permite ter varias versoes linguisticas do mesmo livro agrupadas, para que na biblioteca apareca apenas uma entrada por obra, com opcao de escolher qual ficheiro descarregar.
-
----
-
-### Como vai funcionar
-
-1. **Na biblioteca**: Cada livro aparece apenas uma vez, mesmo que tenhas versoes em PT, EN, FR, etc.
-2. **Ao abrir um livro**: Ves todas as versoes disponiveis e escolhes qual descarregar
-3. **Ao fazer upload**: Podes adicionar um novo ficheiro a um livro existente, indicando a lingua
-4. **Detecao automatica**: O sistema tenta detetar a lingua do ficheiro automaticamente
+Vou adicionar um scoreboard dentro da pagina de detalhes de cada livro que mostra quais amigos ja leram (ou nao) e quanto tempo demoraram.
 
 ---
 
-### Nova estrutura da base de dados
+### O que vai mostrar
+
+O scoreboard apresenta uma lista de amigos com:
+
+1. **Avatar e nome** do amigo
+2. **Estado de leitura**: Para Ler, A Ler, ou Lido
+3. **Tempo de leitura** (se ja terminou): calculado entre `started_at` e `finished_at`
+4. **Barra de progresso** (se esta a ler)
+
+---
+
+### Exemplo visual
 
 ```text
-books (obra principal - sem ficheiro diretamente)
-  - id, owner_id, title, author, description
-  - genre_id, year, cover_url
-  - created_at, updated_at
-
-book_files (ficheiros por lingua)
-  - id, book_id, language (ex: "pt", "en", "es")
-  - file_url, file_type, file_size
-  - created_at
++-----------------------------------------------+
+| Scoreboard da Jamigaz                  Trophy |
++-----------------------------------------------+
+| [Avatar] Maria        Lido em 12 dias    1o   |
+| [Avatar] Joao         Lido em 18 dias    2o   |
+| [Avatar] Pedro        A Ler - 45%             |
+| [Avatar] Ana          Para Ler                |
++-----------------------------------------------+
+| Nenhum amigo tem este livro? Convida-os!      |
++-----------------------------------------------+
 ```
 
-O livro passa a ser o "conceito" da obra, e os ficheiros sao as versoes concretas em cada lingua.
+---
+
+### Alteracoes na Base de Dados
+
+**Nova RLS Policy necessaria:**
+
+A policy atual so permite ver progresso de amigos em livros onde o dono e amigo. Precisamos de uma policy que permita ver o progresso de leitura dos nossos amigos em qualquer livro que tenhamos em comum:
+
+```sql
+-- Users can view friends' reading progress on shared books
+CREATE POLICY "Users can view friends reading progress on shared books"
+  ON reading_progress FOR SELECT
+  USING (
+    -- Check if the user viewing is friends with the user who has the progress
+    are_friends(auth.uid(), user_id)
+  );
+```
 
 ---
 
-### Alteracoes no Upload
+### Implementacao Frontend
 
-**Duas opcoes ao fazer upload:**
+**1. Novo Hook: `useFriendsBookProgress`**
 
-1. **Novo livro**: Cria obra nova + primeiro ficheiro
-2. **Adicionar versao**: Adiciona ficheiro a um livro existente
-
-**Interface atualizada:**
-- Dropdown para selecionar lingua do ficheiro (PT, EN, ES, FR, DE, IT, etc.)
-- Opcao "Adicionar a livro existente" que mostra lista dos teus livros
-- AI tenta detetar lingua automaticamente a partir do conteudo
-
----
-
-### Alteracoes na Biblioteca
-
-- Cada card mostra o livro uma so vez
-- Badge com numero de versoes disponiveis (ex: "3 linguas")
-- Ao clicar, vai para detalhes onde podes escolher qual versao
-
----
-
-### Alteracoes nos Detalhes do Livro
-
-Nova seccao "Versoes Disponiveis":
 ```text
-+----------------------------------+
-| Versoes Disponiveis              |
-+----------------------------------+
-| PT  Portugues    EPUB  [Download]|
-| EN  English      PDF   [Download]|
-| ES  Espanol      EPUB  [Download]|
-+----------------------------------+
-| + Adicionar nova versao          |
-+----------------------------------+
+src/hooks/useFriendsBookProgress.ts
+
+- Recebe bookId como parametro
+- Busca lista de amigos do utilizador atual
+- Busca progresso de leitura de cada amigo para este livro
+- Combina com informacoes de perfil (avatar, nome)
+- Calcula tempo de leitura para quem ja terminou
+- Ordena: Lidos primeiro (por tempo), depois A Ler, depois Para Ler
+```
+
+**2. Novo Componente: `FriendsScoreboard`**
+
+```text
+src/components/books/FriendsScoreboard.tsx
+
+- Recebe bookId como prop
+- Usa o hook useFriendsBookProgress
+- Mostra lista de amigos com estado e tempo
+- Icone de trofeu para os primeiros lugares
+- Estados visuais diferenciados com cores/badges
+- Mensagem amigavel se nao houver amigos com o livro
+```
+
+**3. Integracao em BookDetails**
+
+Adicionar o componente FriendsScoreboard na pagina de detalhes, apos o card de progresso pessoal.
+
+---
+
+### Calculo do Tempo de Leitura
+
+```typescript
+function calculateReadingTime(startedAt: string, finishedAt: string): string {
+  const start = new Date(startedAt);
+  const end = new Date(finishedAt);
+  const diffMs = end.getTime() - start.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'menos de 1 dia';
+  if (diffDays === 1) return '1 dia';
+  return `${diffDays} dias`;
+}
 ```
 
 ---
 
-### Implementacao Tecnica
+### Ordenacao do Scoreboard
 
-**1. Migracao da Base de Dados**
-
-Criar tabela `book_files`:
-```sql
-CREATE TABLE book_files (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-  language TEXT NOT NULL DEFAULT 'pt',
-  file_url TEXT NOT NULL,
-  file_type TEXT NOT NULL,
-  file_size BIGINT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
-Migrar dados existentes:
-```sql
-INSERT INTO book_files (book_id, language, file_url, file_type, file_size)
-SELECT id, 'pt', file_url, file_type, file_size FROM books;
-```
-
-Remover colunas file_* da tabela books (apos migracao).
-
-**2. Detecao de Lingua com AI**
-
-Adicionar a edge function `extract-metadata`:
-- Analisa primeiras paginas do conteudo
-- Retorna codigo ISO da lingua (pt, en, es, etc.)
-- Campo `detectedLanguage` no retorno
-
-**3. Alteracoes Frontend**
-
-Ficheiros a modificar:
-- `src/hooks/useBooks.ts` - incluir `book_files` nas queries
-- `src/pages/UploadBook.tsx` - selector de lingua + opcao adicionar a existente
-- `src/pages/BookDetails.tsx` - lista de versoes com downloads
-- `src/components/books/BookCard.tsx` - badge de linguas
-- `src/pages/Library.tsx` - agrupamento automatico
-
-**4. Novas RLS Policies**
-
-```sql
--- Users can view their book files
-CREATE POLICY "Users can view their book files"
-  ON book_files FOR SELECT
-  USING (EXISTS (
-    SELECT 1 FROM books 
-    WHERE books.id = book_files.book_id 
-    AND books.owner_id = auth.uid()
-  ));
-
--- Users can insert files for their books
-CREATE POLICY "Users can insert their book files"
-  ON book_files FOR INSERT
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM books 
-    WHERE books.id = book_files.book_id 
-    AND books.owner_id = auth.uid()
-  ));
-```
-
----
-
-### Linguas Suportadas
-
-| Codigo | Nome        |
-|--------|-------------|
-| pt     | Portugues   |
-| en     | English     |
-| es     | Espanol     |
-| fr     | Francais    |
-| de     | Deutsch     |
-| it     | Italiano    |
-| nl     | Nederlands  |
-| ru     | Russkiy     |
-| zh     | Zhongwen    |
-| ja     | Nihongo     |
+1. **Lidos** - ordenados por tempo (mais rapido primeiro = 1o lugar)
+2. **A Ler** - ordenados por progresso (maior primeiro)
+3. **Para Ler** - ordenados por nome
 
 ---
 
@@ -158,13 +115,44 @@ CREATE POLICY "Users can insert their book files"
 
 ```text
 Criar:
-  (migracao SQL via ferramenta)
+  src/hooks/useFriendsBookProgress.ts
+  src/components/books/FriendsScoreboard.tsx
 
 Modificar:
-  supabase/functions/extract-metadata/index.ts  (detecao lingua)
-  src/hooks/useBooks.ts                         (incluir book_files)
-  src/pages/UploadBook.tsx                      (UI lingua + adicionar)
-  src/pages/BookDetails.tsx                     (lista versoes)
-  src/components/books/BookCard.tsx             (badge linguas)
+  src/pages/BookDetails.tsx (adicionar FriendsScoreboard)
+  
+Migracao SQL:
+  Nova RLS policy para reading_progress
 ```
+
+---
+
+### Detalhes Tecnicos
+
+**Interface do Hook:**
+
+```typescript
+interface FriendProgress {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  status: 'to_read' | 'reading' | 'read' | null;
+  progress: number;
+  started_at: string | null;
+  finished_at: string | null;
+  reading_time_days: number | null;
+}
+
+function useFriendsBookProgress(bookId: string): {
+  friendsProgress: FriendProgress[];
+  isLoading: boolean;
+}
+```
+
+**Query Strategy:**
+
+1. Buscar amigos do utilizador atual
+2. Buscar progresso de leitura para este livro para todos os amigos
+3. Left join para incluir amigos que nao tem progresso (estado implicitamente "nao tem o livro")
+4. Combinar com dados de perfil
 
