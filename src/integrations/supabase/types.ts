@@ -372,6 +372,15 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { user1: string; user2: string }; Returns: boolean }
+      use_invite_link: {
+        Args: { invite_code: string; joining_user_id: string }
+        Returns: {
+          error_message: string
+          invite_id: string
+          invite_owner_id: string
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       reading_status: "to_read" | "reading" | "read"

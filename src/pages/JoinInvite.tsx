@@ -72,58 +72,40 @@ export default function JoinInvite() {
     setStatus('joining');
 
     try {
-      // Get invite
-      const { data: invite, error: inviteError } = await supabase
-        .from('invite_links')
-        .select('id, owner_id')
-        .eq('code', code)
-        .eq('is_active', true)
-        .single();
-
-      if (inviteError || !invite) {
-        throw new Error('Convite não encontrado');
-      }
-
-      // Check if already friends
-      const { data: existingFriendship } = await supabase
-        .from('friendships')
-        .select('id')
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-        .or(`user_id.eq.${invite.owner_id},friend_id.eq.${invite.owner_id}`)
-        .maybeSingle();
-
-      if (existingFriendship) {
-        toast({ title: 'Já és amigo deste utilizador!' });
-        navigate('/friends');
-        return;
-      }
-
-      // Can't be friends with yourself
-      if (invite.owner_id === user.id) {
-        toast({
-          variant: 'destructive',
-          title: 'Não podes usar o teu próprio convite!',
-        });
-        navigate('/');
-        return;
-      }
-
-      // Create friendship
-      const { error: friendshipError } = await supabase
-        .from('friendships')
-        .insert({
-          user_id: invite.owner_id,
-          friend_id: user.id,
-          invite_link_id: invite.id,
+      // Use atomic database function to prevent race conditions
+      const { data, error: rpcError } = await supabase
+        .rpc('use_invite_link', {
+          invite_code: code,
+          joining_user_id: user.id
         });
 
-      if (friendshipError) throw friendshipError;
+      if (rpcError) throw rpcError;
 
-      // Increment uses count
-      await supabase
-        .from('invite_links')
-        .update({ uses_count: (await supabase.from('invite_links').select('uses_count').eq('id', invite.id).single()).data?.uses_count + 1 })
-        .eq('id', invite.id);
+      const result = data?.[0];
+      
+      if (!result) {
+        throw new Error('Erro ao processar convite');
+      }
+
+      if (!result.success) {
+        // Handle specific error cases
+        if (result.error_message === 'Já és amigo deste utilizador') {
+          toast({ title: 'Já és amigo deste utilizador!' });
+          navigate('/friends');
+          return;
+        }
+        
+        if (result.error_message === 'Não podes usar o teu próprio convite') {
+          toast({
+            variant: 'destructive',
+            title: 'Não podes usar o teu próprio convite!',
+          });
+          navigate('/');
+          return;
+        }
+        
+        throw new Error(result.error_message || 'Erro ao aceitar convite');
+      }
 
       setStatus('success');
       toast({ title: 'Amizade criada com sucesso!' });
