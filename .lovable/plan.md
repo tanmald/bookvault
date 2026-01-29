@@ -1,107 +1,98 @@
 
 
-## 📚 BookVault - Biblioteca Digital Social
+## Extração Automática de Metadados de Ebooks
 
-Uma aplicação web para gerir a tua coleção de ebooks, partilhar com amigos através de links privados, e acompanhar o que todos estão a ler.
-
----
-
-### 🏠 Páginas Principais
-
-**1. Página de Login/Registo**
-- Autenticação por email/password
-- Design minimalista com ilustração de livros
-
-**2. Dashboard / Biblioteca Pessoal**
-- Vista em grelha das capas dos livros
-- Filtros por categorias/tags
-- Barra de pesquisa por título, autor ou género
-- Indicador de "A ler" vs "Lido" vs "Para ler"
-- Botão flutuante para adicionar novos livros
-
-**3. Página de Detalhes do Livro**
-- Capa do livro em destaque
-- Metadados: título, autor, género, ano, descrição
-- Tags personalizadas
-- Botão de download do ficheiro
-- Secção de reviews e rating (1-5 estrelas)
-- Ver quem está a ler este livro
-
-**4. Upload de Livro**
-- Arrastar e largar ficheiros (PDF, EPUB, MOBI, etc.)
-- Formulário de metadados (título, autor, género, ano)
-- Upload de capa (ou opção de capa gerada automaticamente)
-- Adicionar a estantes/categorias
-
-**5. Página de Amigos / Atividade**
-- Lista de amigos na tua biblioteca
-- Feed de atividade: quem está a ler o quê
-- Progressos de leitura dos amigos
-- Reviews recentes dos amigos
-
-**6. Gestão de Convites**
-- Gerar links de convite únicos
-- Ver convites ativos e expirados
-- Revogar acesso a amigos
-
-**7. Perfil do Utilizador**
-- Estatísticas: livros lidos, páginas lidas
-- Livros favoritos
-- Reviews publicadas
-- Editar informações do perfil
+Vou adicionar a funcionalidade de extrair automaticamente título, autor, descrição e capa dos ficheiros quando fazes upload de um ebook.
 
 ---
 
-### ✨ Funcionalidades Chave
+### Como vai funcionar
 
-**Gestão de Livros**
-- Upload de múltiplos formatos (PDF, EPUB, MOBI, AZW3)
-- Extração automática de metadados quando possível
-- Organização por estantes virtuais e tags
-- Status de leitura: Para ler → A ler → Lido
+1. **Selecionas um ficheiro** (EPUB, PDF, etc.)
+2. **O sistema analisa o ficheiro** e tenta extrair os metadados
+3. **Os campos são preenchidos automaticamente** com a informação encontrada
+4. **Podes editar** qualquer campo antes de guardar
 
-**Sistema Social**
-- Convites por link privado único
-- Ver biblioteca dos amigos
-- Descarregar livros partilhados
-- Ver quem está a ler cada livro
-- Sistema de reviews com texto e rating (1-5 estrelas)
-
-**Tracking de Leitura**
-- Marcar livro como "A ler"
-- Atualizar progresso de leitura (%)
-- Data de início e fim de leitura
-- Histórico de leituras
+Um indicador de "A extrair metadados..." aparece enquanto o ficheiro está a ser analisado.
 
 ---
 
-### 🗄️ Backend (Supabase)
+### Formatos suportados
 
-**Base de dados para:**
-- Utilizadores e perfis
-- Livros com metadados completos
-- Categorias/tags
-- Relações de amizade via convites
-- Status e progresso de leitura
-- Reviews e ratings
+| Formato | Título | Autor | Descrição | Capa |
+|---------|--------|-------|-----------|------|
+| **EPUB** | Sim | Sim | Sim | Sim |
+| **PDF** | Sim* | Sim* | Nao | Nao |
+| **MOBI/AZW** | Nao** | Nao** | Nao | Nao |
 
-**Storage para:**
-- Ficheiros dos livros (PDF, EPUB, etc.)
-- Capas dos livros
-- Avatares dos utilizadores
+*PDFs podem ter metadados limitados ou ausentes dependendo de como foram criados
 
-**Segurança:**
-- Apenas amigos aprovados podem ver e descarregar livros
-- Links de convite com expiração configurável
+**Formatos Kindle requerem parsing especializado - podem ser adicionados futuramente
 
 ---
 
-### 🎨 Design
+### Implementacao Tecnica
 
-**Estilo Minimalista**
-- Cores neutras: brancos, cinzas, com um accent color subtil
-- Tipografia limpa e legível
-- Espaço em branco generoso
-- Foco nas capas dos livros como elemento visual principal
-- Ícones simples e funcionais
+**1. Edge Function `extract-metadata`**
+- Recebe o ficheiro via FormData
+- Detecta o tipo de ficheiro pela extensao
+- Para EPUB: usa JSZip para descomprimir e ler o ficheiro `content.opf` (XML com metadados Dublin Core)
+- Para PDF: usa a biblioteca `pdf-lib` para ler metadados do documento
+- Extrai capa embutida do EPUB quando disponivel
+- Retorna JSON com os metadados encontrados
+
+**2. Alteracoes no Frontend**
+- Novo estado `isExtractingMetadata` para mostrar loading
+- Funcao `extractMetadata(file)` que chama a edge function
+- Quando um ficheiro e selecionado, dispara a extracao automaticamente
+- Os campos do formulario sao preenchidos com os valores extraidos
+- Campos ja preenchidos nao sao sobrescritos (permite editar antes de selecionar ficheiro)
+- A capa extraida e mostrada como preview e usada no upload se nenhuma outra for selecionada
+
+**3. UX/Feedback**
+- Spinner e texto "A extrair metadados..." durante o processamento
+- Toast de sucesso quando metadados sao encontrados
+- Toast informativo quando nao ha metadados disponiveis
+- Campos preenchidos automaticamente ficam destacados brevemente
+
+---
+
+### Ficheiros a criar/modificar
+
+```text
+Criar:
+  supabase/functions/extract-metadata/index.ts
+
+Modificar:
+  src/pages/UploadBook.tsx
+  src/components/upload/FileUpload.tsx (opcional - adicionar callback)
+```
+
+---
+
+### Fluxo da Edge Function
+
+```text
+1. Receber ficheiro via POST (FormData)
+2. Ler bytes do ficheiro
+3. Verificar extensao (.epub, .pdf, etc.)
+4. Se EPUB:
+   - Descomprimir com JSZip
+   - Localizar container.xml para encontrar OPF
+   - Ler content.opf (XML)
+   - Extrair dc:title, dc:creator, dc:description, dc:date
+   - Procurar imagem de capa referenciada no OPF
+   - Converter capa para base64 (para preview temporario)
+5. Se PDF:
+   - Usar pdf-lib para carregar documento
+   - Ler Title, Author, Subject do metadata
+6. Retornar JSON:
+   {
+     title: string | null,
+     author: string | null,
+     description: string | null,
+     year: number | null,
+     coverBase64: string | null
+   }
+```
 
