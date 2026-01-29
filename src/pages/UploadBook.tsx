@@ -28,6 +28,7 @@ interface ExtractedMetadata {
   description: string | null;
   year: number | null;
   coverBase64: string | null;
+  genreSlug: string | null;
 }
 
 export default function UploadBook() {
@@ -50,7 +51,6 @@ export default function UploadBook() {
     description: '',
     genre_id: '',
     year: '',
-    isbn: '',
   });
 
   const extractMetadata = useCallback(async (selectedFile: File) => {
@@ -87,6 +87,15 @@ export default function UploadBook() {
 
       const metadata: ExtractedMetadata = await response.json();
 
+      // Find genre_id from the detected slug
+      let detectedGenreId = '';
+      if (metadata.genreSlug && genres) {
+        const matchedGenre = genres.find(g => g.slug === metadata.genreSlug);
+        if (matchedGenre) {
+          detectedGenreId = matchedGenre.id;
+        }
+      }
+
       // Always overwrite with new file's metadata (user can edit after)
       setFormData(prev => ({
         ...prev,
@@ -94,20 +103,20 @@ export default function UploadBook() {
         author: metadata.author || '',
         description: metadata.description || '',
         year: metadata.year ? String(metadata.year) : '',
+        genre_id: detectedGenreId,
       }));
 
-      // Always update cover with new file's extracted cover (unless user manually selected one)
+      // Always update cover with new file's extracted cover
       if (metadata.coverBase64) {
-        setCoverFile(null); // Clear any manually selected cover
+        setCoverFile(null);
         setExtractedCoverBase64(metadata.coverBase64);
         setCoverPreview(metadata.coverBase64);
       } else {
-        // New file has no cover - clear previous extracted cover
         setExtractedCoverBase64(null);
         setCoverPreview(null);
       }
 
-      const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64;
+      const hasMetadata = metadata.title || metadata.author || metadata.description || metadata.coverBase64 || metadata.genreSlug;
       
       if (hasMetadata) {
         toast({
@@ -127,7 +136,7 @@ export default function UploadBook() {
     } finally {
       setIsExtractingMetadata(false);
     }
-  }, [coverFile, coverPreview, toast]);
+  }, [genres, toast]);
 
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
@@ -239,7 +248,7 @@ export default function UploadBook() {
         description: formData.description.trim() || undefined,
         genre_id: formData.genre_id || undefined,
         year: formData.year ? parseInt(formData.year) : undefined,
-        isbn: formData.isbn.trim() || undefined,
+        
         file_url: fileData.publicUrl,
         file_type: fileExt.toUpperCase(),
         file_size: file.size,
@@ -358,15 +367,6 @@ export default function UploadBook() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="isbn">ISBN</Label>
-                <Input
-                  id="isbn"
-                  value={formData.isbn}
-                  onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
-                  placeholder="978-3-16-148410-0"
-                />
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description">Descrição</Label>

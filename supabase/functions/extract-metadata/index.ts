@@ -8,17 +8,36 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Available genres with their slugs for AI matching
+const GENRES = [
+  { slug: "autoajuda", name: "Autoajuda" },
+  { slug: "biografia", name: "Biografia" },
+  { slug: "ciencia", name: "Ciência" },
+  { slug: "drama", name: "Drama" },
+  { slug: "fantasia", name: "Fantasia" },
+  { slug: "ficcao", name: "Ficção" },
+  { slug: "ficcao-cientifica", name: "Ficção Científica" },
+  { slug: "historia", name: "História" },
+  { slug: "horror", name: "Horror" },
+  { slug: "misterio", name: "Mistério" },
+  { slug: "nao-ficcao", name: "Não-Ficção" },
+  { slug: "poesia", name: "Poesia" },
+  { slug: "romance", name: "Romance" },
+  { slug: "tecnologia", name: "Tecnologia" },
+  { slug: "thriller", name: "Thriller" },
+];
+
 interface ExtractedMetadata {
   title: string | null;
   author: string | null;
   description: string | null;
   year: number | null;
   coverBase64: string | null;
+  genreSlug: string | null;
 }
 
 // Parse XML and extract text content from a tag
 function getTagContent(xml: string, tagName: string): string | null {
-  // Handle namespaced tags like dc:title
   const patterns = [
     new RegExp(`<${tagName}[^>]*>([^<]*)</${tagName}>`, "i"),
     new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, "i"),
@@ -40,6 +59,102 @@ function extractYear(dateStr: string | null): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
+async function detectGenreWithAI(
+  title: string | null,
+  author: string | null,
+  description: string | null
+): Promise<string | null> {
+  if (!title && !description) return null;
+
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    console.log("LOVABLE_API_KEY not configured, skipping genre detection");
+    return null;
+  }
+
+  try {
+    const genreList = GENRES.map((g) => g.slug).join(", ");
+    const bookInfo = [
+      title ? `Título: ${title}` : "",
+      author ? `Autor: ${author}` : "",
+      description ? `Descrição: ${description.substring(0, 500)}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const response = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content: `Você é um classificador de livros. Dado informações sobre um livro, responda APENAS com o slug do género mais apropriado da lista. Não adicione explicações nem pontuação.
+
+Géneros disponíveis: ${genreList}`,
+            },
+            {
+              role: "user",
+              content: bookInfo,
+            },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "classify_genre",
+                description: "Classifica o género do livro",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    genre_slug: {
+                      type: "string",
+                      enum: GENRES.map((g) => g.slug),
+                      description: "O slug do género do livro",
+                    },
+                  },
+                  required: ["genre_slug"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "classify_genre" } },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("AI genre detection failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (toolCall?.function?.arguments) {
+      const args = JSON.parse(toolCall.function.arguments);
+      const detectedSlug = args.genre_slug;
+      
+      // Validate the slug exists
+      if (GENRES.some((g) => g.slug === detectedSlug)) {
+        return detectedSlug;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error detecting genre with AI:", error);
+    return null;
+  }
+}
+
 async function extractEpubMetadata(
   fileBuffer: ArrayBuffer
 ): Promise<ExtractedMetadata> {
@@ -49,12 +164,12 @@ async function extractEpubMetadata(
     description: null,
     year: null,
     coverBase64: null,
+    genreSlug: null,
   };
 
   try {
     const zip = await JSZip.loadAsync(fileBuffer);
 
-    // Find container.xml to locate the OPF file
     const containerFile = zip.file("META-INF/container.xml");
     if (!containerFile) {
       console.log("No container.xml found");
@@ -77,7 +192,6 @@ async function extractEpubMetadata(
 
     const opfContent = await opfFile.async("string");
 
-    // Extract Dublin Core metadata
     result.title =
       getTagContent(opfContent, "dc:title") ||
       getTagContent(opfContent, "title");
@@ -93,13 +207,11 @@ async function extractEpubMetadata(
     result.year = extractYear(dateStr);
 
     // Try to find cover image
-    // Look for meta tag with name="cover"
     const coverIdMatch = opfContent.match(
       /<meta[^>]*name="cover"[^>]*content="([^"]+)"/i
     );
     let coverId = coverIdMatch ? coverIdMatch[1] : null;
 
-    // Alternative: look for item with id containing "cover"
     if (!coverId) {
       const coverItemMatch = opfContent.match(
         /<item[^>]*id="([^"]*cover[^"]*)"[^>]*href="([^"]+)"/i
@@ -110,13 +222,11 @@ async function extractEpubMetadata(
     }
 
     if (coverId) {
-      // Find the href for this cover id
       const itemMatch = opfContent.match(
         new RegExp(`<item[^>]*id="${coverId}"[^>]*href="([^"]+)"`, "i")
       );
       if (itemMatch) {
         const coverHref = itemMatch[1];
-        // Resolve path relative to OPF file
         const opfDir = opfPath.substring(0, opfPath.lastIndexOf("/") + 1);
         const coverPath = coverHref.startsWith("/")
           ? coverHref.substring(1)
@@ -137,13 +247,10 @@ async function extractEpubMetadata(
       }
     }
 
-    // Alternative cover search: look for any image with "cover" in the name
     if (!result.coverBase64) {
       const files = Object.keys(zip.files);
       const coverFile = files.find(
-        (f) =>
-          /cover/i.test(f) &&
-          /\.(jpg|jpeg|png|gif)$/i.test(f)
+        (f) => /cover/i.test(f) && /\.(jpg|jpeg|png|gif)$/i.test(f)
       );
       if (coverFile) {
         const file = zip.file(coverFile);
@@ -176,6 +283,7 @@ async function extractPdfMetadata(
     description: null,
     year: null,
     coverBase64: null,
+    genreSlug: null,
   };
 
   try {
@@ -199,7 +307,6 @@ async function extractPdfMetadata(
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -225,14 +332,23 @@ serve(async (req) => {
     } else if (fileName.endsWith(".pdf")) {
       metadata = await extractPdfMetadata(fileBuffer);
     } else {
-      // Unsupported format
       metadata = {
         title: null,
         author: null,
         description: null,
         year: null,
         coverBase64: null,
+        genreSlug: null,
       };
+    }
+
+    // Use AI to detect genre based on extracted metadata
+    if (metadata.title || metadata.description) {
+      metadata.genreSlug = await detectGenreWithAI(
+        metadata.title,
+        metadata.author,
+        metadata.description
+      );
     }
 
     return new Response(JSON.stringify(metadata), {
