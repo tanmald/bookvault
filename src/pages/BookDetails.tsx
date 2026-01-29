@@ -26,6 +26,7 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
+import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import {
   ArrowLeft,
   Trash2,
@@ -274,6 +275,9 @@ export default function BookDetails() {
               )}
             </CardContent>
           </Card>
+
+          {/* Friends Scoreboard */}
+          <FriendsScoreboard bookId={id!} />
 
           {/* Description */}
           {book.description && (
