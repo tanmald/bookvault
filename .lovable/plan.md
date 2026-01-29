@@ -1,59 +1,156 @@
 
 
-## Extração Automática de Metadados de Ebooks
+## Agrupar Livros por Língua numa Unica Obra
 
-Vou adicionar a funcionalidade de extrair automaticamente título, autor, descrição e capa dos ficheiros quando fazes upload de um ebook.
+Vou implementar um sistema que permite ter varias versoes linguisticas do mesmo livro agrupadas, para que na biblioteca apareca apenas uma entrada por obra, com opcao de escolher qual ficheiro descarregar.
 
 ---
 
 ### Como vai funcionar
 
-1. **Selecionas um ficheiro** (EPUB, PDF, etc.)
-2. **O sistema analisa o ficheiro** e tenta extrair os metadados
-3. **Os campos são preenchidos automaticamente** com a informação encontrada
-4. **Podes editar** qualquer campo antes de guardar
-
-Um indicador de "A extrair metadados..." aparece enquanto o ficheiro está a ser analisado.
+1. **Na biblioteca**: Cada livro aparece apenas uma vez, mesmo que tenhas versoes em PT, EN, FR, etc.
+2. **Ao abrir um livro**: Ves todas as versoes disponiveis e escolhes qual descarregar
+3. **Ao fazer upload**: Podes adicionar um novo ficheiro a um livro existente, indicando a lingua
+4. **Detecao automatica**: O sistema tenta detetar a lingua do ficheiro automaticamente
 
 ---
 
-### Formatos suportados
+### Nova estrutura da base de dados
 
-| Formato | Título | Autor | Descrição | Capa |
-|---------|--------|-------|-----------|------|
-| **EPUB** | Sim | Sim | Sim | Sim |
-| **PDF** | Sim* | Sim* | Nao | Nao |
-| **MOBI/AZW** | Nao** | Nao** | Nao | Nao |
+```text
+books (obra principal - sem ficheiro diretamente)
+  - id, owner_id, title, author, description
+  - genre_id, year, cover_url
+  - created_at, updated_at
 
-*PDFs podem ter metadados limitados ou ausentes dependendo de como foram criados
+book_files (ficheiros por lingua)
+  - id, book_id, language (ex: "pt", "en", "es")
+  - file_url, file_type, file_size
+  - created_at
+```
 
-**Formatos Kindle requerem parsing especializado - podem ser adicionados futuramente
+O livro passa a ser o "conceito" da obra, e os ficheiros sao as versoes concretas em cada lingua.
+
+---
+
+### Alteracoes no Upload
+
+**Duas opcoes ao fazer upload:**
+
+1. **Novo livro**: Cria obra nova + primeiro ficheiro
+2. **Adicionar versao**: Adiciona ficheiro a um livro existente
+
+**Interface atualizada:**
+- Dropdown para selecionar lingua do ficheiro (PT, EN, ES, FR, DE, IT, etc.)
+- Opcao "Adicionar a livro existente" que mostra lista dos teus livros
+- AI tenta detetar lingua automaticamente a partir do conteudo
+
+---
+
+### Alteracoes na Biblioteca
+
+- Cada card mostra o livro uma so vez
+- Badge com numero de versoes disponiveis (ex: "3 linguas")
+- Ao clicar, vai para detalhes onde podes escolher qual versao
+
+---
+
+### Alteracoes nos Detalhes do Livro
+
+Nova seccao "Versoes Disponiveis":
+```text
++----------------------------------+
+| Versoes Disponiveis              |
++----------------------------------+
+| PT  Portugues    EPUB  [Download]|
+| EN  English      PDF   [Download]|
+| ES  Espanol      EPUB  [Download]|
++----------------------------------+
+| + Adicionar nova versao          |
++----------------------------------+
+```
 
 ---
 
 ### Implementacao Tecnica
 
-**1. Edge Function `extract-metadata`**
-- Recebe o ficheiro via FormData
-- Detecta o tipo de ficheiro pela extensao
-- Para EPUB: usa JSZip para descomprimir e ler o ficheiro `content.opf` (XML com metadados Dublin Core)
-- Para PDF: usa a biblioteca `pdf-lib` para ler metadados do documento
-- Extrai capa embutida do EPUB quando disponivel
-- Retorna JSON com os metadados encontrados
+**1. Migracao da Base de Dados**
 
-**2. Alteracoes no Frontend**
-- Novo estado `isExtractingMetadata` para mostrar loading
-- Funcao `extractMetadata(file)` que chama a edge function
-- Quando um ficheiro e selecionado, dispara a extracao automaticamente
-- Os campos do formulario sao preenchidos com os valores extraidos
-- Campos ja preenchidos nao sao sobrescritos (permite editar antes de selecionar ficheiro)
-- A capa extraida e mostrada como preview e usada no upload se nenhuma outra for selecionada
+Criar tabela `book_files`:
+```sql
+CREATE TABLE book_files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  language TEXT NOT NULL DEFAULT 'pt',
+  file_url TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size BIGINT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
 
-**3. UX/Feedback**
-- Spinner e texto "A extrair metadados..." durante o processamento
-- Toast de sucesso quando metadados sao encontrados
-- Toast informativo quando nao ha metadados disponiveis
-- Campos preenchidos automaticamente ficam destacados brevemente
+Migrar dados existentes:
+```sql
+INSERT INTO book_files (book_id, language, file_url, file_type, file_size)
+SELECT id, 'pt', file_url, file_type, file_size FROM books;
+```
+
+Remover colunas file_* da tabela books (apos migracao).
+
+**2. Detecao de Lingua com AI**
+
+Adicionar a edge function `extract-metadata`:
+- Analisa primeiras paginas do conteudo
+- Retorna codigo ISO da lingua (pt, en, es, etc.)
+- Campo `detectedLanguage` no retorno
+
+**3. Alteracoes Frontend**
+
+Ficheiros a modificar:
+- `src/hooks/useBooks.ts` - incluir `book_files` nas queries
+- `src/pages/UploadBook.tsx` - selector de lingua + opcao adicionar a existente
+- `src/pages/BookDetails.tsx` - lista de versoes com downloads
+- `src/components/books/BookCard.tsx` - badge de linguas
+- `src/pages/Library.tsx` - agrupamento automatico
+
+**4. Novas RLS Policies**
+
+```sql
+-- Users can view their book files
+CREATE POLICY "Users can view their book files"
+  ON book_files FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM books 
+    WHERE books.id = book_files.book_id 
+    AND books.owner_id = auth.uid()
+  ));
+
+-- Users can insert files for their books
+CREATE POLICY "Users can insert their book files"
+  ON book_files FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM books 
+    WHERE books.id = book_files.book_id 
+    AND books.owner_id = auth.uid()
+  ));
+```
+
+---
+
+### Linguas Suportadas
+
+| Codigo | Nome        |
+|--------|-------------|
+| pt     | Portugues   |
+| en     | English     |
+| es     | Espanol     |
+| fr     | Francais    |
+| de     | Deutsch     |
+| it     | Italiano    |
+| nl     | Nederlands  |
+| ru     | Russkiy     |
+| zh     | Zhongwen    |
+| ja     | Nihongo     |
 
 ---
 
@@ -61,38 +158,13 @@ Um indicador de "A extrair metadados..." aparece enquanto o ficheiro está a ser
 
 ```text
 Criar:
-  supabase/functions/extract-metadata/index.ts
+  (migracao SQL via ferramenta)
 
 Modificar:
-  src/pages/UploadBook.tsx
-  src/components/upload/FileUpload.tsx (opcional - adicionar callback)
-```
-
----
-
-### Fluxo da Edge Function
-
-```text
-1. Receber ficheiro via POST (FormData)
-2. Ler bytes do ficheiro
-3. Verificar extensao (.epub, .pdf, etc.)
-4. Se EPUB:
-   - Descomprimir com JSZip
-   - Localizar container.xml para encontrar OPF
-   - Ler content.opf (XML)
-   - Extrair dc:title, dc:creator, dc:description, dc:date
-   - Procurar imagem de capa referenciada no OPF
-   - Converter capa para base64 (para preview temporario)
-5. Se PDF:
-   - Usar pdf-lib para carregar documento
-   - Ler Title, Author, Subject do metadata
-6. Retornar JSON:
-   {
-     title: string | null,
-     author: string | null,
-     description: string | null,
-     year: number | null,
-     coverBase64: string | null
-   }
+  supabase/functions/extract-metadata/index.ts  (detecao lingua)
+  src/hooks/useBooks.ts                         (incluir book_files)
+  src/pages/UploadBook.tsx                      (UI lingua + adicionar)
+  src/pages/BookDetails.tsx                     (lista versoes)
+  src/components/books/BookCard.tsx             (badge linguas)
 ```
 
