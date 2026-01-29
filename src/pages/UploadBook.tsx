@@ -87,13 +87,13 @@ export default function UploadBook() {
 
       const metadata: ExtractedMetadata = await response.json();
 
-      // Only fill empty fields (don't overwrite user edits)
+      // Always overwrite with new file's metadata (user can edit after)
       setFormData(prev => ({
         ...prev,
-        title: prev.title || metadata.title || '',
-        author: prev.author || metadata.author || '',
-        description: prev.description || metadata.description || '',
-        year: prev.year || (metadata.year ? String(metadata.year) : ''),
+        title: metadata.title || '',
+        author: metadata.author || '',
+        description: metadata.description || '',
+        year: metadata.year ? String(metadata.year) : '',
       }));
 
       // Set extracted cover if no cover was manually selected
