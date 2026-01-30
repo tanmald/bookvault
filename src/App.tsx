@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Onboarding from "./pages/Onboarding";
 import Library from "./pages/Library";
 import UploadBook from "./pages/UploadBook";
 import BookDetails from "./pages/BookDetails";
@@ -28,6 +29,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/join/:code" element={<JoinInvite />} />
             <Route
               path="/"
