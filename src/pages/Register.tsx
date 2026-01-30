@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import OnboardingChoice from '@/components/auth/OnboardingChoice';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -16,10 +15,19 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'register' | 'onboarding'>('register');
   
-  const { signUp } = useAuth();
+  const { user, loading, signUp } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
+
+  // If already authenticated, redirect to onboarding or home
+  useEffect(() => {
+    if (!loading && user) {
+      const code = searchParams.get('code');
+      // Redirect to onboarding with any invite code
+      navigate(code ? `/onboarding?code=${code}` : '/onboarding', { replace: true });
+    }
+  }, [user, loading, navigate, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,14 +66,19 @@ export default function Register() {
         title: 'Conta criada!',
         description: 'Vamos configurar a tua biblioteca',
       });
-      setStep('onboarding');
-      setIsLoading(false);
+      // Navigate to onboarding page with any invite code
+      const code = searchParams.get('code');
+      navigate(code ? `/onboarding?code=${code}` : '/onboarding', { replace: true });
     }
   };
 
-  // Show onboarding step after successful registration
-  if (step === 'onboarding') {
-    return <OnboardingChoice />;
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
