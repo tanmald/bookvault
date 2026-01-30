@@ -48,16 +48,16 @@ export function BookVersionsList({
       {files.map((file) => (
         <div
           key={file.id}
-          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+          className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-              <Globe className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 shrink-0">
+              <Globe className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{getLanguageName(file.language)}</span>
-                <Badge variant="outline" className="text-xs">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="font-medium text-sm truncate">{getLanguageName(file.language)}</span>
+                <Badge variant="outline" className="text-xs shrink-0">
                   {file.file_type}
                 </Badge>
               </div>
@@ -69,14 +69,15 @@ export function BookVersionsList({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 shrink-0">
             <Button
-              size="sm"
+              size="icon"
               variant="outline"
+              className="h-8 w-8"
               onClick={() => handleDownload(file.file_url)}
+              title={t('book.download')}
             >
               <Download className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">{t('book.download')}</span>
             </Button>
 
             {isOwner && onDeleteFile && files.length > 1 && (
