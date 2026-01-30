@@ -75,9 +75,9 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - **Files**: Login, Register, UploadBook, Profile pages
 - **Fix**: Add field-level error display, real-time validation
 
-### 16. UX: Incomplete Loading States
-- **Files**: All pages
-- **Fix**: Add skeleton components for better perceived performance
+### ~~16. UX: Incomplete Loading States~~ ✅ DONE
+- Created BookCardSkeleton, BookGridSkeleton, BookKanbanSkeleton components
+- Updated Library page to use skeleton loading states
 
 ---
 

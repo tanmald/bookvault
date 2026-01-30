@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { BookGrid } from '@/components/books/BookGrid';
 import { BookKanban } from '@/components/books/BookKanban';
+import { BookGridSkeleton, BookKanbanSkeleton } from '@/components/books/BookCardSkeleton';
 import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
@@ -134,9 +135,7 @@ export default function Library() {
         />
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          viewMode === 'kanban' ? <BookKanbanSkeleton /> : <BookGridSkeleton />
         ) : viewMode === 'kanban' ? (
           <BookKanban books={filteredBooks} progressMap={progressMap} />
         ) : (
