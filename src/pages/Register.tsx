@@ -43,7 +43,7 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         variant: 'destructive',
         title: t('common.error'),
@@ -136,6 +136,9 @@ export default function Register() {
                   required
                   autoComplete="new-password"
                 />
+                <p className={`text-xs ${password.length >= 8 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                  {t('auth.passwordRequirements')} {password.length > 0 && `(${password.length}/8)`}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>

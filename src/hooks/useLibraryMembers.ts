@@ -24,43 +24,28 @@ export function useLibraryMembers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch members of the current user's library
+  // Fetch members of the current user's library using single RPC query
   const membersQuery = useQuery({
     queryKey: ['library-members', user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      // Get all members where the current user is the library owner
-      const { data: members, error } = await supabase
-        .from('library_members')
-        .select('*')
-        .eq('library_owner_id', user.id);
+      const { data, error } = await supabase
+        .rpc('get_library_members_with_profiles', { p_library_owner_id: user.id });
 
       if (error) throw error;
 
-      if (!members || members.length === 0) return [];
-
-      // Get all user IDs to fetch profiles
-      const userIds = members.map((m) => m.user_id);
-
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Combine data
-      return members.map((m) => {
-        const profile = profiles?.find((p) => p.user_id === m.user_id);
-        return {
-          ...m,
-          display_name: profile?.display_name || null,
-          avatar_url: profile?.avatar_url || null,
-          is_owner: m.user_id === m.library_owner_id,
-        };
-      }) as LibraryMember[];
+      return (data ?? []).map((m) => ({
+        id: m.member_id,
+        library_owner_id: user.id,
+        user_id: m.user_id,
+        role: m.role as LibraryRole,
+        created_at: m.joined_at,
+        invited_by: null,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url,
+        is_owner: m.user_id === user.id,
+      })) as LibraryMember[];
     },
     enabled: !!user,
   });

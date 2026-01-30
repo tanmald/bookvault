@@ -19,41 +19,19 @@ export function useFriends() {
   const friendsQuery = useQuery({
     queryKey: ['friends', user?.id],
     queryFn: async () => {
-      // Get friendships where current user is either user_id or friend_id
-      const { data: friendships, error } = await supabase
-        .from('friendships')
-        .select('id, user_id, friend_id, created_at')
-        .or(`user_id.eq.${user!.id},friend_id.eq.${user!.id}`);
+      // Single query using RPC function that joins friendships with profiles
+      const { data, error } = await supabase
+        .rpc('get_friends_with_profiles', { p_user_id: user!.id });
 
       if (error) throw error;
 
-      // Get the friend IDs (the one that's not the current user)
-      const friendIds = friendships.map((f) =>
-        f.user_id === user!.id ? f.friend_id : f.user_id
-      );
-
-      if (friendIds.length === 0) return [];
-
-      // Get friend profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url')
-        .in('user_id', friendIds);
-
-      if (profilesError) throw profilesError;
-
-      // Combine data
-      return friendships.map((f) => {
-        const friendId = f.user_id === user!.id ? f.friend_id : f.user_id;
-        const profile = profiles.find((p) => p.user_id === friendId);
-        return {
-          id: f.id,
-          user_id: friendId,
-          display_name: profile?.display_name || null,
-          avatar_url: profile?.avatar_url || null,
-          created_at: f.created_at,
-        };
-      }) as Friend[];
+      return (data ?? []).map((f) => ({
+        id: f.friendship_id,
+        user_id: f.friend_user_id,
+        display_name: f.display_name,
+        avatar_url: f.avatar_url,
+        created_at: f.friendship_created_at,
+      })) as Friend[];
     },
     enabled: !!user,
   });

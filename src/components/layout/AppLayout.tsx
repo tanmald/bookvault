@@ -88,9 +88,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                  aria-label={t('nav.profile')}
+                >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="" alt="Avatar" />
+                    <AvatarImage src="" alt="" />
                     <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -116,6 +120,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               size="icon"
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? t('common.closeMenu') : t('common.openMenu')}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>

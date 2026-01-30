@@ -19,64 +19,52 @@ export function useActivityFeed() {
   const query = useQuery({
     queryKey: ['activity-feed', user?.id],
     queryFn: async () => {
-      // Get friend IDs
-      const { data: friendships, error: friendsError } = await supabase
-        .from('friendships')
-        .select('user_id, friend_id')
-        .or(`user_id.eq.${user!.id},friend_id.eq.${user!.id}`);
+      // Get friends with profiles in a single query (includes display_name)
+      const { data: friends, error: friendsError } = await supabase
+        .rpc('get_friends_with_profiles', { p_user_id: user!.id });
 
       if (friendsError) throw friendsError;
+      if (!friends || friends.length === 0) return [];
 
-      const friendIds = friendships.map((f) =>
-        f.user_id === user!.id ? f.friend_id : f.user_id
-      );
+      const friendIds = friends.map((f) => f.friend_user_id);
+      const profileMap = new Map(friends.map((f) => [f.friend_user_id, f.display_name]));
 
-      if (friendIds.length === 0) return [];
+      // Run reading progress and reviews queries in parallel
+      const [progressResult, reviewsResult] = await Promise.all([
+        supabase
+          .from('reading_progress')
+          .select(`
+            id,
+            user_id,
+            book_id,
+            status,
+            updated_at,
+            book:books(title)
+          `)
+          .in('user_id', friendIds)
+          .in('status', ['reading', 'read'])
+          .order('updated_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('reviews')
+          .select(`
+            id,
+            user_id,
+            book_id,
+            rating,
+            created_at,
+            book:books(title)
+          `)
+          .in('user_id', friendIds)
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
 
-      // Get reading progress updates from friends
-      const { data: progressData, error: progressError } = await supabase
-        .from('reading_progress')
-        .select(`
-          id,
-          user_id,
-          book_id,
-          status,
-          updated_at,
-          book:books(title)
-        `)
-        .in('user_id', friendIds)
-        .in('status', ['reading', 'read'])
-        .order('updated_at', { ascending: false })
-        .limit(20);
+      if (progressResult.error) throw progressResult.error;
+      if (reviewsResult.error) throw reviewsResult.error;
 
-      if (progressError) throw progressError;
-
-      // Get profiles for friend IDs
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', friendIds);
-
-      if (profilesError) throw profilesError;
-
-      const profileMap = new Map(profiles.map((p) => [p.user_id, p.display_name]));
-
-      // Get reviews from friends
-      const { data: reviewsData, error: reviewsError } = await supabase
-        .from('reviews')
-        .select(`
-          id,
-          user_id,
-          book_id,
-          rating,
-          created_at,
-          book:books(title)
-        `)
-        .in('user_id', friendIds)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (reviewsError) throw reviewsError;
+      const progressData = progressResult.data ?? [];
+      const reviewsData = reviewsResult.data ?? [];
 
       // Combine and sort activities
       const activities: Activity[] = [
@@ -86,7 +74,7 @@ export function useActivityFeed() {
           user_id: p.user_id,
           user_name: profileMap.get(p.user_id) || null,
           book_id: p.book_id,
-          book_title: (p.book as unknown as { title: string })?.title || 'Livro desconhecido',
+          book_title: (p.book as { title: string } | null)?.title || 'Livro desconhecido',
           created_at: p.updated_at,
         })),
         ...reviewsData.map((r) => ({
@@ -95,7 +83,7 @@ export function useActivityFeed() {
           user_id: r.user_id,
           user_name: profileMap.get(r.user_id) || null,
           book_id: r.book_id,
-          book_title: (r.book as unknown as { title: string })?.title || 'Livro desconhecido',
+          book_title: (r.book as { title: string } | null)?.title || 'Livro desconhecido',
           rating: r.rating,
           created_at: r.created_at,
         })),
