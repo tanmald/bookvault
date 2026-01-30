@@ -8,6 +8,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
 
+// Type for the owner profile relation
+interface OwnerProfile {
+  display_name: string | null;
+}
+
+function parseOwnerProfile(owner: unknown): OwnerProfile | null {
+  if (!owner) return null;
+  // Handle both single object and array (Supabase relation types)
+  const profile = Array.isArray(owner) ? owner[0] : owner;
+  if (typeof profile === 'object' && profile !== null && 'display_name' in profile) {
+    return { display_name: (profile as OwnerProfile).display_name };
+  }
+  return null;
+}
+
 export default function JoinInvite() {
   const { code } = useParams<{ code: string }>();
   const { user, loading: authLoading } = useAuth();
@@ -57,7 +72,7 @@ export default function JoinInvite() {
           return;
         }
 
-        setInviteOwner(data.owner as unknown as { display_name: string | null });
+        setInviteOwner(parseOwnerProfile(data.owner));
         setStatus('valid');
       } catch (err) {
         setStatus('invalid');

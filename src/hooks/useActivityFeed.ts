@@ -13,6 +13,18 @@ export interface Activity {
   created_at: string;
 }
 
+// Type for the book relation returned by Supabase
+interface BookRelation {
+  title: string;
+}
+
+function getBookTitle(book: BookRelation | BookRelation[] | null): string {
+  if (!book) return 'Unknown book';
+  // Supabase can return single object or array depending on relationship
+  const bookData = Array.isArray(book) ? book[0] : book;
+  return bookData?.title || 'Unknown book';
+}
+
 export function useActivityFeed() {
   const { user } = useAuth();
 
@@ -74,7 +86,7 @@ export function useActivityFeed() {
           user_id: p.user_id,
           user_name: profileMap.get(p.user_id) || null,
           book_id: p.book_id,
-          book_title: (p.book as { title: string } | null)?.title || 'Livro desconhecido',
+          book_title: getBookTitle(p.book),
           created_at: p.updated_at,
         })),
         ...reviewsData.map((r) => ({
@@ -83,7 +95,7 @@ export function useActivityFeed() {
           user_id: r.user_id,
           user_name: profileMap.get(r.user_id) || null,
           book_id: r.book_id,
-          book_title: (r.book as { title: string } | null)?.title || 'Livro desconhecido',
+          book_title: getBookTitle(r.book),
           rating: r.rating,
           created_at: r.created_at,
         })),

@@ -87,9 +87,9 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - `src/pages/UploadBook.tsx`: Two-column layout doesn't stack
 - `src/pages/Friends.tsx`: Sidebar layout issues on tablets
 
-### 18. TypeScript: Double Type Casting
-- `src/hooks/useActivityFeed.ts` (lines 89, 98)
-- `src/pages/JoinInvite.tsx` (line 63)
+### ~~18. TypeScript: Double Type Casting~~ ✅ DONE
+- Created helper functions to handle Supabase relation types
+- Fixed useActivityFeed.ts and JoinInvite.tsx
 
 ### 19. Component Organization
 - `UploadBook.tsx` (603 lines) - extract forms
