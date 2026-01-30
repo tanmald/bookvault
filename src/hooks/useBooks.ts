@@ -228,11 +228,31 @@ export function useBooks() {
       if (error) throw error;
       return data as Book;
     },
+    onMutate: async ({ id, ...updates }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['books'] });
+
+      // Snapshot the previous value
+      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, loadAll]);
+
+      // Optimistically update the cache
+      if (previousBooks) {
+        queryClient.setQueryData<Book[]>(['books', user?.id, loadAll], (old) =>
+          old?.map((book) => (book.id === id ? { ...book, ...updates } : book))
+        );
+      }
+
+      return { previousBooks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({ title: 'Livro atualizado!' });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousBooks) {
+        queryClient.setQueryData(['books', user?.id, loadAll], context.previousBooks);
+      }
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar livro',
@@ -246,11 +266,31 @@ export function useBooks() {
       const { error } = await supabase.from('books').delete().eq('id', id);
       if (error) throw error;
     },
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['books'] });
+
+      // Snapshot the previous value
+      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, loadAll]);
+
+      // Optimistically remove the book from cache
+      if (previousBooks) {
+        queryClient.setQueryData<Book[]>(['books', user?.id, loadAll], (old) =>
+          old?.filter((book) => book.id !== id)
+        );
+      }
+
+      return { previousBooks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({ title: 'Livro removido!' });
     },
-    onError: (error) => {
+    onError: (error, _id, context) => {
+      // Rollback on error
+      if (context?.previousBooks) {
+        queryClient.setQueryData(['books', user?.id, loadAll], context.previousBooks);
+      }
       toast({
         variant: 'destructive',
         title: 'Erro ao remover livro',

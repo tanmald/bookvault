@@ -85,10 +85,64 @@ export function useReadingProgress(bookId?: string) {
       if (error) throw error;
       return data as ReadingProgress;
     },
+    onMutate: async ({ bookId, status, progress: progressValue }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['reading-progress'] });
+
+      // Snapshot previous values for both query keys (with and without bookId)
+      const previousProgress = queryClient.getQueryData<ReadingProgress[]>(['reading-progress', user?.id, bookId]);
+      const previousAllProgress = queryClient.getQueryData<ReadingProgress[]>(['reading-progress', user?.id, undefined]);
+
+      const now = new Date().toISOString();
+      const existingProgress = (previousProgress ?? previousAllProgress)?.find(p => p.book_id === bookId);
+
+      // Build optimistic update
+      const optimisticUpdate: Partial<ReadingProgress> = {
+        book_id: bookId,
+        user_id: user?.id,
+        status: status ?? existingProgress?.status ?? 'to_read',
+        progress: status === 'read' ? 100 : (progressValue ?? existingProgress?.progress ?? 0),
+        updated_at: now,
+      };
+
+      if (status === 'reading' && !existingProgress?.started_at) {
+        optimisticUpdate.started_at = now;
+      }
+      if (status === 'read') {
+        optimisticUpdate.finished_at = now;
+      }
+
+      // Update cache optimistically
+      const updateCache = (old: ReadingProgress[] | undefined) => {
+        if (!old) return old;
+        const existing = old.find(p => p.book_id === bookId);
+        if (existing) {
+          return old.map(p => p.book_id === bookId ? { ...p, ...optimisticUpdate } : p);
+        }
+        // Add new entry if it doesn't exist
+        return [...old, { ...existingProgress, ...optimisticUpdate, id: 'optimistic-' + bookId, created_at: now } as ReadingProgress];
+      };
+
+      if (previousProgress) {
+        queryClient.setQueryData<ReadingProgress[]>(['reading-progress', user?.id, bookId], updateCache);
+      }
+      if (previousAllProgress) {
+        queryClient.setQueryData<ReadingProgress[]>(['reading-progress', user?.id, undefined], updateCache);
+      }
+
+      return { previousProgress, previousAllProgress };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousProgress) {
+        queryClient.setQueryData(['reading-progress', user?.id, bookId], context.previousProgress);
+      }
+      if (context?.previousAllProgress) {
+        queryClient.setQueryData(['reading-progress', user?.id, undefined], context.previousAllProgress);
+      }
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar progresso',

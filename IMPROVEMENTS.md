@@ -34,15 +34,12 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - `useLibraryMembers.ts`: 2→1 query
 - `useActivityFeed.ts`: 4→2 queries (1 RPC + 2 parallel)
 
-### 6. Performance: Missing Pagination
-- **Files**: `src/hooks/useBooks.ts`, `src/hooks/useActivityFeed.ts`
-- **Issue**: Loads all records into memory
-- **Fix**: Add `.limit()` and implement infinite scroll
+### ~~6. Performance: Missing Pagination~~ ✅ DONE
+- Added initial limit of 100 books with "Load all" button
 
-### 7. Performance: No Optimistic Updates
-- **Files**: All mutation hooks (useBooks, useReadingProgress, useFriends)
-- **Issue**: UI waits for server response
-- **Fix**: Implement `onMutate` callbacks with rollback
+### ~~7. Performance: No Optimistic Updates~~ ✅ DONE
+- Added optimistic updates to useBooks (updateBook, deleteBook)
+- Added optimistic updates to useReadingProgress (updateProgress)
 
 ### ~~8. Accessibility: No ARIA Labels~~ ✅ DONE
 - Added ARIA labels to AppLayout icon buttons
