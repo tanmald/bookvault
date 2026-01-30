@@ -233,6 +233,33 @@ export type Database = {
         }
         Relationships: []
       }
+      library_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          library_owner_id: string
+          role: Database["public"]["Enums"]["library_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          library_owner_id: string
+          role?: Database["public"]["Enums"]["library_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          library_owner_id?: string
+          role?: Database["public"]["Enums"]["library_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -372,6 +399,18 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { user1: string; user2: string }; Returns: boolean }
+      has_library_role: {
+        Args: {
+          _library_owner_id: string
+          _role: Database["public"]["Enums"]["library_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_library_admin: {
+        Args: { _library_owner_id: string; _user_id: string }
+        Returns: boolean
+      }
       use_invite_link: {
         Args: { invite_code: string; joining_user_id: string }
         Returns: {
@@ -383,6 +422,7 @@ export type Database = {
       }
     }
     Enums: {
+      library_role: "admin" | "member"
       reading_status: "to_read" | "reading" | "read"
     }
     CompositeTypes: {
@@ -511,6 +551,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      library_role: ["admin", "member"],
       reading_status: ["to_read", "reading", "read"],
     },
   },

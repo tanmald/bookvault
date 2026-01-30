@@ -1,16 +1,41 @@
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useFriends } from '@/hooks/useFriends';
+import { useLibraryMembers } from '@/hooks/useLibraryMembers';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { Link } from 'react-router-dom';
-import { Users, BookOpen, Star, Loader2, UserMinus } from 'lucide-react';
+import { Users, BookOpen, Star, Loader2, UserMinus, Shield, ShieldOff, Crown } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreVertical } from 'lucide-react';
 
 export default function Friends() {
-  const { friends, isLoading, removeFriend } = useFriends();
+  const { friends, isLoading } = useFriends();
+  const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers();
   const { activities, isLoading: activitiesLoading } = useActivityFeed();
+
+  // Get member info by user_id
+  const getMemberInfo = (userId: string) => {
+    return members.find((m) => m.user_id === userId);
+  };
 
   return (
     <AppLayout>
@@ -22,24 +47,24 @@ export default function Friends() {
       </div>
 
       <div className="grid lg:grid-cols-[1fr_400px] gap-8">
-        {/* Friends List */}
+        {/* Library Members / Friends List */}
         <div>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Os Meus Amigos ({friends.length})
+            A Minha Biblioteca ({members.length > 0 ? members.length : friends.length})
           </h2>
 
-          {isLoading ? (
+          {isLoading || membersLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : friends.length === 0 ? (
+          ) : members.length === 0 && friends.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Ainda sem amigos</h3>
+                <h3 className="font-medium mb-2">Ainda sem membros</h3>
                 <p className="text-sm text-muted-foreground text-center mb-4">
-                  Partilha um link de convite para adicionar amigos à tua biblioteca
+                  Partilha um link de convite para adicionar membros à tua biblioteca
                 </p>
                 <Button asChild>
                   <Link to="/invites">Criar Convite</Link>
@@ -48,30 +73,96 @@ export default function Friends() {
             </Card>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
-              {friends.map((friend) => (
-                <Card key={friend.id}>
+              {members.map((member) => (
+                <Card key={member.id}>
                   <CardContent className="flex items-center gap-4 p-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback>
-                        {friend.display_name?.substring(0, 2).toUpperCase() || 'U'}
+                        {member.display_name?.substring(0, 2).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">
-                        {friend.display_name || 'Utilizador'}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium truncate">
+                          {member.display_name || 'Utilizador'}
+                        </h3>
+                        {member.is_owner ? (
+                          <Badge variant="default" className="gap-1">
+                            <Crown className="h-3 w-3" />
+                            Dono
+                          </Badge>
+                        ) : member.role === 'admin' ? (
+                          <Badge variant="secondary" className="gap-1">
+                            <Shield className="h-3 w-3" />
+                            Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Membro</Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">
-                        Amigo desde {new Date(friend.created_at).toLocaleDateString('pt-PT')}
+                        Desde {new Date(member.created_at).toLocaleDateString('pt-PT')}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFriend.mutate(friend.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </Button>
+                    
+                    {/* Admin actions - can't modify the owner */}
+                    {isAdmin && !member.is_owner && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {member.role === 'member' ? (
+                            <DropdownMenuItem
+                              onClick={() => promoteMember.mutate(member.id)}
+                              disabled={promoteMember.isPending}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Promover a Admin
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => demoteMember.mutate(member.id)}
+                              disabled={demoteMember.isPending}
+                            >
+                              <ShieldOff className="h-4 w-4 mr-2" />
+                              Remover Admin
+                            </DropdownMenuItem>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <UserMinus className="h-4 w-4 mr-2" />
+                                Expulsar da Biblioteca
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Expulsar membro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação irá remover {member.display_name || 'este utilizador'} da tua biblioteca. 
+                                  Eles deixarão de ter acesso aos teus livros e a amizade será removida.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => removeMember.mutate({ memberId: member.id, memberUserId: member.user_id })}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Expulsar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </CardContent>
                 </Card>
               ))}
