@@ -83,9 +83,9 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 
 ## LOW PRIORITY (Polish)
 
-### 17. Mobile Responsiveness
-- `src/pages/UploadBook.tsx`: Two-column layout doesn't stack
-- `src/pages/Friends.tsx`: Sidebar layout issues on tablets
+### ~~17. Mobile Responsiveness~~ ✅ DONE
+- Fixed UploadBook.tsx genre/year grid to stack on mobile (grid-cols-1 sm:grid-cols-2)
+- Added tablet breakpoint to Friends.tsx layout (md:grid-cols-[2fr_1fr])
 
 ### ~~18. TypeScript: Double Type Casting~~ ✅ DONE
 - Created helper functions to handle Supabase relation types

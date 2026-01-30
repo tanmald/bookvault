@@ -52,7 +52,7 @@ export default function Friends() {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_400px] gap-8">
+      <div className="grid md:grid-cols-[2fr_1fr] lg:grid-cols-[1fr_400px] gap-6 md:gap-8">
         {/* Library Members / Friends List */}
         <div>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
