@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import OnboardingChoice from '@/components/auth/OnboardingChoice';
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'register' | 'onboarding'>('register');
+  
   const { signUp } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,11 +56,17 @@ export default function Register() {
     } else {
       toast({
         title: 'Conta criada!',
-        description: 'Bem-vindo ao BookVault',
+        description: 'Vamos configurar a tua biblioteca',
       });
-      navigate('/');
+      setStep('onboarding');
+      setIsLoading(false);
     }
   };
+
+  // Show onboarding step after successful registration
+  if (step === 'onboarding') {
+    return <OnboardingChoice />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
