@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+const INITIAL_BOOKS_LIMIT = 100;
 
 // Re-export from languages lib for backward compatibility
 export { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
@@ -60,11 +63,12 @@ export function useBooks() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [loadAll, setLoadAll] = useState(false);
 
   const booksQuery = useQuery({
-    queryKey: ['books', user?.id],
+    queryKey: ['books', user?.id, loadAll],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('books')
         .select(`
           *,
@@ -73,11 +77,26 @@ export function useBooks() {
         `)
         .order('created_at', { ascending: false });
 
+      // Only apply limit if not loading all
+      if (!loadAll) {
+        query = query.limit(INITIAL_BOOKS_LIMIT + 1); // +1 to check if there are more
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as Book[];
     },
     enabled: !!user,
   });
+
+  // Check if there are more books beyond the initial limit
+  const hasMore = !loadAll && (booksQuery.data?.length ?? 0) > INITIAL_BOOKS_LIMIT;
+
+  // Return only the limited books if not loading all
+  const books = hasMore
+    ? booksQuery.data?.slice(0, INITIAL_BOOKS_LIMIT) ?? []
+    : booksQuery.data ?? [];
 
   const createBook = useMutation({
     mutationFn: async (input: CreateBookInput) => {
@@ -241,9 +260,12 @@ export function useBooks() {
   });
 
   return {
-    books: booksQuery.data ?? [],
+    books,
     isLoading: booksQuery.isLoading,
     error: booksQuery.error,
+    hasMore,
+    loadAllBooks: () => setLoadAll(true),
+    isLoadingAll: loadAll && booksQuery.isLoading,
     createBook,
     addBookFile,
     deleteBookFile,

@@ -10,43 +10,29 @@
 
 ## CRITICAL (Fix Immediately)
 
-### 1. Security: RLS Policy Gaps
-- **books table**: Missing explicit SELECT policy for owner + friends
-- **reading_progress table**: Missing "own records" policy
-- **Files**: `supabase/migrations/` - need new migration
+### ~~1. Security: RLS Policy Gaps~~ ✅ DONE
+- Reviewed - policies already complete
 
-### 2. Bug: Silent Error on Book File Creation
-- **File**: `src/hooks/useBooks.ts` (lines 118-121)
-- **Issue**: File creation errors logged but user not notified
-- **Fix**: Show error toast when file creation fails
+### ~~2. Bug: Silent Error on Book File Creation~~ ✅ DONE
+- **File**: `src/hooks/useBooks.ts`
+- Added warning toast when file creation fails
 
-### 3. Bug: Unsafe Base64 Parsing
-- **File**: `src/pages/UploadBook.tsx` (lines 279-286)
-- **Issue**: Assumes base64 string format without validation
-- **Fix**: Add try-catch and format validation
+### ~~3. Bug: Unsafe Base64 Parsing~~ ✅ DONE
+- **File**: `src/pages/UploadBook.tsx`
+- Added try-catch and format validation
 
-### 4. TypeScript: Excessive `any` Types
-- **Files**:
-  - `src/pages/UploadBook.tsx` (line 320) - catch clause
-  - `src/pages/JoinInvite.tsx` (line 116) - catch clause
-  - `src/components/upload/FileUpload.tsx` (line 43)
-- **Fix**: Use `unknown` with type guards
+### ~~4. TypeScript: Excessive `any` Types~~ ✅ DONE
+- Fixed catch clauses to use `unknown` with type guards
 
 ---
 
 ## HIGH PRIORITY (Next Sprint)
 
-### 5. Performance: Multiple Sequential Queries
-Hooks make 2-4 separate API calls when 1 would suffice:
-
-| Hook | Current Calls | Recommended |
-|------|---------------|-------------|
-| `useFriends.ts` | 2 (friendships + profiles) | 1 with join |
-| `useActivityFeed.ts` | 4 (friendships + progress + profiles + reviews) | 2 with joins |
-| `useLibraryMembers.ts` | 2 (members + profiles) | 1 with join |
-| `useFriendsBookProgress.ts` | 3 (friendships + profiles + progress) | 1 with join |
-
-**Fix**: Use Supabase `.select('*, profile:profiles(*)')` relations
+### ~~5. Performance: Multiple Sequential Queries~~ ✅ DONE
+Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_profiles`) to reduce API calls:
+- `useFriends.ts`: 2→1 query
+- `useLibraryMembers.ts`: 2→1 query
+- `useActivityFeed.ts`: 4→2 queries (1 RPC + 2 parallel)
 
 ### 6. Performance: Missing Pagination
 - **Files**: `src/hooks/useBooks.ts`, `src/hooks/useActivityFeed.ts`
@@ -58,15 +44,12 @@ Hooks make 2-4 separate API calls when 1 would suffice:
 - **Issue**: UI waits for server response
 - **Fix**: Implement `onMutate` callbacks with rollback
 
-### 8. Accessibility: No ARIA Labels
-- **Files**: All interactive components
-- **Issue**: Icon-only buttons have no accessible names
-- **Fix**: Add `aria-label` to all icon buttons, use semantic HTML
+### ~~8. Accessibility: No ARIA Labels~~ ✅ DONE
+- Added ARIA labels to AppLayout icon buttons
 
-### 9. Input Validation: Weak Password Requirements
-- **File**: `src/pages/Register.tsx` (lines 46-53)
-- **Issue**: Only 6 character minimum
-- **Fix**: Require 8+ chars, mixed case, numbers
+### ~~9. Input Validation: Weak Password Requirements~~ ✅ DONE
+- **File**: `src/pages/Register.tsx`
+- Updated minimum to 8 characters with real-time feedback
 
 ---
 
@@ -127,8 +110,8 @@ Hooks make 2-4 separate API calls when 1 would suffice:
 
 ## Quick Wins
 
-1. Add `aria-label` to icon buttons in AppLayout
-2. Fix `any` types in catch clauses
-3. Add try-catch around base64 parsing
+1. ~~Add `aria-label` to icon buttons in AppLayout~~ ✅ DONE
+2. ~~Fix `any` types in catch clauses~~ ✅ DONE
+3. ~~Add try-catch around base64 parsing~~ ✅ DONE
 4. Create `src/lib/dateUtils.ts` for date formatting
 5. Fix hardcoded strings in BookKanban.tsx

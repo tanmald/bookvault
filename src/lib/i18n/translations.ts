@@ -15,6 +15,8 @@ export const translations = {
     'library.addFirst': 'Adicionar Livro',
     'library.viewGrid': 'Grelha',
     'library.viewKanban': 'Kanban',
+    'library.loadAllBooks': 'Carregar todos os livros',
+    'library.loadingAll': 'A carregar...',
     
     // Book status
     'status.toRead': 'Para Ler',
@@ -329,6 +331,8 @@ export const translations = {
     'library.addFirst': 'Add Book',
     'library.viewGrid': 'Grid',
     'library.viewKanban': 'Kanban',
+    'library.loadAllBooks': 'Load all books',
+    'library.loadingAll': 'Loading...',
     
     // Book status
     'status.toRead': 'To Read',

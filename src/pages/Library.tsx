@@ -15,7 +15,7 @@ type ViewMode = 'grid' | 'kanban';
 
 export default function Library() {
   const navigate = useNavigate();
-  const { books, isLoading } = useBooks();
+  const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks();
   const { progress } = useReadingProgress();
   const { t, language } = useLanguage();
 
@@ -146,6 +146,25 @@ export default function Library() {
           <BookKanban books={filteredBooks} progressMap={progressMap} />
         ) : (
           <BookGrid books={filteredBooks} progressMap={progressMap} />
+        )}
+
+        {hasMore && (
+          <div className="flex justify-center py-8">
+            <Button
+              variant="outline"
+              onClick={loadAllBooks}
+              disabled={isLoadingAll}
+            >
+              {isLoadingAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('library.loadingAll')}
+                </>
+              ) : (
+                t('library.loadAllBooks')
+              )}
+            </Button>
+          </div>
         )}
       </AppLayout>
 
