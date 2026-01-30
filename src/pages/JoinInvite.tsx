@@ -113,13 +113,14 @@ export default function JoinInvite() {
       toast({ title: t('joinInvite.friendCreated') });
 
       setTimeout(() => navigate('/friends'), 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setStatus('error');
-      setError(err.message);
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: t('joinInvite.acceptError'),
-        description: err.message,
+        description: errorMessage,
       });
     }
   };

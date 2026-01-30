@@ -117,7 +117,12 @@ export function useBooks() {
 
       if (fileError) {
         console.error('Error creating book file:', fileError);
-        // Don't fail the whole operation, the book was created
+        // Warn user but don't fail - the book was created successfully
+        toast({
+          variant: 'destructive',
+          title: 'Aviso: erro ao criar versão do ficheiro',
+          description: 'O livro foi criado, mas houve um problema ao registar a versão do ficheiro.',
+        });
       }
 
       return book as Book;

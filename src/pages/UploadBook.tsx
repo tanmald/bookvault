@@ -276,30 +276,46 @@ export default function UploadBook() {
 
           coverUrl = coverData.publicUrl;
         } else if (extractedCoverBase64) {
-          const base64Data = extractedCoverBase64.split(',')[1];
-          const mimeType = extractedCoverBase64.split(';')[0].split(':')[1] || 'image/jpeg';
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          // Validate and parse base64 data URL format: data:image/type;base64,DATA
+          try {
+            if (!extractedCoverBase64.includes(',') || !extractedCoverBase64.includes(':')) {
+              throw new Error('Invalid base64 format');
+            }
+
+            const base64Data = extractedCoverBase64.split(',')[1];
+            const mimeMatch = extractedCoverBase64.match(/data:([^;]+);/);
+            const mimeType = mimeMatch?.[1] || 'image/jpeg';
+
+            if (!base64Data) {
+              throw new Error('No base64 data found');
+            }
+
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
+
+            const ext = mimeType.split('/')[1] || 'jpg';
+            const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+            const { error: coverError } = await supabase.storage
+              .from('covers')
+              .upload(coverName, blob);
+
+            if (coverError) throw coverError;
+
+            const { data: coverData } = supabase.storage
+              .from('covers')
+              .getPublicUrl(coverName);
+
+            coverUrl = coverData.publicUrl;
+          } catch (base64Error) {
+            console.error('Error processing extracted cover:', base64Error);
+            // Continue without cover - don't fail the entire upload
           }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: mimeType });
-          
-          const ext = mimeType.split('/')[1] || 'jpg';
-          const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-          const { error: coverError } = await supabase.storage
-            .from('covers')
-            .upload(coverName, blob);
-
-          if (coverError) throw coverError;
-
-          const { data: coverData } = supabase.storage
-            .from('covers')
-            .getPublicUrl(coverName);
-
-          coverUrl = coverData.publicUrl;
         }
 
         await createBook.mutateAsync({
@@ -317,11 +333,12 @@ export default function UploadBook() {
       }
 
       navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         variant: 'destructive',
         title: t('upload.uploadError'),
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setIsUploading(false);
