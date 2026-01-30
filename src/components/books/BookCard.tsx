@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Globe } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 import { cn } from '@/lib/utils';
@@ -11,12 +12,6 @@ interface BookCardProps {
   progress?: ReadingProgress;
 }
 
-const statusLabels = {
-  to_read: 'Para Ler',
-  reading: 'A Ler',
-  read: 'Lido',
-};
-
 const statusColors = {
   to_read: 'bg-muted text-muted-foreground',
   reading: 'bg-accent text-accent-foreground',
@@ -24,7 +19,14 @@ const statusColors = {
 };
 
 export function BookCard({ book, progress }: BookCardProps) {
+  const { t } = useLanguage();
   const status = progress?.status ?? 'to_read';
+  
+  const statusLabels = {
+    to_read: t('status.toRead'),
+    reading: t('status.reading'),
+    read: t('status.read'),
+  };
   
   // Count available language versions
   const languageCount = book.book_files?.length ?? (book.file_url ? 1 : 0);
