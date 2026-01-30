@@ -475,14 +475,13 @@ serve(async (req) => {
       });
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    });
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
+    // Extract JWT from Authorization header
+    const jwt = authHeader.replace("Bearer ", "");
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
+
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
