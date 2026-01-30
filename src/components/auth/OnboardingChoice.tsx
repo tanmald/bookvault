@@ -166,9 +166,9 @@ export default function OnboardingChoice() {
                 <Input
                   id="inviteCode"
                   type="text"
-                  placeholder="Ex: ABC12345"
+                  placeholder="Ex: AbC12345"
                   value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setInviteCode(e.target.value)}
                   className="font-mono tracking-wider"
                   autoComplete="off"
                 />
