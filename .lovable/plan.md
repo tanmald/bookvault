@@ -1,154 +1,87 @@
 
-# Plano: Fluxo de Onboarding com Opção de Biblioteca
+# Plano: Completar Traduções da Aplicação
 
 ## Resumo
+A aplicação tem um sistema de internacionalização (i18n) implementado, mas muitas páginas e componentes ainda usam texto em português diretamente no código em vez de usar as traduções. Este plano vai completar a implementação para que toda a aplicação mude de idioma quando o utilizador escolhe português ou inglês.
 
-O registo atual cria uma conta e redireciona para a biblioteca vazia. Este plano adiciona um passo de onboarding após o registo, onde o utilizador escolhe entre:
+## O Que Será Traduzido
 
-1. **Criar biblioteca nova** - Começa do zero com uma biblioteca vazia
-2. **Juntar-se a uma biblioteca** - Introduz um código de convite para aceder a uma biblioteca existente
+### Páginas Principais
+- **Detalhes do Livro** (BookDetails.tsx) - Botões, labels, diálogos de confirmação
+- **Upload de Livro** (UploadBook.tsx) - Formulários, labels, mensagens
+- **Amigos** (Friends.tsx) - Títulos, badges, ações
+- **Convites** (Invites.tsx) - Diálogos, botões, labels
+- **Login** (Login.tsx) - Formulário de entrada
+- **Registo** (Register.tsx) - Formulário de criação de conta
+- **Onboarding** (OnboardingChoice.tsx) - Escolha inicial
+- **Aceitar Convite** (JoinInvite.tsx) - Página de convite partilhado
+
+### Componentes
+- **BookVersionsList** - Lista de versões/idiomas do livro
+- **FriendsScoreboard** - Placar de leitura dos amigos
+- **FileUpload** - Área de upload de ficheiros
+
+## Novas Traduções Necessárias
+
+Serão adicionadas aproximadamente 60 novas chaves de tradução, incluindo:
+
+| Secção | Exemplos |
+|--------|----------|
+| **Detalhes do Livro** | "Livro não encontrado", "Voltar à biblioteca", "Versões Disponíveis", "Progresso de Leitura", "Livro concluído" |
+| **Upload** | "Tipo de Upload", "Adicionar a livro existente", "Metadados extraídos", "A língua é detetada automaticamente" |
+| **Amigos** | "A Minha Biblioteca", "Ainda sem membros", "Atividade Recente", "Dono", "Admin", "Membro" |
+| **Convites** | "Novo Convite", "Convites Ativos", "Expirados/Inativos", "Criar Link" |
+| **Scoreboard** | "Scoreboard dos Amigos", "Convida amigos para comparar leituras" |
+| **JoinInvite** | "Convite para Biblioteca", "Precisas de ter conta" |
 
 ---
 
-## Fluxo Proposto
+## Detalhes Técnicos
 
-```text
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Formulário    │     │   Escolha de    │     │   Biblioteca    │
-│   de Registo    │ --> │   Onboarding    │ --> │   ou Amigos     │
-│   (nome,email,  │     │  (Nova/Juntar)  │     │                 │
-│    password)    │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
+### Ficheiros a Modificar
+
+1. **src/lib/i18n/translations.ts** - Adicionar ~60 novas chaves de tradução
+
+2. **src/pages/BookDetails.tsx** - Usar `useLanguage()` e substituir textos hardcoded
+
+3. **src/pages/UploadBook.tsx** - Traduzir formulário, labels e toasts
+
+4. **src/pages/Friends.tsx** - Traduzir títulos, badges e ações
+
+5. **src/pages/Invites.tsx** - Traduzir diálogo de criação e lista
+
+6. **src/pages/Login.tsx** - Traduzir formulário de login
+
+7. **src/pages/Register.tsx** - Traduzir formulário de registo
+
+8. **src/components/auth/OnboardingChoice.tsx** - Traduzir opções de onboarding
+
+9. **src/pages/JoinInvite.tsx** - Traduzir página de convite
+
+10. **src/components/books/BookVersionsList.tsx** - Traduzir lista de versões
+
+11. **src/components/books/FriendsScoreboard.tsx** - Traduzir scoreboard
+
+12. **src/components/upload/FileUpload.tsx** - Traduzir mensagens de erro
+
+### Padrão de Implementação
+
+Cada componente seguirá este padrão:
+
+```typescript
+// Adicionar import
+import { useLanguage } from '@/contexts/LanguageContext';
+
+// No componente
+const { t } = useLanguage();
+
+// Substituir texto hardcoded
+// Antes: <h1>Título em Português</h1>
+// Depois: <h1>{t('chave.traducao')}</h1>
 ```
 
----
+### Notas Importantes
 
-## Interface de Utilizador
-
-### Passo 1: Registo (existente)
-Mantém o formulário atual com nome, email e password.
-
-### Passo 2: Escolha de Biblioteca (novo)
-Após criar conta com sucesso, em vez de redirecionar para `/`:
-
-```text
-┌─────────────────────────────────────────────┐
-│          Como queres começar?               │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │  📚 Criar biblioteca nova           │   │
-│  │  Começa do zero com a tua própria   │   │
-│  │  coleção de livros                  │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │  🔗 Juntar-me a uma biblioteca      │   │
-│  │  Tenho um código de convite         │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  (Se escolher juntar-se)                   │
-│  ┌─────────────────────────────────────┐   │
-│  │  Código de convite: [________]      │   │
-│  │                                     │   │
-│  │  [Validar e Continuar]              │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-```
-
----
-
-## Alterações Técnicas
-
-### 1. Novo Componente: `OnboardingChoice`
-
-Criar componente que apresenta as duas opções:
-
-- **Cards visuais** com ícones para cada opção
-- **RadioGroup** para seleção
-- **Campo de código** que aparece condicionalmente
-- **Validação do código** antes de prosseguir
-- **Botão de continuar** que processa a escolha
-
-### 2. Modificar Página de Registo
-
-Converter para um fluxo multi-step:
-- **Step 1**: Formulário de registo (existente)
-- **Step 2**: Escolha de biblioteca (novo)
-
-O estado `step` controla qual ecrã mostrar.
-
-### 3. Lógica de Processamento
-
-Quando o utilizador escolhe "Juntar-se":
-- Valida o código de convite usando a query existente
-- Se válido, chama `use_invite_link` RPC
-- Redireciona para `/friends` 
-
-Quando escolhe "Criar nova":
-- Simplesmente redireciona para `/` (biblioteca vazia)
-
-### 4. Tratamento de Erros
-
-- Código inválido ou expirado: mostrar mensagem de erro
-- Utilizador já é amigo: mostrar aviso e redirecionar
-- Erro de rede: permitir tentar novamente
-
----
-
-## Ficheiros a Modificar
-
-| Ficheiro | Alteração |
-|----------|-----------|
-| `src/pages/Register.tsx` | Adicionar step 2 com escolha de biblioteca |
-| (opcional) `src/components/auth/OnboardingChoice.tsx` | Componente separado para o passo de escolha |
-
----
-
-## Código Exemplo
-
-```tsx
-// Estado para controlar o step
-const [step, setStep] = useState<'register' | 'onboarding'>('register');
-const [libraryChoice, setLibraryChoice] = useState<'new' | 'join'>('new');
-const [inviteCode, setInviteCode] = useState('');
-
-// Após registo bem-sucedido
-const handleSubmit = async (e: React.FormEvent) => {
-  // ... validações e signUp existentes ...
-  
-  if (!error) {
-    setStep('onboarding'); // Em vez de navigate('/')
-  }
-};
-
-// Processar escolha de biblioteca
-const handleOnboardingComplete = async () => {
-  if (libraryChoice === 'new') {
-    navigate('/');
-    return;
-  }
-  
-  // Validar e usar código de convite
-  const { data, error } = await supabase.rpc('use_invite_link', {
-    invite_code: inviteCode,
-    joining_user_id: user.id
-  });
-  
-  if (error || !data?.[0]?.success) {
-    toast({ variant: 'destructive', ... });
-    return;
-  }
-  
-  toast({ title: 'Juntaste-te à biblioteca!' });
-  navigate('/friends');
-};
-```
-
----
-
-## Considerações de UX
-
-- O utilizador pode sempre saltar este passo (botão "Saltar" ou "Mais tarde")
-- Se tiver um código no URL (`/register?code=ABC123`), pré-preencher e pré-selecionar "Juntar-se"
-- Validação em tempo real do código de convite
-- Feedback visual claro sobre o estado do código (válido/inválido/a verificar)
+- Os toasts (notificações) também serão traduzidos
+- Datas continuarão a usar o formato local (pt-PT ou en-GB)
+- Nomes de géneros literários vêm da base de dados e não serão traduzidos nesta fase
