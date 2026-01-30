@@ -86,9 +86,8 @@ export default function Register() {
         title: t('auth.accountCreated'),
         description: t('auth.accountCreatedDesc'),
       });
-      // Navigate to onboarding page with any invite code
-      const code = searchParams.get('code');
-      navigate(code ? `/onboarding?code=${code}` : '/onboarding', { replace: true });
+      // Redirect is handled by useEffect (lines 26-32) once user state updates
+      // This prevents race condition where we navigate before authentication completes
     }
   };
 
