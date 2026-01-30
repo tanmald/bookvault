@@ -9,15 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from 'next-themes';
 import { useProfile } from '@/hooks/useProfile';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { Loader2, Save, BookOpen, BookMarked, Check, Globe } from 'lucide-react';
+import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 
 export default function Profile() {
   const { user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
@@ -100,13 +102,12 @@ export default function Profile() {
               <Globe className="h-5 w-5" />
               {t('settings.title')}
             </CardTitle>
-            <CardDescription>
-              {t('settings.languageDesc')}
-            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Language */}
             <div className="space-y-3">
               <Label>{t('settings.language')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settings.languageDesc')}</p>
               <RadioGroup
                 value={language}
                 onValueChange={(value) => setLanguage(value as Language)}
@@ -122,6 +123,39 @@ export default function Profile() {
                   <RadioGroupItem value="en" id="lang-en" />
                   <Label htmlFor="lang-en" className="cursor-pointer font-normal">
                     English
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Theme */}
+            <div className="space-y-3">
+              <Label>{t('settings.theme')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settings.themeDesc')}</p>
+              <RadioGroup
+                value={theme}
+                onValueChange={setTheme}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="light" id="theme-light" />
+                  <Label htmlFor="theme-light" className="cursor-pointer font-normal flex items-center gap-1">
+                    <Sun className="h-4 w-4" />
+                    {t('settings.themeLight')}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dark" id="theme-dark" />
+                  <Label htmlFor="theme-dark" className="cursor-pointer font-normal flex items-center gap-1">
+                    <Moon className="h-4 w-4" />
+                    {t('settings.themeDark')}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="system" id="theme-system" />
+                  <Label htmlFor="theme-system" className="cursor-pointer font-normal flex items-center gap-1">
+                    <Monitor className="h-4 w-4" />
+                    {t('settings.themeSystem')}
                   </Label>
                 </div>
               </RadioGroup>

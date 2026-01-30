@@ -50,6 +50,11 @@ export const translations = {
     'settings.title': 'Definições',
     'settings.language': 'Idioma',
     'settings.languageDesc': 'Escolhe o idioma da aplicação',
+    'settings.theme': 'Tema',
+    'settings.themeDesc': 'Escolhe o tema da aplicação',
+    'settings.themeLight': 'Claro',
+    'settings.themeDark': 'Escuro',
+    'settings.themeSystem': 'Sistema',
     
     // Friends
     'friends.title': 'Amigos',
@@ -356,6 +361,11 @@ export const translations = {
     'settings.title': 'Settings',
     'settings.language': 'Language',
     'settings.languageDesc': 'Choose the application language',
+    'settings.theme': 'Theme',
+    'settings.themeDesc': 'Choose the application theme',
+    'settings.themeLight': 'Light',
+    'settings.themeDark': 'Dark',
+    'settings.themeSystem': 'System',
     
     // Friends
     'friends.title': 'Friends',
