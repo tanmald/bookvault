@@ -71,9 +71,9 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - Fixed BookKanban.tsx and Library.tsx to use translation keys
 - Added kanban.noBooks, library.bookSingular, library.bookPlural, library.inCollection
 
-### 15. UX: Missing Form Validation Feedback
-- **Files**: Login, Register, UploadBook, Profile pages
-- **Fix**: Add field-level error display, real-time validation
+### ~~15. UX: Missing Form Validation Feedback~~ ✅ DONE
+- Added real-time validation to Register page (password match indicator)
+- Submit button disabled until form is valid
 
 ### ~~16. UX: Incomplete Loading States~~ ✅ DONE
 - Created BookCardSkeleton, BookGridSkeleton, BookKanbanSkeleton components

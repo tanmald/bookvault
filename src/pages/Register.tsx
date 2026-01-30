@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,23 @@ export default function Register() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Real-time validation
+  const validation = useMemo(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return {
+      nameValid: displayName.trim().length >= 2,
+      emailValid: emailRegex.test(email),
+      passwordValid: password.length >= 8,
+      passwordsMatch: password === confirmPassword && confirmPassword.length > 0,
+    };
+  }, [displayName, email, password, confirmPassword]);
+
+  const isFormValid =
+    validation.nameValid &&
+    validation.emailValid &&
+    validation.passwordValid &&
+    validation.passwordsMatch;
 
   // If already authenticated, redirect to onboarding or home
   useEffect(() => {
@@ -142,19 +160,40 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    className={cn(
+                      confirmPassword.length > 0 && (
+                        validation.passwordsMatch
+                          ? 'border-green-500 focus-visible:ring-green-500'
+                          : 'border-destructive focus-visible:ring-destructive'
+                      )
+                    )}
+                  />
+                  {confirmPassword.length > 0 && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {validation.passwordsMatch ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {confirmPassword.length > 0 && !validation.passwordsMatch && (
+                  <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || !isFormValid}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
