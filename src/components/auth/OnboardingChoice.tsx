@@ -171,9 +171,15 @@ export default function OnboardingChoice() {
                   placeholder={t('onboarding.inviteCodePlaceholder')}
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
-                  className="font-mono tracking-wider normal-case"
+                  className="font-mono tracking-wider"
                   style={{ textTransform: 'none' }}
                   autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  inputMode="text"
+                  data-form-type="other"
+                  data-lpignore="true"
                 />
               </div>
             )}
