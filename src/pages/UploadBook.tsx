@@ -83,25 +83,22 @@ export default function UploadBook() {
       const formDataPayload = new FormData();
       formDataPayload.append('file', selectedFile);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-metadata`,
+      // Use Supabase's built-in functions.invoke() for automatic auth handling
+      const { data: metadata, error: invokeError } = await supabase.functions.invoke<ExtractedMetadata>(
+        'extract-metadata',
         {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
           body: formDataPayload,
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to extract metadata');
+      if (invokeError) {
+        console.error('Edge function error:', invokeError);
+        throw new Error(invokeError.message || 'Failed to extract metadata');
       }
 
-      const metadata: ExtractedMetadata = await response.json();
+      if (!metadata) {
+        throw new Error('No metadata returned');
+      }
 
       // Find genre_id from the detected slug
       let detectedGenreId = '';

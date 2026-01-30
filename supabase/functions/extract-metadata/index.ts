@@ -467,7 +467,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
+
     if (!supabaseUrl || !supabaseAnonKey) {
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
@@ -475,14 +475,28 @@ serve(async (req) => {
       });
     }
 
+    // Create Supabase client (simple config, no global headers)
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Extract JWT from Authorization header
-    const jwt = authHeader.replace("Bearer ", "");
+    // Extract JWT from "Bearer <token>" format
+    const jwt = authHeader.replace(/^Bearer\s+/i, '');
 
+    // CRITICAL FIX: Pass JWT directly to getUser(jwt)
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
 
-    if (authError || !user) {
+    if (authError) {
+      console.error("JWT verification failed:", authError);
+      return new Response(JSON.stringify({
+        error: "Invalid JWT",
+        details: authError.message
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!user) {
+      console.error("No user returned from JWT");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
