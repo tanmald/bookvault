@@ -1,106 +1,159 @@
 
+# Plano: Implementar Dark Mode com Opções Light/Dark/System
 
-# Plano: Corrigir Campo de Código de Convite (Uppercase Bug)
+## Resumo
 
-## Resumo do Problema
+Adicionar suporte completo para dark mode com três opções de tema (claro, escuro, sistema) na página de Perfil/Settings, utilizando a biblioteca `next-themes` que já está instalada.
 
-O utilizador reporta que o campo de código de convite na página de onboarding está a converter automaticamente o texto para maiúsculas. Os códigos de convite são **case-sensitive** (ex: `BTVYqUXF`), por isso esta conversão causa erros de validação.
-
-## Análise Realizada
-
-Após uma revisão completa do código, **não encontrei nenhum `toUpperCase()` aplicado ao campo de convite**:
-
-| Ficheiro | Linha | Código Atual |
-|----------|-------|--------------|
-| `OnboardingChoice.tsx` | 173 | `onChange={(e) => setInviteCode(e.target.value)}` |
-| `Input.tsx` | 10-11 | Sem transformação de texto |
-| `index.css` | - | Sem `text-transform` |
-
-O código já inclui protecções CSS contra transformação:
-```tsx
-className="font-mono tracking-wider normal-case"
-style={{ textTransform: 'none' }}
-```
-
-## Possíveis Causas
-
-1. **Browser autocomplete/autofill** - O browser pode estar a preencher com um valor guardado anteriormente (em maiúsculas)
-2. **Cache de versão anterior** - Pode haver uma versão cached do JavaScript que tinha a transformação
-3. **Extensão do browser** - Alguma extensão pode estar a modificar inputs
-
-## Solução Proposta
-
-Para garantir que o problema está resolvido definitivamente:
-
-### 1. Desativar completamente o autocomplete
-Adicionar atributos extra para prevenir interferência do browser.
-
-### 2. Usar inputMode apropriado
-Configurar o input para texto verbatim sem correções automáticas.
+## Arquitetura da Solução
 
 ```text
-+-------------------------------------------+
-|  Campo de Código de Convite               |
-+-------------------------------------------+
-|  autoComplete="off"                       |
-|  autoCorrect="off"                        |
-|  autoCapitalize="none"                    |
-|  spellCheck="false"                       |
-|  inputMode="text"                         |
-|  data-form-type="other"                   |
-+-------------------------------------------+
++----------------------------------+
+|         ThemeProvider            |
+|  (next-themes - raiz da app)     |
++----------------------------------+
+              |
+              v
++----------------------------------+
+|          useTheme()              |
+|  (hook para aceder/mudar tema)   |
++----------------------------------+
+              |
+              v
++----------------------------------+
+|        Profile.tsx               |
+|  [Light] [Dark] [System]         |
++----------------------------------+
 ```
 
 ## Ficheiros a Modificar
 
-### `src/components/auth/OnboardingChoice.tsx`
-
-Atualizar o Input do código de convite com atributos completos anti-autocomplete:
+### 1. `src/App.tsx`
+Envolver a aplicação com o `ThemeProvider` do next-themes:
 
 ```tsx
-<Input
-  id="inviteCode"
-  type="text"
-  placeholder={t('onboarding.inviteCodePlaceholder')}
-  value={inviteCode}
-  onChange={(e) => setInviteCode(e.target.value)}
-  className="font-mono tracking-wider"
-  style={{ textTransform: 'none' }}
-  autoComplete="off"
-  autoCorrect="off"
-  autoCapitalize="none"
-  spellCheck={false}
-  inputMode="text"
-  data-form-type="other"
-  data-lpignore="true"
-/>
+import { ThemeProvider } from 'next-themes';
+
+const App = () => (
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    {/* resto da app */}
+  </ThemeProvider>
+);
+```
+
+### 2. `src/lib/i18n/translations.ts`
+Adicionar traduções para as opções de tema:
+
+**Português:**
+- `settings.theme`: 'Tema'
+- `settings.themeDesc`: 'Escolhe o tema da aplicação'
+- `settings.themeLight`: 'Claro'
+- `settings.themeDark`: 'Escuro'
+- `settings.themeSystem`: 'Sistema'
+
+**English:**
+- `settings.theme`: 'Theme'
+- `settings.themeDesc`: 'Choose the application theme'
+- `settings.themeLight`: 'Light'
+- `settings.themeDark`: 'Dark'
+- `settings.themeSystem`: 'System'
+
+### 3. `src/pages/Profile.tsx`
+Adicionar secção de seleção de tema usando `RadioGroup`:
+
+```tsx
+import { useTheme } from 'next-themes';
+import { Sun, Moon, Monitor } from 'lucide-react';
+
+// Dentro do componente:
+const { theme, setTheme } = useTheme();
+
+// Nova secção no Card de Settings:
+<div className="space-y-3">
+  <Label>{t('settings.theme')}</Label>
+  <RadioGroup
+    value={theme}
+    onValueChange={setTheme}
+    className="flex gap-4"
+  >
+    <div className="flex items-center space-x-2">
+      <RadioGroupItem value="light" id="theme-light" />
+      <Label htmlFor="theme-light">
+        <Sun className="inline mr-1 h-4 w-4" />
+        {t('settings.themeLight')}
+      </Label>
+    </div>
+    <div className="flex items-center space-x-2">
+      <RadioGroupItem value="dark" id="theme-dark" />
+      <Label htmlFor="theme-dark">
+        <Moon className="inline mr-1 h-4 w-4" />
+        {t('settings.themeDark')}
+      </Label>
+    </div>
+    <div className="flex items-center space-x-2">
+      <RadioGroupItem value="system" id="theme-system" />
+      <Label htmlFor="theme-system">
+        <Monitor className="inline mr-1 h-4 w-4" />
+        {t('settings.themeSystem')}
+      </Label>
+    </div>
+  </RadioGroup>
+</div>
+```
+
+### 4. `index.html`
+Adicionar script para prevenir flash de tema incorreto:
+
+```html
+<script>
+  (function() {
+    const theme = localStorage.getItem('theme') || 'system';
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (theme === 'dark' || (theme === 'system' && systemDark)) {
+      document.documentElement.classList.add('dark');
+    }
+  })();
+</script>
 ```
 
 ## Detalhes Técnicos
 
-Os atributos adicionados fazem o seguinte:
+| Componente | Função |
+|------------|--------|
+| `ThemeProvider` | Gere o estado do tema e sincroniza com localStorage |
+| `attribute="class"` | Aplica o tema via classe CSS (compatível com Tailwind) |
+| `enableSystem` | Permite deteção automática do tema do sistema |
+| `defaultTheme="system"` | Começa com preferência do sistema operativo |
 
-| Atributo | Propósito |
-|----------|-----------|
-| `autoComplete="off"` | Desativa preenchimento automático |
-| `autoCorrect="off"` | Desativa correção automática (mobile) |
-| `autoCapitalize="none"` | Impede capitalização automática (mobile) |
-| `spellCheck={false}` | Desativa verificação ortográfica |
-| `inputMode="text"` | Garante teclado de texto normal |
-| `data-form-type="other"` | Previne detecção automática de tipo |
-| `data-lpignore="true"` | Ignora extensões como LastPass |
+## CSS Existente
+
+O projeto já tem todas as variáveis CSS definidas para dark mode em `src/index.css`:
+- Cores de background, foreground, cards, borders
+- Cores de accent e destructive
+- Cores do sidebar
+
+Não é necessário alterar o CSS, apenas ativar a classe `.dark` no `<html>`.
+
+## Fluxo de Funcionamento
+
+1. Utilizador abre a app -> ThemeProvider lê tema do localStorage (ou usa "system")
+2. Se tema = "system" -> deteta preferência do SO
+3. Aplica classe `.dark` ao `<html>` se necessário
+4. Utilizador muda tema em Settings -> atualiza localStorage e classe
+5. Todas as cores mudam automaticamente via variáveis CSS
 
 ## Passos de Implementação
 
-1. Abrir `src/components/auth/OnboardingChoice.tsx`
-2. Localizar o Input do campo `inviteCode` (linhas 168-178)
-3. Adicionar os atributos anti-autocomplete
-4. Testar com um código case-sensitive como `BTVYqUXF`
+1. Atualizar `src/App.tsx` com ThemeProvider
+2. Adicionar traduções em `src/lib/i18n/translations.ts`
+3. Atualizar `src/pages/Profile.tsx` com seletor de tema
+4. Adicionar script anti-flash em `index.html`
+5. Testar as três opções de tema
 
 ## Testes Recomendados
 
-- [ ] Digitar um código com letras minúsculas e maiúsculas misturadas
-- [ ] Colar um código com case misto
-- [ ] Verificar que não há autocomplete a interferir
-- [ ] Testar em mobile (se aplicável)
-
+- [ ] Mudar para dark mode e verificar todas as páginas
+- [ ] Mudar para light mode e confirmar que reverte
+- [ ] Testar opção "Sistema" mudando preferências do SO
+- [ ] Recarregar a página e confirmar que o tema persiste
+- [ ] Verificar traduções em PT e EN
