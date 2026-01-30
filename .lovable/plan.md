@@ -1,158 +1,190 @@
 
+# Plano: Sistema de Roles de Admin para Bibliotecas
 
-## Scoreboard da Jamigaz (Friends Scoreboard)
+## Resumo
 
-Vou adicionar um scoreboard dentro da pagina de detalhes de cada livro que mostra quais amigos ja leram (ou nao) e quanto tempo demoraram.
+Atualmente, a tua biblioteca não tem um sistema formal de administradores. O dono da biblioteca é implicitamente quem criou os livros, mas não existe uma forma de:
+- Dar permissões de admin a outros utilizadores
+- Expulsar utilizadores da biblioteca
 
----
-
-### O que vai mostrar
-
-O scoreboard apresenta uma lista de amigos com:
-
-1. **Avatar e nome** do amigo
-2. **Estado de leitura**: Para Ler, A Ler, ou Lido
-3. **Tempo de leitura** (se ja terminou): calculado entre `started_at` e `finished_at`
-4. **Barra de progresso** (se esta a ler)
+Este plano implementa um sistema de roles onde o criador da biblioteca é automaticamente admin, podendo depois promover outros amigos a admin ou removê-los.
 
 ---
 
-### Exemplo visual
+## Arquitetura Proposta
 
 ```text
-+-----------------------------------------------+
-| Scoreboard da Jamigaz                  Trophy |
-+-----------------------------------------------+
-| [Avatar] Maria        Lido em 12 dias    1o   |
-| [Avatar] Joao         Lido em 18 dias    2o   |
-| [Avatar] Pedro        A Ler - 45%             |
-| [Avatar] Ana          Para Ler                |
-+-----------------------------------------------+
-| Nenhum amigo tem este livro? Convida-os!      |
-+-----------------------------------------------+
+┌─────────────────────────────────────────────────────────┐
+│                    library_members                       │
+├─────────────────────────────────────────────────────────┤
+│  id          │ UUID (PK)                                │
+│  library_owner_id │ UUID (o dono original da biblioteca)│
+│  user_id     │ UUID (o membro)                          │
+│  role        │ ENUM ('admin', 'member')                 │
+│  created_at  │ TIMESTAMP                                │
+│  invited_by  │ UUID (quem convidou)                     │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Alteracoes na Base de Dados
+## Alterações Necessárias
 
-**Nova RLS Policy necessaria:**
+### 1. Base de Dados
 
-A policy atual so permite ver progresso de amigos em livros onde o dono e amigo. Precisamos de uma policy que permita ver o progresso de leitura dos nossos amigos em qualquer livro que tenhamos em comum:
+**Criar enum de roles:**
+```sql
+CREATE TYPE public.library_role AS ENUM ('admin', 'member');
+```
+
+**Criar tabela `library_members`:**
+- `library_owner_id` - identifica a biblioteca (pertence ao utilizador original)
+- `user_id` - o membro da biblioteca
+- `role` - 'admin' ou 'member'
+- O dono original é automaticamente inserido como 'admin' quando aceita o primeiro convite
+
+**Função de segurança para verificar role:**
+```sql
+CREATE FUNCTION public.has_library_role(
+  _library_owner_id UUID, 
+  _user_id UUID, 
+  _role library_role
+) RETURNS BOOLEAN
+```
+
+**Atualizar a função `use_invite_link`:**
+- Além de criar a amizade, também adiciona o utilizador como 'member' na tabela `library_members`
+- Se for o primeiro membro, adiciona o dono como 'admin'
+
+**Políticas RLS:**
+- Admins podem ver todos os membros da sua biblioteca
+- Admins podem alterar roles de outros membros
+- Admins podem remover membros
+- Membros só podem ver os outros membros
+
+### 2. Frontend
+
+**Novo hook `useLibraryMembers`:**
+- Listar membros da biblioteca
+- Promover/despromover admins
+- Remover membros
+
+**Nova página ou secção em `/friends`:**
+- Lista de membros da tua biblioteca
+- Badge indicando role (Admin/Membro)
+- Ações para admins:
+  - Promover a admin
+  - Remover da biblioteca
+
+**Atualizar página Amigos:**
+- Mostrar o role de cada amigo
+- Adicionar controlos de gestão para admins
+
+---
+
+## Detalhes Técnicos
+
+### Migração SQL
 
 ```sql
--- Users can view friends' reading progress on shared books
-CREATE POLICY "Users can view friends reading progress on shared books"
-  ON reading_progress FOR SELECT
+-- 1. Criar enum
+CREATE TYPE public.library_role AS ENUM ('admin', 'member');
+
+-- 2. Criar tabela de membros
+CREATE TABLE public.library_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  library_owner_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  role library_role NOT NULL DEFAULT 'member',
+  invited_by UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(library_owner_id, user_id)
+);
+
+-- 3. Ativar RLS
+ALTER TABLE public.library_members ENABLE ROW LEVEL SECURITY;
+
+-- 4. Função para verificar se é admin
+CREATE OR REPLACE FUNCTION public.is_library_admin(
+  _library_owner_id UUID, 
+  _user_id UUID
+) RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.library_members
+    WHERE library_owner_id = _library_owner_id
+      AND user_id = _user_id
+      AND role = 'admin'
+  ) OR _library_owner_id = _user_id
+$$;
+
+-- 5. Políticas RLS para library_members
+CREATE POLICY "Users can view library members"
+  ON public.library_members FOR SELECT
   USING (
-    -- Check if the user viewing is friends with the user who has the progress
-    are_friends(auth.uid(), user_id)
+    user_id = auth.uid() 
+    OR library_owner_id = auth.uid()
+    OR is_library_admin(library_owner_id, auth.uid())
   );
+
+CREATE POLICY "Library owner and admins can manage members"
+  ON public.library_members FOR ALL
+  USING (is_library_admin(library_owner_id, auth.uid()));
 ```
 
----
+### Migração de Dados Existentes
 
-### Implementacao Frontend
+Os utilizadores que já são amigos serão migrados:
+- O dono de cada biblioteca torna-se 'admin'
+- Os amigos existentes tornam-se 'member'
 
-**1. Novo Hook: `useFriendsBookProgress`**
-
-```text
-src/hooks/useFriendsBookProgress.ts
-
-- Recebe bookId como parametro
-- Busca lista de amigos do utilizador atual
-- Busca progresso de leitura de cada amigo para este livro
-- Combina com informacoes de perfil (avatar, nome)
-- Calcula tempo de leitura para quem ja terminou
-- Ordena: Lidos primeiro (por tempo), depois A Ler, depois Para Ler
+```sql
+-- Migrar amizades existentes para library_members
+INSERT INTO public.library_members (library_owner_id, user_id, role)
+SELECT DISTINCT user_id, user_id, 'admin' FROM friendships
+UNION
+SELECT user_id, friend_id, 'member' FROM friendships
+ON CONFLICT DO NOTHING;
 ```
 
-**2. Novo Componente: `FriendsScoreboard`**
+### Componentes React
 
-```text
-src/components/books/FriendsScoreboard.tsx
-
-- Recebe bookId como prop
-- Usa o hook useFriendsBookProgress
-- Mostra lista de amigos com estado e tempo
-- Icone de trofeu para os primeiros lugares
-- Estados visuais diferenciados com cores/badges
-- Mensagem amigavel se nao houver amigos com o livro
-```
-
-**3. Integracao em BookDetails**
-
-Adicionar o componente FriendsScoreboard na pagina de detalhes, apos o card de progresso pessoal.
-
----
-
-### Calculo do Tempo de Leitura
-
+**`useLibraryMembers.ts`:**
 ```typescript
-function calculateReadingTime(startedAt: string, finishedAt: string): string {
-  const start = new Date(startedAt);
-  const end = new Date(finishedAt);
-  const diffMs = end.getTime() - start.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) return 'menos de 1 dia';
-  if (diffDays === 1) return '1 dia';
-  return `${diffDays} dias`;
-}
+// Listar membros
+// Promover/despromover
+// Remover membro
 ```
+
+**Página de Gestão (nova secção em Amigos ou página separada):**
+- Tabela/lista de membros
+- Ações contextuais baseadas no role do utilizador atual
 
 ---
 
-### Ordenacao do Scoreboard
+## Fluxo de Utilização
 
-1. **Lidos** - ordenados por tempo (mais rapido primeiro = 1o lugar)
-2. **A Ler** - ordenados por progresso (maior primeiro)
-3. **Para Ler** - ordenados por nome
-
----
-
-### Ficheiros a criar/modificar
-
-```text
-Criar:
-  src/hooks/useFriendsBookProgress.ts
-  src/components/books/FriendsScoreboard.tsx
-
-Modificar:
-  src/pages/BookDetails.tsx (adicionar FriendsScoreboard)
-  
-Migracao SQL:
-  Nova RLS policy para reading_progress
-```
+1. **Criar convite** → Quando alguém aceita, é adicionado como 'member'
+2. **Ver membros** → Admins veem todos os membros da sua biblioteca
+3. **Promover admin** → Admin pode tornar um membro em admin
+4. **Remover membro** → Admin pode expulsar (remove de `library_members` e `friendships`)
+5. **O dono original** → Sempre é admin e não pode ser removido
 
 ---
 
-### Detalhes Tecnicos
+## Considerações de Segurança
 
-**Interface do Hook:**
+- O dono original da biblioteca (`library_owner_id = user_id`) nunca pode ser removido ou despromovido
+- Apenas admins podem gerir outros membros
+- As funções usam `SECURITY DEFINER` para evitar recursão infinita no RLS
+- Os roles são armazenados numa tabela separada (não no perfil) para prevenir ataques de escalação de privilégios
 
-```typescript
-interface FriendProgress {
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  status: 'to_read' | 'reading' | 'read' | null;
-  progress: number;
-  started_at: string | null;
-  finished_at: string | null;
-  reading_time_days: number | null;
-}
+---
 
-function useFriendsBookProgress(bookId: string): {
-  friendsProgress: FriendProgress[];
-  isLoading: boolean;
-}
-```
+## Estimativa
 
-**Query Strategy:**
-
-1. Buscar amigos do utilizador atual
-2. Buscar progresso de leitura para este livro para todos os amigos
-3. Left join para incluir amigos que nao tem progresso (estado implicitamente "nao tem o livro")
-4. Combinar com dados de perfil
-
+- **Base de dados**: 1 enum, 1 tabela, 2-3 funções, políticas RLS, migração de dados
+- **Frontend**: 1 novo hook, atualizações na página de Amigos, UI de gestão
+- **Complexidade**: Média-alta devido à lógica de permissões
