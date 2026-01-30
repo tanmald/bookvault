@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Upload, File, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,13 +27,17 @@ export function FileUpload({
   onFileSelect,
   accept = defaultAccept,
   maxSize = 50 * 1024 * 1024, // 50MB
-  label = 'Arrasta um ficheiro ou clica para selecionar',
-  description = 'PDF, EPUB, MOBI, AZW3 até 50MB',
+  label,
+  description,
   selectedFile,
   onClear,
   isUploading,
 }: FileUploadProps) {
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
+
+  const displayLabel = label || t('upload.dragDrop');
+  const displayDescription = description || t('upload.formats');
 
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: any[]) => {
@@ -41,11 +46,11 @@ export function FileUpload({
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0];
         if (rejection.errors[0]?.code === 'file-too-large') {
-          setError('Ficheiro demasiado grande. Máximo: 50MB');
+          setError(t('upload.fileTooLarge'));
         } else if (rejection.errors[0]?.code === 'file-invalid-type') {
-          setError('Tipo de ficheiro não suportado');
+          setError(t('upload.invalidType'));
         } else {
-          setError('Erro ao carregar ficheiro');
+          setError(t('upload.uploadFileError'));
         }
         return;
       }
@@ -54,7 +59,7 @@ export function FileUpload({
         onFileSelect(acceptedFiles[0]);
       }
     },
-    [onFileSelect]
+    [onFileSelect, t]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -106,8 +111,8 @@ export function FileUpload({
       >
         <input {...getInputProps()} />
         <Upload className={cn('h-10 w-10 mb-3', isDragActive ? 'text-accent' : 'text-muted-foreground')} />
-        <p className="text-center font-medium">{label}</p>
-        <p className="text-center text-sm text-muted-foreground mt-1">{description}</p>
+        <p className="text-center font-medium">{displayLabel}</p>
+        <p className="text-center text-sm text-muted-foreground mt-1">{displayDescription}</p>
       </div>
       {error && <p className="text-sm text-destructive mt-2">{error}</p>}
     </div>

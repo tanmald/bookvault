@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
 export default function JoinInvite() {
   const { code } = useParams<{ code: string }>();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -40,21 +42,21 @@ export default function JoinInvite() {
 
       if (error || !data) {
         setStatus('invalid');
-        setError('Este convite não existe ou já expirou.');
+        setError(t('joinInvite.notExist'));
         return;
       }
 
       // Check if expired
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         setStatus('invalid');
-        setError('Este convite já expirou.');
+        setError(t('joinInvite.expired'));
         return;
       }
 
       // Check max uses
       if (data.max_uses && data.uses_count >= data.max_uses) {
         setStatus('invalid');
-        setError('Este convite já atingiu o número máximo de utilizações.');
+        setError(t('joinInvite.maxUses'));
         return;
       }
 
@@ -62,7 +64,7 @@ export default function JoinInvite() {
       setStatus('valid');
     } catch (err) {
       setStatus('invalid');
-      setError('Erro ao verificar o convite.');
+      setError(t('joinInvite.checkError'));
     }
   };
 
@@ -84,13 +86,13 @@ export default function JoinInvite() {
       const result = data?.[0];
       
       if (!result) {
-        throw new Error('Erro ao processar convite');
+        throw new Error(t('joinInvite.processError'));
       }
 
       if (!result.success) {
         // Handle specific error cases
         if (result.error_message === 'Já és amigo deste utilizador') {
-          toast({ title: 'Já és amigo deste utilizador!' });
+          toast({ title: t('joinInvite.alreadyFriend') });
           navigate('/friends');
           return;
         }
@@ -98,17 +100,17 @@ export default function JoinInvite() {
         if (result.error_message === 'Não podes usar o teu próprio convite') {
           toast({
             variant: 'destructive',
-            title: 'Não podes usar o teu próprio convite!',
+            title: t('joinInvite.ownInvite'),
           });
           navigate('/');
           return;
         }
         
-        throw new Error(result.error_message || 'Erro ao aceitar convite');
+        throw new Error(result.error_message || t('joinInvite.acceptError'));
       }
 
       setStatus('success');
-      toast({ title: 'Amizade criada com sucesso!' });
+      toast({ title: t('joinInvite.friendCreated') });
 
       setTimeout(() => navigate('/friends'), 2000);
     } catch (err: any) {
@@ -116,7 +118,7 @@ export default function JoinInvite() {
       setError(err.message);
       toast({
         variant: 'destructive',
-        title: 'Erro ao aceitar convite',
+        title: t('joinInvite.acceptError'),
         description: err.message,
       });
     }
@@ -129,6 +131,8 @@ export default function JoinInvite() {
       </div>
     );
   }
+
+  const ownerName = inviteOwner?.display_name || t('joinInvite.aUser');
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -147,12 +151,12 @@ export default function JoinInvite() {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
                   <X className="h-6 w-6 text-destructive" />
                 </div>
-                <CardTitle>Convite Inválido</CardTitle>
+                <CardTitle>{t('joinInvite.invalidTitle')}</CardTitle>
                 <CardDescription>{error}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button asChild className="w-full">
-                  <Link to="/">Ir para a Biblioteca</Link>
+                  <Link to="/">{t('joinInvite.goToLibrary')}</Link>
                 </Button>
               </CardContent>
             </>
@@ -162,9 +166,9 @@ export default function JoinInvite() {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                   <Check className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle>Bem-vindo!</CardTitle>
+                <CardTitle>{t('joinInvite.welcome')}</CardTitle>
                 <CardDescription>
-                  Agora és amigo de {inviteOwner?.display_name || 'um utilizador'} e podes ver a biblioteca dele.
+                  {t('joinInvite.welcomeDesc').replace('{name}', ownerName)}
                 </CardDescription>
               </CardHeader>
             </>
@@ -174,23 +178,23 @@ export default function JoinInvite() {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
                   <UserPlus className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle>Convite para Biblioteca</CardTitle>
+                <CardTitle>{t('joinInvite.inviteTitle')}</CardTitle>
                 <CardDescription>
-                  {inviteOwner?.display_name || 'Um utilizador'} convidou-te para acederes à biblioteca dele.
+                  {t('joinInvite.inviteDesc').replace('{name}', ownerName)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!user ? (
                   <>
                     <p className="text-sm text-muted-foreground text-center">
-                      Precisas de ter conta para aceitar este convite.
+                      {t('joinInvite.needAccount')}
                     </p>
                     <div className="flex gap-3">
                       <Button asChild variant="outline" className="flex-1">
-                        <Link to={`/login?redirect=/join/${code}`}>Entrar</Link>
+                        <Link to={`/login?redirect=/join/${code}`}>{t('joinInvite.login')}</Link>
                       </Button>
                       <Button asChild className="flex-1">
-                        <Link to={`/register?redirect=/join/${code}`}>Criar Conta</Link>
+                        <Link to={`/register?redirect=/join/${code}`}>{t('joinInvite.createAccount')}</Link>
                       </Button>
                     </div>
                   </>
@@ -203,12 +207,12 @@ export default function JoinInvite() {
                     {status === 'joining' ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        A aceitar...
+                        {t('joinInvite.accepting')}
                       </>
                     ) : (
                       <>
                         <UserPlus className="mr-2 h-4 w-4" />
-                        Aceitar Convite
+                        {t('joinInvite.acceptInvite')}
                       </>
                     )}
                   </Button>

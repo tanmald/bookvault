@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   
   const { user, loading, signUp } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,8 +37,8 @@ export default function Register() {
     if (password !== confirmPassword) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'As passwords não coincidem',
+        title: t('common.error'),
+        description: t('auth.passwordMismatch'),
       });
       return;
     }
@@ -44,8 +46,8 @@ export default function Register() {
     if (password.length < 6) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'A password deve ter pelo menos 6 caracteres',
+        title: t('common.error'),
+        description: t('auth.passwordTooShort'),
       });
       return;
     }
@@ -57,14 +59,14 @@ export default function Register() {
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Erro ao criar conta',
+        title: t('auth.registerError'),
         description: error.message,
       });
       setIsLoading(false);
     } else {
       toast({
-        title: 'Conta criada!',
-        description: 'Vamos configurar a tua biblioteca',
+        title: t('auth.accountCreated'),
+        description: t('auth.accountCreatedDesc'),
       });
       // Navigate to onboarding page with any invite code
       const code = searchParams.get('code');
@@ -89,22 +91,22 @@ export default function Register() {
             <BookOpen className="h-10 w-10 text-accent" />
             <span className="text-3xl font-semibold tracking-tight">BookVault</span>
           </div>
-          <p className="text-muted-foreground">Cria a tua biblioteca digital</p>
+          <p className="text-muted-foreground">{t('auth.createDigitalLibrary')}</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Criar Conta</CardTitle>
-            <CardDescription>Começa a organizar os teus livros</CardDescription>
+            <CardTitle>{t('auth.registerTitle')}</CardTitle>
+            <CardDescription>{t('auth.registerDesc')}</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="displayName">Nome</Label>
+                <Label htmlFor="displayName">{t('auth.name')}</Label>
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="O teu nome"
+                  placeholder={t('auth.namePlaceholder')}
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
@@ -112,11 +114,11 @@ export default function Register() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="email@exemplo.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -124,7 +126,7 @@ export default function Register() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -136,7 +138,7 @@ export default function Register() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar Password</Label>
+                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -153,16 +155,16 @@ export default function Register() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    A criar conta...
+                    {t('auth.registering')}
                   </>
                 ) : (
-                  'Criar Conta'
+                  t('auth.createAccount')
                 )}
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                Já tens conta?{' '}
+                {t('auth.hasAccount')}{' '}
                 <Link to="/login" className="font-medium text-primary hover:underline">
-                  Entrar
+                  {t('auth.login')}
                 </Link>
               </p>
             </CardFooter>

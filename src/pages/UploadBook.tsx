@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FileUpload } from '@/components/upload/FileUpload';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { useBooks } from '@/hooks/useBooks';
 import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
@@ -36,10 +37,15 @@ interface ExtractedMetadata {
 
 export default function UploadBook() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { books, createBook, addBookFile } = useBooks();
   const { data: genres } = useGenres();
   const { toast } = useToast();
+
+  // Check if we're adding to an existing book from URL params
+  const bookIdFromUrl = searchParams.get('bookId');
 
   const [file, setFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -49,8 +55,8 @@ export default function UploadBook() {
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
 
   // Mode: 'new' for new book, 'existing' for adding to existing book
-  const [mode, setMode] = useState<'new' | 'existing'>('new');
-  const [selectedBookId, setSelectedBookId] = useState<string>('');
+  const [mode, setMode] = useState<'new' | 'existing'>(bookIdFromUrl ? 'existing' : 'new');
+  const [selectedBookId, setSelectedBookId] = useState<string>(bookIdFromUrl || '');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('pt');
 
   const [formData, setFormData] = useState({
@@ -136,23 +142,23 @@ export default function UploadBook() {
       if (hasMetadata) {
         const detectedInfo = [];
         if (metadata.detectedLanguage) {
-          detectedInfo.push(`Língua: ${getLanguageName(metadata.detectedLanguage)}`);
+          detectedInfo.push(`${t('upload.fileLanguage')}: ${getLanguageName(metadata.detectedLanguage)}`);
         }
         if (metadata.genreSlug) {
           const genre = genres?.find(g => g.slug === metadata.genreSlug);
-          if (genre) detectedInfo.push(`Género: ${genre.name}`);
+          if (genre) detectedInfo.push(`${t('upload.genre')}: ${genre.name}`);
         }
         
         toast({
-          title: 'Metadados extraídos',
+          title: t('upload.metadataExtracted'),
           description: detectedInfo.length > 0 
             ? detectedInfo.join(' • ') 
-            : 'Os campos foram preenchidos automaticamente',
+            : undefined,
         });
       } else {
         toast({
-          title: 'Sem metadados',
-          description: 'Não foram encontrados metadados neste ficheiro',
+          title: t('upload.noMetadata'),
+          description: t('upload.noMetadataDesc'),
           variant: 'default',
         });
       }
@@ -161,7 +167,7 @@ export default function UploadBook() {
     } finally {
       setIsExtractingMetadata(false);
     }
-  }, [genres, toast, mode]);
+  }, [genres, toast, mode, t]);
 
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
@@ -199,8 +205,8 @@ export default function UploadBook() {
     if (!file || !user) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Por favor seleciona um ficheiro',
+        title: t('upload.error'),
+        description: t('upload.selectFile'),
       });
       return;
     }
@@ -208,8 +214,8 @@ export default function UploadBook() {
     if (mode === 'new' && !formData.title.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'O título é obrigatório',
+        title: t('upload.error'),
+        description: t('upload.titleRequiredError'),
       });
       return;
     }
@@ -217,8 +223,8 @@ export default function UploadBook() {
     if (mode === 'existing' && !selectedBookId) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Por favor seleciona um livro existente',
+        title: t('upload.error'),
+        description: t('upload.selectExistingBook'),
       });
       return;
     }
@@ -313,7 +319,7 @@ export default function UploadBook() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Erro ao fazer upload',
+        title: t('upload.uploadError'),
         description: error.message,
       });
     } finally {
@@ -328,9 +334,9 @@ export default function UploadBook() {
     <AppLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-1">Adicionar Livro</h1>
+          <h1 className="text-2xl font-semibold mb-1">{t('upload.title')}</h1>
           <p className="text-muted-foreground">
-            Faz upload de um novo livro ou adiciona uma versão a um livro existente
+            {t('upload.subtitle')}
           </p>
         </div>
 
@@ -338,9 +344,9 @@ export default function UploadBook() {
           {/* Mode Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Tipo de Upload</CardTitle>
+              <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
               <CardDescription>
-                Escolhe se queres criar um novo livro ou adicionar uma versão a um existente
+                {t('upload.uploadTypeDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -352,17 +358,17 @@ export default function UploadBook() {
                     onCheckedChange={handleModeChange}
                   />
                   <Label htmlFor="mode" className="cursor-pointer">
-                    Adicionar a livro existente
+                    {t('upload.addToExisting')}
                   </Label>
                 </div>
               </div>
 
               {mode === 'existing' && (
                 <div className="mt-4 space-y-2">
-                  <Label>Selecionar Livro</Label>
+                  <Label>{t('upload.selectBook')}</Label>
                   <Select value={selectedBookId} onValueChange={setSelectedBookId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Escolher livro..." />
+                      <SelectValue placeholder={t('upload.chooseBook')} />
                     </SelectTrigger>
                     <SelectContent>
                       {userBooks.map((book) => (
@@ -380,7 +386,7 @@ export default function UploadBook() {
                   </Select>
                   {userBooks.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      Ainda não tens livros. Cria um novo primeiro.
+                      {t('upload.noBooks')}
                     </p>
                   )}
                 </div>
@@ -390,9 +396,9 @@ export default function UploadBook() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Ficheiro do Livro</CardTitle>
+              <CardTitle className="text-lg">{t('upload.bookFile')}</CardTitle>
               <CardDescription>
-                Seleciona o ficheiro do ebook
+                {t('upload.bookFileDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -407,7 +413,7 @@ export default function UploadBook() {
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
                   <Sparkles className="h-4 w-4 text-primary animate-pulse" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">A extrair metadados...</p>
+                    <p className="text-sm font-medium">{t('upload.extractingMetadata')}</p>
                     <Progress value={undefined} className="h-1 mt-1" />
                   </div>
                 </div>
@@ -415,10 +421,10 @@ export default function UploadBook() {
 
               {/* Language Selection */}
               <div className="space-y-2">
-                <Label>Língua do Ficheiro</Label>
+                <Label>{t('upload.fileLanguage')}</Label>
                 <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecionar língua" />
+                    <SelectValue placeholder={t('upload.selectLanguage')} />
                   </SelectTrigger>
                   <SelectContent>
                     {SUPPORTED_LANGUAGES.map((lang) => (
@@ -429,7 +435,7 @@ export default function UploadBook() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  A língua é detetada automaticamente, mas podes alterar se necessário
+                  {t('upload.languageAutoDetect')}
                 </p>
               </div>
             </CardContent>
@@ -439,42 +445,42 @@ export default function UploadBook() {
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Informações do Livro</CardTitle>
+                  <CardTitle className="text-lg">{t('upload.bookInfo')}</CardTitle>
                   <CardDescription>
-                    Preenche os detalhes do livro
+                    {t('upload.bookInfoDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Título *</Label>
+                    <Label htmlFor="title">{t('upload.titleRequired')}</Label>
                     <Input
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Nome do livro"
+                      placeholder={t('upload.titlePlaceholder')}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="author">Autor</Label>
+                    <Label htmlFor="author">{t('upload.author')}</Label>
                     <Input
                       id="author"
                       value={formData.author}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                      placeholder="Nome do autor"
+                      placeholder={t('upload.authorPlaceholder')}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="genre">Género</Label>
+                      <Label htmlFor="genre">{t('upload.genre')}</Label>
                       <Select
                         value={formData.genre_id}
                         onValueChange={(v) => setFormData({ ...formData, genre_id: v })}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecionar" />
+                          <SelectValue placeholder={t('upload.selectGenre')} />
                         </SelectTrigger>
                         <SelectContent>
                           {genres?.map((genre) => (
@@ -487,7 +493,7 @@ export default function UploadBook() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="year">Ano</Label>
+                      <Label htmlFor="year">{t('upload.year')}</Label>
                       <Input
                         id="year"
                         type="number"
@@ -501,12 +507,12 @@ export default function UploadBook() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
+                    <Label htmlFor="description">{t('upload.description')}</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Sinopse ou descrição do livro..."
+                      placeholder={t('upload.descriptionPlaceholder')}
                       rows={4}
                     />
                   </div>
@@ -515,9 +521,9 @@ export default function UploadBook() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Capa do Livro</CardTitle>
+                  <CardTitle className="text-lg">{t('upload.bookCover')}</CardTitle>
                   <CardDescription>
-                    Opcional - adiciona uma imagem de capa
+                    {t('upload.bookCoverDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -525,7 +531,7 @@ export default function UploadBook() {
                     <div className="flex items-start gap-4">
                       <img
                         src={coverPreview}
-                        alt="Pré-visualização da capa"
+                        alt={t('upload.coverPreview')}
                         className="w-32 h-48 object-cover rounded-md"
                       />
                       <Button
@@ -534,7 +540,7 @@ export default function UploadBook() {
                         onClick={handleClearCover}
                         disabled={isUploading}
                       >
-                        Remover
+                        {t('upload.removeCover')}
                       </Button>
                     </div>
                   ) : (
@@ -546,8 +552,8 @@ export default function UploadBook() {
                         'image/webp': ['.webp'],
                       }}
                       maxSize={5 * 1024 * 1024}
-                      label="Arrasta uma imagem de capa"
-                      description="JPG, PNG ou WebP até 5MB"
+                      label={t('upload.dragCover')}
+                      description={t('upload.coverFormats')}
                       isUploading={isUploading}
                     />
                   )}
@@ -564,7 +570,7 @@ export default function UploadBook() {
               disabled={isUploading}
               className="flex-1"
             >
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button 
               type="submit" 
@@ -574,17 +580,17 @@ export default function UploadBook() {
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A carregar...
+                  {t('upload.uploading')}
                 </>
               ) : mode === 'existing' ? (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Versão
+                  {t('upload.addVersion')}
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Adicionar Livro
+                  {t('upload.submit')}
                 </>
               )}
             </Button>

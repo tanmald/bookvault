@@ -25,6 +25,7 @@ import {
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import {
@@ -39,16 +40,11 @@ import {
   Globe,
 } from 'lucide-react';
 
-const statusLabels: Record<ReadingStatus, string> = {
-  to_read: 'Para Ler',
-  reading: 'A Ler',
-  read: 'Lido',
-};
-
 export default function BookDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress } = useReadingProgress(id);
 
@@ -58,6 +54,10 @@ export default function BookDetails() {
   const currentProgress = bookProgress?.progress ?? 0;
 
   const isOwner = book?.owner_id === user?.id;
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB');
+  };
 
   const handleStatusChange = (status: ReadingStatus) => {
     if (!id) return;
@@ -108,10 +108,10 @@ export default function BookDetails() {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center py-16">
-          <h2 className="text-xl font-semibold mb-2">Livro não encontrado</h2>
+          <h2 className="text-xl font-semibold mb-2">{t('book.notFound')}</h2>
           <Button variant="outline" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar à biblioteca
+            {t('book.backToLibrary')}
           </Button>
         </div>
       </AppLayout>
@@ -122,7 +122,7 @@ export default function BookDetails() {
     <AppLayout>
       <Button variant="ghost" onClick={() => navigate('/')} className="mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Voltar
+        {t('book.back')}
       </Button>
 
       <div className="grid md:grid-cols-[300px_1fr] gap-8">
@@ -150,20 +150,20 @@ export default function BookDetails() {
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="w-full text-destructive hover:text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar Livro
+                  {t('book.delete')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Tens a certeza?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('book.deleteConfirm')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. O livro e todos os dados associados serão eliminados permanentemente.
+                    {t('book.deleteWarning')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel>{t('book.cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Eliminar
+                    {t('book.confirm')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -199,7 +199,7 @@ export default function BookDetails() {
             {bookFiles.length > 0 && (
               <Badge variant="outline">
                 <Globe className="mr-1 h-3 w-3" />
-                {bookFiles.length} {bookFiles.length === 1 ? 'versão' : 'versões'}
+                {bookFiles.length} {bookFiles.length === 1 ? t('book.version') : t('book.versionsCount')}
               </Badge>
             )}
           </div>
@@ -207,12 +207,12 @@ export default function BookDetails() {
           {/* Book Versions Card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Versões Disponíveis</CardTitle>
+              <CardTitle className="text-lg">{t('book.versionsAvailable')}</CardTitle>
               {isOwner && (
                 <Link to={`/upload?bookId=${book.id}`}>
                   <Button size="sm" variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
-                    Adicionar
+                    {t('book.addVersion')}
                   </Button>
                 </Link>
               )}
@@ -230,19 +230,19 @@ export default function BookDetails() {
           {/* Reading Progress Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Progresso de Leitura</CardTitle>
+              <CardTitle className="text-lg">{t('book.readingProgress')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium w-16">Estado:</span>
+                <span className="text-sm font-medium w-16">{t('book.state')}</span>
                 <Select value={currentStatus} onValueChange={handleStatusChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="to_read">Para Ler</SelectItem>
-                    <SelectItem value="reading">A Ler</SelectItem>
-                    <SelectItem value="read">Lido</SelectItem>
+                    <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
+                    <SelectItem value="reading">{t('status.reading')}</SelectItem>
+                    <SelectItem value="read">{t('status.read')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -250,7 +250,7 @@ export default function BookDetails() {
               {currentStatus === 'reading' && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Progresso:</span>
+                    <span className="text-sm font-medium">{t('book.progressLabel')}</span>
                     <span className="text-sm text-muted-foreground">{currentProgress}%</span>
                   </div>
                   <Slider
@@ -265,10 +265,10 @@ export default function BookDetails() {
 
               {currentStatus === 'read' && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>✓ Livro concluído</span>
+                  <span>{t('book.finished')}</span>
                   {bookProgress?.finished_at && (
                     <span>
-                      em {new Date(bookProgress.finished_at).toLocaleDateString('pt-PT')}
+                      {t('book.finishedOn')} {formatDate(bookProgress.finished_at)}
                     </span>
                   )}
                 </div>
@@ -283,7 +283,7 @@ export default function BookDetails() {
           {book.description && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Descrição</CardTitle>
+                <CardTitle className="text-lg">{t('book.descriptionTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground whitespace-pre-wrap">
@@ -296,12 +296,12 @@ export default function BookDetails() {
           {/* Book Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Informações</CardTitle>
+              <CardTitle className="text-lg">{t('book.infoTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Adicionado em:</span>
-                <span>{new Date(book.created_at).toLocaleDateString('pt-PT')}</span>
+                <span className="text-muted-foreground">{t('book.addedOn')}</span>
+                <span>{formatDate(book.created_at)}</span>
               </div>
             </CardContent>
           </Card>
