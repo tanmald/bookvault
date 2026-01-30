@@ -440,6 +440,16 @@ async function extractPdfMetadata(
   return result;
 }
 
+// File validation constants
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_EXTENSIONS = [".epub", ".pdf"];
+const ALLOWED_MIME_TYPES = [
+  "application/epub+zip",
+  "application/pdf",
+  "application/x-pdf",
+  "application/octet-stream", // Some browsers send this for EPUB files
+];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -490,7 +500,33 @@ serve(async (req) => {
       });
     }
 
+    // File size validation
+    if (file.size > MAX_FILE_SIZE) {
+      return new Response(JSON.stringify({ error: "File too large. Maximum size is 50MB" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const fileName = file.name.toLowerCase();
+    
+    // File extension validation
+    const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    if (!hasValidExtension) {
+      return new Response(JSON.stringify({ error: "Invalid file type. Only EPUB and PDF files are allowed" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // MIME type validation (allow octet-stream for browser compatibility)
+    if (file.type && !ALLOWED_MIME_TYPES.includes(file.type)) {
+      return new Response(JSON.stringify({ error: "Invalid file MIME type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const fileBuffer = await file.arrayBuffer();
 
     let metadata: ExtractedMetadata;
