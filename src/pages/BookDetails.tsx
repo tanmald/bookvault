@@ -1,9 +1,12 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
@@ -54,6 +57,21 @@ export default function BookDetails() {
   const currentProgress = bookProgress?.progress ?? 0;
 
   const isOwner = book?.owner_id === user?.id;
+
+  // Fetch owner profile
+  const { data: ownerProfile } = useQuery({
+    queryKey: ['profile', book?.owner_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url')
+        .eq('user_id', book!.owner_id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!book?.owner_id,
+  });
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB');
@@ -298,7 +316,19 @@ export default function BookDetails() {
             <CardHeader>
               <CardTitle className="text-lg">{t('book.infoTitle')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">{t('book.addedBy')}</span>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={ownerProfile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {ownerProfile?.display_name?.charAt(0)?.toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{ownerProfile?.display_name || t('friends.user')}</span>
+                </div>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('book.addedOn')}</span>
                 <span>{formatDate(book.created_at)}</span>
