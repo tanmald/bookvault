@@ -1,17 +1,19 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { BookGrid } from '@/components/books/BookGrid';
 import { BookKanban } from '@/components/books/BookKanban';
 import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { Loader2, LayoutGrid, Columns3 } from 'lucide-react';
+import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'kanban';
 
 export default function Library() {
+  const navigate = useNavigate();
   const { books, isLoading } = useBooks();
   const { progress } = useReadingProgress();
 
@@ -134,6 +136,16 @@ export default function Library() {
       ) : (
         <BookGrid books={filteredBooks} progressMap={progressMap} />
       )}
+
+      {/* Floating Action Button for mobile */}
+      <Button
+        onClick={() => navigate('/upload')}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg md:hidden"
+        size="icon"
+      >
+        <Plus className="h-6 w-6" />
+        <span className="sr-only">Adicionar livro</span>
+      </Button>
     </AppLayout>
   );
 }
