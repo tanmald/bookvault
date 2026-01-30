@@ -15,16 +15,22 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useInvites } from '@/hooks/useInvites';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { Link2, Plus, Copy, Trash2, Loader2, Check, X } from 'lucide-react';
 
 export default function Invites() {
   const { invites, isLoading, createInvite, deleteInvite } = useInvites();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expiresInDays, setExpiresInDays] = useState('7');
   const [maxUses, setMaxUses] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB');
+  };
 
   const handleCreate = async () => {
     const expires = expiresInDays ? parseInt(expiresInDays) : undefined;
@@ -45,7 +51,7 @@ export default function Invites() {
     navigator.clipboard.writeText(link);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-    toast({ title: 'Link copiado!' });
+    toast({ title: t('invites.copied') });
   };
 
   const activeInvites = invites.filter((i) => i.is_active);
@@ -55,9 +61,9 @@ export default function Invites() {
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">Convites</h1>
+          <h1 className="text-2xl font-semibold mb-1">{t('invites.title')}</h1>
           <p className="text-muted-foreground">
-            Gera links para convidar amigos para a tua biblioteca
+            {t('invites.subtitle')}
           </p>
         </div>
 
@@ -65,19 +71,19 @@ export default function Invites() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Convite
+              {t('invites.newInvite')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Criar Novo Convite</DialogTitle>
+              <DialogTitle>{t('invites.createNew')}</DialogTitle>
               <DialogDescription>
-                Configura as opções do link de convite
+                {t('invites.configOptions')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="expires">Expira em (dias)</Label>
+                <Label htmlFor="expires">{t('invites.expiresInDays')}</Label>
                 <Input
                   id="expires"
                   type="number"
@@ -85,24 +91,24 @@ export default function Invites() {
                   max="365"
                   value={expiresInDays}
                   onChange={(e) => setExpiresInDays(e.target.value)}
-                  placeholder="Deixa vazio para nunca expirar"
+                  placeholder={t('invites.expiresPlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxUses">Máximo de utilizações</Label>
+                <Label htmlFor="maxUses">{t('invites.maxUses')}</Label>
                 <Input
                   id="maxUses"
                   type="number"
                   min="1"
                   value={maxUses}
                   onChange={(e) => setMaxUses(e.target.value)}
-                  placeholder="Deixa vazio para ilimitado"
+                  placeholder={t('invites.maxUsesPlaceholder')}
                 />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancelar
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleCreate} disabled={createInvite.isPending}>
                 {createInvite.isPending ? (
@@ -110,7 +116,7 @@ export default function Invites() {
                 ) : (
                   <Link2 className="mr-2 h-4 w-4" />
                 )}
-                Criar Link
+                {t('invites.createLink')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -125,9 +131,9 @@ export default function Invites() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Link2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-medium mb-2">Sem convites</h3>
+            <h3 className="font-medium mb-2">{t('invites.noInvites')}</h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
-              Cria o teu primeiro link de convite para partilhar a biblioteca
+              {t('invites.noInvitesDesc')}
             </p>
           </CardContent>
         </Card>
@@ -137,7 +143,7 @@ export default function Invites() {
             <div>
               <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent" />
-                Convites Ativos ({activeInvites.length})
+                {t('invites.active')} ({activeInvites.length})
               </h2>
               <div className="space-y-3">
                 {activeInvites.map((invite) => (
@@ -150,13 +156,13 @@ export default function Invites() {
                           </code>
                           <Badge variant="outline" className="text-xs">
                             {invite.uses_count}
-                            {invite.max_uses ? ` / ${invite.max_uses}` : ''} uso(s)
+                            {invite.max_uses ? ` / ${invite.max_uses}` : ''} {t('invites.uses')}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {invite.expires_at
-                            ? `Expira em ${new Date(invite.expires_at).toLocaleDateString('pt-PT')}`
-                            : 'Sem expiração'}
+                            ? `${t('invites.expires')} ${formatDate(invite.expires_at)}`
+                            : t('invites.noExpiry')}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -191,7 +197,7 @@ export default function Invites() {
             <div>
               <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-muted-foreground">
                 <X className="h-5 w-5" />
-                Expirados / Inativos ({expiredInvites.length})
+                {t('invites.expired')} ({expiredInvites.length})
               </h2>
               <div className="space-y-3 opacity-60">
                 {expiredInvites.map((invite) => (
@@ -203,11 +209,11 @@ export default function Invites() {
                             {invite.code}
                           </code>
                           <Badge variant="secondary" className="text-xs">
-                            {invite.uses_count} uso(s)
+                            {invite.uses_count} {t('invites.uses')}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Criado em {new Date(invite.created_at).toLocaleDateString('pt-PT')}
+                          {t('invites.createdAt')} {formatDate(invite.created_at)}
                         </p>
                       </div>
                       <Button

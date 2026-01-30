@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,14 +20,15 @@ export default function OnboardingChoice() {
   const [isLoading, setIsLoading] = useState(false);
   
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleContinue = async () => {
     if (libraryChoice === 'new') {
       toast({
-        title: 'Bem-vindo ao BookVault!',
-        description: 'A tua biblioteca está pronta para começar.',
+        title: t('onboarding.welcomeToast'),
+        description: t('onboarding.welcomeDesc'),
       });
       navigate('/');
       return;
@@ -36,8 +38,8 @@ export default function OnboardingChoice() {
     if (!inviteCode.trim()) {
       toast({
         variant: 'destructive',
-        title: 'Código em falta',
-        description: 'Introduz o código de convite para te juntares a uma biblioteca.',
+        title: t('onboarding.codeMissing'),
+        description: t('onboarding.codeMissingDesc'),
       });
       return;
     }
@@ -45,8 +47,8 @@ export default function OnboardingChoice() {
     if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Sessão não encontrada. Por favor, faz login novamente.',
+        title: t('common.error'),
+        description: t('onboarding.sessionError'),
       });
       return;
     }
@@ -68,24 +70,24 @@ export default function OnboardingChoice() {
       if (!result?.success) {
         toast({
           variant: 'destructive',
-          title: 'Código inválido',
-          description: result?.error_message || 'Não foi possível usar este código de convite.',
+          title: t('onboarding.invalidCode'),
+          description: result?.error_message || t('onboarding.invalidCodeDesc'),
         });
         setIsLoading(false);
         return;
       }
 
       toast({
-        title: 'Juntaste-te à biblioteca!',
-        description: 'Agora tens acesso aos livros partilhados.',
+        title: t('onboarding.joinedLibrary'),
+        description: t('onboarding.joinedLibraryDesc'),
       });
       navigate('/friends');
     } catch (error) {
       console.error('Error using invite:', error);
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Ocorreu um erro ao processar o convite. Tenta novamente.',
+        title: t('common.error'),
+        description: t('onboarding.error'),
       });
       setIsLoading(false);
     }
@@ -103,14 +105,14 @@ export default function OnboardingChoice() {
             <BookOpen className="h-10 w-10 text-accent" />
             <span className="text-3xl font-semibold tracking-tight">BookVault</span>
           </div>
-          <p className="text-muted-foreground">Como queres começar?</p>
+          <p className="text-muted-foreground">{t('onboarding.chooseOption')}</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Escolhe uma opção</CardTitle>
+            <CardTitle>{t('onboarding.chooseOptionTitle')}</CardTitle>
             <CardDescription>
-              Podes criar a tua própria biblioteca ou juntar-te a uma existente
+              {t('onboarding.chooseOptionDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -130,10 +132,10 @@ export default function OnboardingChoice() {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <Library className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Criar biblioteca nova</span>
+                      <span className="font-medium">{t('onboarding.createLibrary')}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Começa do zero com a tua própria coleção de livros
+                      {t('onboarding.createLibraryDesc')}
                     </p>
                   </div>
                 </Label>
@@ -150,10 +152,10 @@ export default function OnboardingChoice() {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
                       <Link2 className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Juntar-me a uma biblioteca</span>
+                      <span className="font-medium">{t('onboarding.joinLibrary')}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Tenho um código de convite de um amigo
+                      {t('onboarding.joinLibraryDesc')}
                     </p>
                   </div>
                 </Label>
@@ -162,11 +164,11 @@ export default function OnboardingChoice() {
 
             {libraryChoice === 'join' && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Label htmlFor="inviteCode">Código de convite</Label>
+                <Label htmlFor="inviteCode">{t('onboarding.inviteCode')}</Label>
                 <Input
                   id="inviteCode"
                   type="text"
-                  placeholder="Ex: AbC12345"
+                  placeholder={t('onboarding.inviteCodePlaceholder')}
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
                   className="font-mono tracking-wider normal-case"
@@ -181,14 +183,14 @@ export default function OnboardingChoice() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    A processar...
+                    {t('onboarding.joining')}
                   </>
                 ) : (
-                  'Continuar'
+                  t('onboarding.continue')
                 )}
               </Button>
               <Button variant="ghost" onClick={handleSkip} disabled={isLoading} className="w-full">
-                Saltar por agora
+                {t('onboarding.skip')}
               </Button>
             </div>
           </CardContent>

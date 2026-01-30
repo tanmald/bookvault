@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { BookFile } from '@/hooks/useBooks';
 import { getLanguageName } from '@/lib/languages';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface BookVersionsListProps {
   files: BookFile[];
@@ -28,6 +29,8 @@ export function BookVersionsList({
   onDeleteFile,
   isDeleting 
 }: BookVersionsListProps) {
+  const { t } = useLanguage();
+
   const handleDownload = (fileUrl: string) => {
     window.open(fileUrl, '_blank');
   };
@@ -35,7 +38,7 @@ export function BookVersionsList({
   if (files.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground">
-        Nenhuma versão disponível
+        {t('book.noVersions')}
       </div>
     );
   }
@@ -73,7 +76,7 @@ export function BookVersionsList({
               onClick={() => handleDownload(file.file_url)}
             >
               <Download className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Download</span>
+              <span className="ml-2 hidden sm:inline">{t('book.download')}</span>
             </Button>
 
             {isOwner && onDeleteFile && files.length > 1 && (
@@ -90,19 +93,20 @@ export function BookVersionsList({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Remover esta versão?</AlertDialogTitle>
+                    <AlertDialogTitle>{t('book.removeVersion')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta ação irá remover a versão em {getLanguageName(file.language)} ({file.file_type}).
-                      Esta ação não pode ser desfeita.
+                      {t('book.removeVersionDesc')
+                        .replace('{language}', getLanguageName(file.language))
+                        .replace('{type}', file.file_type)}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => onDeleteFile(file.id)}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Remover
+                      {t('book.remove')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

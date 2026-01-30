@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFriends } from '@/hooks/useFriends';
 import { useLibraryMembers } from '@/hooks/useLibraryMembers';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import { Users, BookOpen, Star, Loader2, UserMinus, Shield, ShieldOff, Crown } from 'lucide-react';
 import {
@@ -31,18 +32,23 @@ export default function Friends() {
   const { friends, isLoading } = useFriends();
   const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers();
   const { activities, isLoading: activitiesLoading } = useActivityFeed();
+  const { t, language } = useLanguage();
 
   // Get member info by user_id
   const getMemberInfo = (userId: string) => {
     return members.find((m) => m.user_id === userId);
   };
 
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-GB');
+  };
+
   return (
     <AppLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-1">Amigos</h1>
+        <h1 className="text-2xl font-semibold mb-1">{t('friends.title')}</h1>
         <p className="text-muted-foreground">
-          Vê o que os teus amigos estão a ler
+          {t('friends.subtitle')}
         </p>
       </div>
 
@@ -51,7 +57,7 @@ export default function Friends() {
         <div>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Users className="h-5 w-5" />
-            A Minha Biblioteca ({members.length > 0 ? members.length : friends.length})
+            {t('friends.myLibrary')} ({members.length > 0 ? members.length : friends.length})
           </h2>
 
           {isLoading || membersLoading ? (
@@ -62,12 +68,12 @@ export default function Friends() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Ainda sem membros</h3>
+                <h3 className="font-medium mb-2">{t('friends.empty')}</h3>
                 <p className="text-sm text-muted-foreground text-center mb-4">
-                  Partilha um link de convite para adicionar membros à tua biblioteca
+                  {t('friends.emptyDesc')}
                 </p>
                 <Button asChild>
-                  <Link to="/invites">Criar Convite</Link>
+                  <Link to="/invites">{t('friends.createInvite')}</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -84,24 +90,24 @@ export default function Friends() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium truncate">
-                          {member.display_name || 'Utilizador'}
+                          {member.display_name || t('friends.user')}
                         </h3>
                         {member.is_owner ? (
                           <Badge variant="default" className="gap-1">
                             <Crown className="h-3 w-3" />
-                            Dono
+                            {t('friends.owner')}
                           </Badge>
                         ) : member.role === 'admin' ? (
                           <Badge variant="secondary" className="gap-1">
                             <Shield className="h-3 w-3" />
-                            Admin
+                            {t('friends.admin')}
                           </Badge>
                         ) : (
-                          <Badge variant="outline">Membro</Badge>
+                          <Badge variant="outline">{t('friends.member')}</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Desde {new Date(member.created_at).toLocaleDateString('pt-PT')}
+                        {t('friends.since')} {formatDate(member.created_at)}
                       </p>
                     </div>
                     
@@ -120,7 +126,7 @@ export default function Friends() {
                               disabled={promoteMember.isPending}
                             >
                               <Shield className="h-4 w-4 mr-2" />
-                              Promover a Admin
+                              {t('friends.promoteAdmin')}
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
@@ -128,7 +134,7 @@ export default function Friends() {
                               disabled={demoteMember.isPending}
                             >
                               <ShieldOff className="h-4 w-4 mr-2" />
-                              Remover Admin
+                              {t('friends.demoteAdmin')}
                             </DropdownMenuItem>
                           )}
                           <AlertDialog>
@@ -138,24 +144,23 @@ export default function Friends() {
                                 className="text-destructive focus:text-destructive"
                               >
                                 <UserMinus className="h-4 w-4 mr-2" />
-                                Expulsar da Biblioteca
+                                {t('friends.kickMember')}
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Expulsar membro?</AlertDialogTitle>
+                                <AlertDialogTitle>{t('friends.kickTitle')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta ação irá remover {member.display_name || 'este utilizador'} da tua biblioteca. 
-                                  Eles deixarão de ter acesso aos teus livros e a amizade será removida.
+                                  {t('friends.kickDesc').replace('{name}', member.display_name || t('friends.user'))}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => removeMember.mutate({ memberId: member.id, memberUserId: member.user_id })}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  Expulsar
+                                  {t('friends.kick')}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -172,7 +177,7 @@ export default function Friends() {
 
         {/* Activity Feed */}
         <div>
-          <h2 className="text-lg font-medium mb-4">Atividade Recente</h2>
+          <h2 className="text-lg font-medium mb-4">{t('friends.recentActivity')}</h2>
 
           {activitiesLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -181,7 +186,7 @@ export default function Friends() {
           ) : activities.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Sem atividade recente
+                {t('friends.noActivity')}
               </CardContent>
             </Card>
           ) : (
@@ -198,9 +203,9 @@ export default function Friends() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm">
                           <span className="font-medium">{activity.user_name}</span>{' '}
-                          {activity.type === 'reading' && 'começou a ler'}
-                          {activity.type === 'finished' && 'terminou de ler'}
-                          {activity.type === 'review' && 'avaliou'}
+                          {activity.type === 'reading' && t('friends.startedReading')}
+                          {activity.type === 'finished' && t('friends.finishedReading')}
+                          {activity.type === 'review' && t('friends.reviewed')}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
                           {activity.book_title}
@@ -220,7 +225,7 @@ export default function Friends() {
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(activity.created_at).toLocaleDateString('pt-PT')}
+                          {formatDate(activity.created_at)}
                         </p>
                       </div>
                     </div>
