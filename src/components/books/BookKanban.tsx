@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { BookCard } from './BookCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
@@ -57,11 +58,12 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
 
   if (books.length === 0) {
     return (
-      <div className="text-center py-16">
-        <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-1">{emptyMessage}</h3>
-        <p className="text-muted-foreground">{emptyDesc}</p>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title={emptyMessage}
+        description={emptyDesc}
+        size="lg"
+      />
     );
   }
 

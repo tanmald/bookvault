@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Trophy, Users, BookOpen, Clock, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -151,11 +152,12 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
         {isLoading ? (
           <ScoreboardSkeleton />
         ) : !friendsProgress || friendsProgress.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">{t('scoreboard.noFriends')}</p>
-            <p className="text-xs mt-1">{t('scoreboard.inviteFriends')}</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={t('scoreboard.noFriends')}
+            description={t('scoreboard.inviteFriends')}
+            size="sm"
+          />
         ) : (
           <>
             {/* Summary badges */}

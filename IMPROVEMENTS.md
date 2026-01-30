@@ -95,10 +95,10 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - `UploadBook.tsx` (603 lines) - extract forms
 - `BookDetails.tsx` (363 lines) - extract sections
 
-### 20. Create Reusable Components
-- `EmptyState` - for empty lists
-- `SelectFilter` - for filter dropdowns
-- `FormField` - with integrated error display
+### ~~20. Create Reusable Components~~ ✅ PARTIAL
+- Created `EmptyState` component with size variants
+- Used in BookKanban, FriendsScoreboard
+- (SelectFilter, FormField deferred - lower impact)
 
 ---
 
