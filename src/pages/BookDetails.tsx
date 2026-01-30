@@ -29,6 +29,7 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import {
@@ -248,7 +249,7 @@ export default function BookDetails() {
             {book.genre && (
               <Badge variant="secondary">
                 <Tag className="mr-1 h-3 w-3" />
-                {book.genre.name}
+                {t(getGenreTranslationKey(book.genre.slug))}
               </Badge>
             )}
             {book.year && (

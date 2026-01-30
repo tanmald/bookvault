@@ -20,6 +20,7 @@ import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
@@ -146,7 +147,7 @@ export default function UploadBook() {
         }
         if (metadata.genreSlug) {
           const genre = genres?.find(g => g.slug === metadata.genreSlug);
-          if (genre) detectedInfo.push(`${t('upload.genre')}: ${genre.name}`);
+          if (genre) detectedInfo.push(`${t('upload.genre')}: ${t(getGenreTranslationKey(genre.slug))}`);
         }
         
         toast({
@@ -485,7 +486,7 @@ export default function UploadBook() {
                         <SelectContent>
                           {genres?.map((genre) => (
                             <SelectItem key={genre.id} value={genre.id}>
-                              {genre.name}
+                              {t(getGenreTranslationKey(genre.slug))}
                             </SelectItem>
                           ))}
                         </SelectContent>

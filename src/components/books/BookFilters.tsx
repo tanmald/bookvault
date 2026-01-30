@@ -10,6 +10,7 @@ import {
 import { Search, X } from 'lucide-react';
 import { useGenres } from '@/hooks/useGenres';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import type { ReadingStatus } from '@/hooks/useReadingProgress';
 
 interface BookFiltersProps {
@@ -78,7 +79,7 @@ export function BookFilters({
           <SelectItem value="all">{t('filters.allGenres')}</SelectItem>
           {genres?.map((genre) => (
             <SelectItem key={genre.id} value={genre.id}>
-              {genre.name}
+              {t(getGenreTranslationKey(genre.slug))}
             </SelectItem>
           ))}
         </SelectContent>

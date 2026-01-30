@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Globe } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 import { cn } from '@/lib/utils';
@@ -90,7 +91,7 @@ export function BookCard({ book, progress }: BookCardProps) {
           <div className="mt-2 flex items-center gap-2">
             {book.genre && (
               <Badge variant="outline" className="text-xs">
-                {book.genre.name}
+                {t(getGenreTranslationKey(book.genre.slug))}
               </Badge>
             )}
           </div>

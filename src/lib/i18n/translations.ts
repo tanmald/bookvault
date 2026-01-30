@@ -287,6 +287,23 @@ export const translations = {
     'common.back': 'Voltar',
     'common.next': 'Seguinte',
     'common.languages': 'idiomas',
+    
+    // Genres
+    'genre.autoajuda': 'Autoajuda',
+    'genre.biografia': 'Biografia',
+    'genre.ciencia': 'Ciência',
+    'genre.drama': 'Drama',
+    'genre.fantasia': 'Fantasia',
+    'genre.ficcao': 'Ficção',
+    'genre.ficcao-cientifica': 'Ficção Científica',
+    'genre.historia': 'História',
+    'genre.horror': 'Horror',
+    'genre.misterio': 'Mistério',
+    'genre.nao-ficcao': 'Não-Ficção',
+    'genre.poesia': 'Poesia',
+    'genre.romance': 'Romance',
+    'genre.tecnologia': 'Tecnologia',
+    'genre.thriller': 'Thriller',
   },
   en: {
     // Navigation
@@ -576,8 +593,30 @@ export const translations = {
     'common.back': 'Back',
     'common.next': 'Next',
     'common.languages': 'languages',
+    
+    // Genres
+    'genre.autoajuda': 'Self-Help',
+    'genre.biografia': 'Biography',
+    'genre.ciencia': 'Science',
+    'genre.drama': 'Drama',
+    'genre.fantasia': 'Fantasy',
+    'genre.ficcao': 'Fiction',
+    'genre.ficcao-cientifica': 'Science Fiction',
+    'genre.historia': 'History',
+    'genre.horror': 'Horror',
+    'genre.misterio': 'Mystery',
+    'genre.nao-ficcao': 'Non-Fiction',
+    'genre.poesia': 'Poetry',
+    'genre.romance': 'Romance',
+    'genre.tecnologia': 'Technology',
+    'genre.thriller': 'Thriller',
   },
 } as const;
 
 export type Language = keyof typeof translations;
 export type TranslationKey = keyof typeof translations['pt'];
+
+// Helper to get translated genre name
+export function getGenreTranslationKey(slug: string): TranslationKey {
+  return `genre.${slug}` as TranslationKey;
+}
