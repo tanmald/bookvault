@@ -12,24 +12,24 @@ interface BookKanbanProps {
 }
 
 export function BookKanban({ books, progressMap }: BookKanbanProps) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
-    { 
-      status: 'to_read', 
-      label: t('status.toRead'), 
+    {
+      status: 'to_read',
+      label: t('status.toRead'),
       icon: <Clock className="h-4 w-4" />,
       color: 'border-muted-foreground/30'
     },
-    { 
-      status: 'reading', 
-      label: t('status.reading'), 
+    {
+      status: 'reading',
+      label: t('status.reading'),
       icon: <BookOpen className="h-4 w-4" />,
       color: 'border-accent'
     },
-    { 
-      status: 'read', 
-      label: language === 'pt' ? 'Lidos' : 'Read', 
+    {
+      status: 'read',
+      label: t('status.read'),
       icon: <CheckCircle className="h-4 w-4" />,
       color: 'border-primary'
     },
@@ -51,11 +51,9 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
     return grouped;
   }, [books, progressMap]);
 
-  const emptyMessage = language === 'pt' ? 'Nenhum livro encontrado' : 'No books found';
-  const emptyDesc = language === 'pt' 
-    ? 'Adiciona livros à tua biblioteca para os veres aqui'
-    : 'Add books to your library to see them here';
-  const noBooksText = language === 'pt' ? 'Sem livros' : 'No books';
+  const emptyMessage = t('library.empty');
+  const emptyDesc = t('library.emptyDesc');
+  const noBooksText = t('kanban.noBooks');
 
   if (books.length === 0) {
     return (

@@ -61,18 +61,15 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 - **File**: `src/pages/UploadBook.tsx` (lines 51-70)
 - **Fix**: Consolidate into 2-3 state objects
 
-### 12. React: Missing useEffect Dependencies
-- **File**: `src/pages/JoinInvite.tsx` (line 29)
-- **Issue**: `checkInvite` function not in deps array
+### ~~12. React: Missing useEffect Dependencies~~ ✅ DONE
+- Moved `checkInvite` inside useEffect in JoinInvite.tsx
 
-### 13. Code Duplication: Mutation Patterns
-- **Files**: All hooks
-- **Issue**: Identical onSuccess/onError toast patterns
-- **Fix**: Create `useMutationWithToast` wrapper hook
+### ~~13. Code Duplication: Mutation Patterns~~ ✅ DONE
+- Created `useMutationWithToast` wrapper hook
 
-### 14. i18n: Hardcoded Strings
-- **Files**: `src/components/books/BookKanban.tsx`, `src/pages/Library.tsx`
-- **Fix**: Move to translation keys
+### ~~14. i18n: Hardcoded Strings~~ ✅ DONE
+- Fixed BookKanban.tsx and Library.tsx to use translation keys
+- Added kanban.noBooks, library.bookSingular, library.bookPlural, library.inCollection
 
 ### 15. UX: Missing Form Validation Feedback
 - **Files**: Login, Register, UploadBook, Profile pages
@@ -110,5 +107,5 @@ Created RPC functions (`get_friends_with_profiles`, `get_library_members_with_pr
 1. ~~Add `aria-label` to icon buttons in AppLayout~~ ✅ DONE
 2. ~~Fix `any` types in catch clauses~~ ✅ DONE
 3. ~~Add try-catch around base64 parsing~~ ✅ DONE
-4. Create `src/lib/dateUtils.ts` for date formatting
-5. Fix hardcoded strings in BookKanban.tsx
+4. ~~Create `src/lib/dateUtils.ts` for date formatting~~ ✅ DONE
+5. ~~Fix hardcoded strings in BookKanban.tsx~~ ✅ DONE

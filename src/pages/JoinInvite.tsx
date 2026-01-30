@@ -25,48 +25,48 @@ export default function JoinInvite() {
       return;
     }
 
+    const checkInvite = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('invite_links')
+          .select(`
+            *,
+            owner:profiles!invite_links_owner_id_fkey(display_name)
+          `)
+          .eq('code', code)
+          .eq('is_active', true)
+          .single();
+
+        if (error || !data) {
+          setStatus('invalid');
+          setError(t('joinInvite.notExist'));
+          return;
+        }
+
+        // Check if expired
+        if (data.expires_at && new Date(data.expires_at) < new Date()) {
+          setStatus('invalid');
+          setError(t('joinInvite.expired'));
+          return;
+        }
+
+        // Check max uses
+        if (data.max_uses && data.uses_count >= data.max_uses) {
+          setStatus('invalid');
+          setError(t('joinInvite.maxUses'));
+          return;
+        }
+
+        setInviteOwner(data.owner as unknown as { display_name: string | null });
+        setStatus('valid');
+      } catch (err) {
+        setStatus('invalid');
+        setError(t('joinInvite.checkError'));
+      }
+    };
+
     checkInvite();
-  }, [code]);
-
-  const checkInvite = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('invite_links')
-        .select(`
-          *,
-          owner:profiles!invite_links_owner_id_fkey(display_name)
-        `)
-        .eq('code', code)
-        .eq('is_active', true)
-        .single();
-
-      if (error || !data) {
-        setStatus('invalid');
-        setError(t('joinInvite.notExist'));
-        return;
-      }
-
-      // Check if expired
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        setStatus('invalid');
-        setError(t('joinInvite.expired'));
-        return;
-      }
-
-      // Check max uses
-      if (data.max_uses && data.uses_count >= data.max_uses) {
-        setStatus('invalid');
-        setError(t('joinInvite.maxUses'));
-        return;
-      }
-
-      setInviteOwner(data.owner as unknown as { display_name: string | null });
-      setStatus('valid');
-    } catch (err) {
-      setStatus('invalid');
-      setError(t('joinInvite.checkError'));
-    }
-  };
+  }, [code, t]);
 
   const handleJoin = async () => {
     if (!user || !code) return;

@@ -17,7 +17,7 @@ export default function Library() {
   const navigate = useNavigate();
   const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks();
   const { progress } = useReadingProgress();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
@@ -77,13 +77,8 @@ export default function Library() {
     setAuthorFilter('all');
   };
 
-  const booksLabel = language === 'pt' 
-    ? (books.length === 1 ? 'livro' : 'livros')
-    : (books.length === 1 ? 'book' : 'books');
-
-  const collectionText = language === 'pt'
-    ? 'na tua coleção'
-    : 'in your collection';
+  const booksLabel = books.length === 1 ? t('library.bookSingular') : t('library.bookPlural');
+  const collectionText = t('library.inCollection');
 
   return (
     <>

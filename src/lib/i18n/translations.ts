@@ -17,6 +17,12 @@ export const translations = {
     'library.viewKanban': 'Kanban',
     'library.loadAllBooks': 'Carregar todos os livros',
     'library.loadingAll': 'A carregar...',
+    'library.bookSingular': 'livro',
+    'library.bookPlural': 'livros',
+    'library.inCollection': 'na tua coleção',
+
+    // Kanban
+    'kanban.noBooks': 'Sem livros',
     
     // Book status
     'status.toRead': 'Para Ler',
@@ -333,6 +339,12 @@ export const translations = {
     'library.viewKanban': 'Kanban',
     'library.loadAllBooks': 'Load all books',
     'library.loadingAll': 'Loading...',
+    'library.bookSingular': 'book',
+    'library.bookPlural': 'books',
+    'library.inCollection': 'in your collection',
+
+    // Kanban
+    'kanban.noBooks': 'No books',
     
     // Book status
     'status.toRead': 'To Read',
