@@ -169,7 +169,8 @@ export default function OnboardingChoice() {
                   placeholder="Ex: AbC12345"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
-                  className="font-mono tracking-wider"
+                  className="font-mono tracking-wider normal-case"
+                  style={{ textTransform: 'none' }}
                   autoComplete="off"
                 />
               </div>
