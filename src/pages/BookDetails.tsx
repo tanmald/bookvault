@@ -183,6 +183,29 @@ export default function BookDetails() {
             )}
           </div>
 
+          {/* Book Versions Card */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">{t('book.versionsAvailable')}</CardTitle>
+              {isOwner && (
+                <Link to={`/upload?bookId=${book.id}`}>
+                  <Button size="sm" variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t('book.addVersion')}
+                  </Button>
+                </Link>
+              )}
+            </CardHeader>
+            <CardContent className="pt-0">
+              <BookVersionsList
+                files={bookFiles}
+                isOwner={isOwner}
+                onDeleteFile={handleDeleteFile}
+                isDeleting={deleteBookFile.isPending}
+              />
+            </CardContent>
+          </Card>
+
           {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -241,29 +264,6 @@ export default function BookDetails() {
               </Badge>
             )}
           </div>
-
-          {/* Book Versions Card */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">{t('book.versionsAvailable')}</CardTitle>
-              {isOwner && (
-                <Link to={`/upload?bookId=${book.id}`}>
-                  <Button size="sm" variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    {t('book.addVersion')}
-                  </Button>
-                </Link>
-              )}
-            </CardHeader>
-            <CardContent>
-              <BookVersionsList
-                files={bookFiles}
-                isOwner={isOwner}
-                onDeleteFile={handleDeleteFile}
-                isDeleting={deleteBookFile.isPending}
-              />
-            </CardContent>
-          </Card>
 
           {/* Reading Progress Card */}
           <Card>
