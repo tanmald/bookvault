@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import { Search, X } from 'lucide-react';
 import { useGenres } from '@/hooks/useGenres';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { ReadingStatus } from '@/hooks/useReadingProgress';
 
 interface BookFiltersProps {
@@ -39,6 +40,7 @@ export function BookFilters({
   hideStatusFilter = false,
 }: BookFiltersProps) {
   const { data: genres } = useGenres();
+  const { t } = useLanguage();
 
   const hasActiveFilters = search || (!hideStatusFilter && statusFilter !== 'all') || genreFilter !== 'all' || authorFilter !== 'all';
 
@@ -47,7 +49,7 @@ export function BookFilters({
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Pesquisar por título ou autor..."
+          placeholder={t('filters.search')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9"
@@ -57,23 +59,23 @@ export function BookFilters({
       {!hideStatusFilter && (
         <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as ReadingStatus | 'all')}>
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Estado" />
+            <SelectValue placeholder={t('filters.status')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="to_read">Para Ler</SelectItem>
-            <SelectItem value="reading">A Ler</SelectItem>
-            <SelectItem value="read">Lido</SelectItem>
+            <SelectItem value="all">{t('status.all')}</SelectItem>
+            <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
+            <SelectItem value="reading">{t('status.reading')}</SelectItem>
+            <SelectItem value="read">{t('status.read')}</SelectItem>
           </SelectContent>
         </Select>
       )}
 
       <Select value={genreFilter} onValueChange={(v) => onGenreChange(v)}>
         <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Género" />
+          <SelectValue placeholder={t('filters.genre')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos os géneros</SelectItem>
+          <SelectItem value="all">{t('filters.allGenres')}</SelectItem>
           {genres?.map((genre) => (
             <SelectItem key={genre.id} value={genre.id}>
               {genre.name}
@@ -85,10 +87,10 @@ export function BookFilters({
       {authors.length > 0 && (
         <Select value={authorFilter} onValueChange={(v) => onAuthorChange(v)}>
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Autor" />
+            <SelectValue placeholder={t('filters.author')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os autores</SelectItem>
+            <SelectItem value="all">{t('filters.allAuthors')}</SelectItem>
             {authors.map((author) => (
               <SelectItem key={author} value={author}>
                 {author}

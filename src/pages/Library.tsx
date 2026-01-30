@@ -6,6 +6,7 @@ import { BookKanban } from '@/components/books/BookKanban';
 import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ export default function Library() {
   const navigate = useNavigate();
   const { books, isLoading } = useBooks();
   const { progress } = useReadingProgress();
+  const { t, language } = useLanguage();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
@@ -75,14 +77,22 @@ export default function Library() {
     setAuthorFilter('all');
   };
 
+  const booksLabel = language === 'pt' 
+    ? (books.length === 1 ? 'livro' : 'livros')
+    : (books.length === 1 ? 'book' : 'books');
+
+  const collectionText = language === 'pt'
+    ? 'na tua coleção'
+    : 'in your collection';
+
   return (
     <>
       <AppLayout>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold mb-1">A Minha Biblioteca</h1>
+            <h1 className="text-2xl font-semibold mb-1">{t('library.title')}</h1>
             <p className="text-muted-foreground">
-              {books.length} {books.length === 1 ? 'livro' : 'livros'} na tua coleção
+              {books.length} {booksLabel} {collectionText}
             </p>
           </div>
           
@@ -97,7 +107,7 @@ export default function Library() {
               )}
             >
               <Columns3 className="h-4 w-4 mr-1.5" />
-              Kanban
+              {t('library.viewKanban')}
             </Button>
             <Button
               variant="ghost"
@@ -109,7 +119,7 @@ export default function Library() {
               )}
             >
               <LayoutGrid className="h-4 w-4 mr-1.5" />
-              Grelha
+              {t('library.viewGrid')}
             </Button>
           </div>
         </div>
@@ -146,7 +156,7 @@ export default function Library() {
         size="icon"
       >
         <Plus className="h-6 w-6" />
-        <span className="sr-only">Adicionar livro</span>
+        <span className="sr-only">{t('nav.addBook')}</span>
       </Button>
     </>
   );

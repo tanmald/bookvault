@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -27,18 +28,18 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { href: '/', label: 'Biblioteca', icon: Library },
-  { href: '/friends', label: 'Amigos', icon: Users },
-  { href: '/invites', label: 'Convites', icon: Link2 },
-];
-
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const navItems = [
+    { href: '/', label: t('nav.library'), icon: Library },
+    { href: '/friends', label: t('nav.friends'), icon: Users },
+    { href: '/invites', label: t('nav.invites'), icon: Link2 },
+  ];
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
@@ -81,7 +82,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Button asChild size="sm" className="hidden sm:flex">
               <Link to="/upload">
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Livro
+                {t('nav.addBook')}
               </Link>
             </Button>
 
@@ -98,13 +99,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Perfil
+                    {t('nav.profile')}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-destructive">
                   <LogOut className="h-4 w-4" />
-                  Sair
+                  {t('nav.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -147,7 +148,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-accent hover:bg-secondary"
               >
                 <Plus className="h-4 w-4" />
-                Adicionar Livro
+                {t('nav.addBook')}
               </Link>
             </div>
           </nav>

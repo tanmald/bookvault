@@ -6,14 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { Loader2, Save, BookOpen, BookMarked, Check } from 'lucide-react';
+import { Loader2, Save, BookOpen, BookMarked, Check, Globe } from 'lucide-react';
+import type { Language } from '@/lib/i18n/translations';
 
 export default function Profile() {
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
@@ -58,9 +62,9 @@ export default function Profile() {
     <AppLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-1">O Meu Perfil</h1>
+          <h1 className="text-2xl font-semibold mb-1">{t('profile.title')}</h1>
           <p className="text-muted-foreground">
-            Gere as tuas informações pessoais
+            {t('profile.subtitle')}
           </p>
         </div>
 
@@ -70,31 +74,67 @@ export default function Profile() {
             <CardContent className="flex flex-col items-center justify-center p-6">
               <BookOpen className="h-8 w-8 text-muted-foreground mb-2" />
               <span className="text-2xl font-semibold">{totalBooks}</span>
-              <span className="text-sm text-muted-foreground">Livros</span>
+              <span className="text-sm text-muted-foreground">{t('profile.books')}</span>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-6">
               <BookMarked className="h-8 w-8 text-accent mb-2" />
               <span className="text-2xl font-semibold">{booksReading}</span>
-              <span className="text-sm text-muted-foreground">A Ler</span>
+              <span className="text-sm text-muted-foreground">{t('profile.reading')}</span>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-6">
               <Check className="h-8 w-8 text-accent mb-2" />
               <span className="text-2xl font-semibold">{booksRead}</span>
-              <span className="text-sm text-muted-foreground">Lidos</span>
+              <span className="text-sm text-muted-foreground">{t('profile.readBooks')}</span>
             </CardContent>
           </Card>
         </div>
 
+        {/* Settings Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              {t('settings.title')}
+            </CardTitle>
+            <CardDescription>
+              {t('settings.languageDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Label>{t('settings.language')}</Label>
+              <RadioGroup
+                value={language}
+                onValueChange={(value) => setLanguage(value as Language)}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="pt" id="lang-pt" />
+                  <Label htmlFor="lang-pt" className="cursor-pointer font-normal">
+                    Português
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="en" id="lang-en" />
+                  <Label htmlFor="lang-en" className="cursor-pointer font-normal">
+                    English
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Profile Form */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Informações</CardTitle>
+            <CardTitle className="text-lg">{t('profile.info')}</CardTitle>
             <CardDescription>
-              Atualiza os teus dados de perfil
+              {t('profile.infoDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -110,35 +150,35 @@ export default function Profile() {
               <div>
                 <p className="font-medium">{user?.email}</p>
                 <p className="text-sm text-muted-foreground">
-                  Membro desde{' '}
+                  {t('profile.memberSince')}{' '}
                   {profile?.created_at
-                    ? new Date(profile.created_at).toLocaleDateString('pt-PT')
+                    ? new Date(profile.created_at).toLocaleDateString(language === 'pt' ? 'pt-PT' : 'en-US')
                     : '...'}
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="display_name">Nome</Label>
+              <Label htmlFor="display_name">{t('profile.name')}</Label>
               <Input
                 id="display_name"
                 value={formData.display_name}
                 onChange={(e) =>
                   setFormData({ ...formData, display_name: e.target.value })
                 }
-                placeholder="O teu nome"
+                placeholder={t('profile.namePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Biografia</Label>
+              <Label htmlFor="bio">{t('profile.bio')}</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
                 onChange={(e) =>
                   setFormData({ ...formData, bio: e.target.value })
                 }
-                placeholder="Conta-nos um pouco sobre ti..."
+                placeholder={t('profile.bioPlaceholder')}
                 rows={4}
               />
             </div>
@@ -151,12 +191,12 @@ export default function Profile() {
               {updateProfile.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  A guardar...
+                  {t('profile.saving')}
                 </>
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Guardar Alterações
+                  {t('profile.save')}
                 </>
               )}
             </Button>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { BookCard } from './BookCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { BookOpen, Clock, CheckCircle } from 'lucide-react';
@@ -10,28 +11,30 @@ interface BookKanbanProps {
   progressMap: Map<string, ReadingProgress>;
 }
 
-const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
-  { 
-    status: 'to_read', 
-    label: 'Para Ler', 
-    icon: <Clock className="h-4 w-4" />,
-    color: 'border-muted-foreground/30'
-  },
-  { 
-    status: 'reading', 
-    label: 'A Ler', 
-    icon: <BookOpen className="h-4 w-4" />,
-    color: 'border-accent'
-  },
-  { 
-    status: 'read', 
-    label: 'Lidos', 
-    icon: <CheckCircle className="h-4 w-4" />,
-    color: 'border-primary'
-  },
-];
-
 export function BookKanban({ books, progressMap }: BookKanbanProps) {
+  const { t, language } = useLanguage();
+
+  const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
+    { 
+      status: 'to_read', 
+      label: t('status.toRead'), 
+      icon: <Clock className="h-4 w-4" />,
+      color: 'border-muted-foreground/30'
+    },
+    { 
+      status: 'reading', 
+      label: t('status.reading'), 
+      icon: <BookOpen className="h-4 w-4" />,
+      color: 'border-accent'
+    },
+    { 
+      status: 'read', 
+      label: language === 'pt' ? 'Lidos' : 'Read', 
+      icon: <CheckCircle className="h-4 w-4" />,
+      color: 'border-primary'
+    },
+  ];
+
   const booksByStatus = useMemo(() => {
     const grouped: Record<ReadingStatus, Book[]> = {
       to_read: [],
@@ -48,14 +51,18 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
     return grouped;
   }, [books, progressMap]);
 
+  const emptyMessage = language === 'pt' ? 'Nenhum livro encontrado' : 'No books found';
+  const emptyDesc = language === 'pt' 
+    ? 'Adiciona livros à tua biblioteca para os veres aqui'
+    : 'Add books to your library to see them here';
+  const noBooksText = language === 'pt' ? 'Sem livros' : 'No books';
+
   if (books.length === 0) {
     return (
       <div className="text-center py-16">
         <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-1">Nenhum livro encontrado</h3>
-        <p className="text-muted-foreground">
-          Adiciona livros à tua biblioteca para os veres aqui
-        </p>
+        <h3 className="text-lg font-medium mb-1">{emptyMessage}</h3>
+        <p className="text-muted-foreground">{emptyDesc}</p>
       </div>
     );
   }
@@ -78,7 +85,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
           <div className="flex flex-col gap-4 flex-1">
             {booksByStatus[column.status].length === 0 ? (
               <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
-                <p className="text-sm text-muted-foreground">Sem livros</p>
+                <p className="text-sm text-muted-foreground">{noBooksText}</p>
               </div>
             ) : (
               booksByStatus[column.status].map((book) => (
