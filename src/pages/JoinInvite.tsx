@@ -192,10 +192,10 @@ export default function JoinInvite() {
                     </p>
                     <div className="flex gap-3">
                       <Button asChild variant="outline" className="flex-1">
-                        <Link to={`/login?redirect=/join/${code}`}>{t('joinInvite.login')}</Link>
+                        <Link to={`/login?code=${code}`}>{t('joinInvite.login')}</Link>
                       </Button>
                       <Button asChild className="flex-1">
-                        <Link to={`/register?redirect=/join/${code}`}>{t('joinInvite.createAccount')}</Link>
+                        <Link to={`/register?code=${code}`}>{t('joinInvite.createAccount')}</Link>
                       </Button>
                     </div>
                   </>

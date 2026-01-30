@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,7 @@ export default function Login() {
   const location = useLocation();
   const { toast } = useToast();
 
+  const code = searchParams.get('code');
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,13 +33,15 @@ export default function Login() {
       toast({
         variant: 'destructive',
         title: t('auth.loginError'),
-        description: error.message === 'Invalid login credentials' 
+        description: error.message === 'Invalid login credentials'
           ? t('auth.invalidCredentials')
           : error.message,
       });
       setIsLoading(false);
     } else {
-      navigate(from, { replace: true });
+      // If there's an invite code, redirect to the join page
+      const redirectTo = code ? `/join/${code}` : from;
+      navigate(redirectTo, { replace: true });
     }
   };
 
