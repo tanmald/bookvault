@@ -43,7 +43,51 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         .order('is_default', { ascending: false })
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching libraries:', error);
+        throw error;
+      }
+
+      console.log('Fetched libraries:', data);
+
+      // If no libraries exist, create a default one
+      if (!data || data.length === 0) {
+        console.log('No libraries found, creating default library...');
+        const { data: newLibrary, error: createError } = await supabase
+          .from('libraries')
+          .insert({
+            name: 'My Library',
+            description: 'Your personal library',
+            created_by: user.id,
+            is_default: true,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating default library:', createError);
+          throw createError;
+        }
+
+        console.log('Created default library:', newLibrary);
+
+        // Migrate any existing books without library_id or with invalid library_id to this library
+        const { error: updateError } = await supabase
+          .from('books')
+          .update({ library_id: newLibrary.id })
+          .eq('owner_id', user.id);
+
+        if (updateError) {
+          console.error('Error migrating books to library:', updateError);
+        } else {
+          console.log('Migrated existing books to default library');
+        }
+
+        setLibraries([newLibrary]);
+        setCurrentLibraryState(newLibrary);
+        setIsLoading(false);
+        return;
+      }
 
       setLibraries(data || []);
 
@@ -51,10 +95,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const storedId = localStorage.getItem(STORAGE_KEY);
       const stored = data?.find(lib => lib.id === storedId);
       const defaultLib = data?.find(lib => lib.is_default);
+      const selected = stored || defaultLib || data?.[0] || null;
 
-      setCurrentLibraryState(stored || defaultLib || data?.[0] || null);
+      console.log('Selected library:', selected);
+      setCurrentLibraryState(selected);
     } catch (error) {
       console.error('Error fetching libraries:', error);
+      // Set empty state so app doesn't break
+      setLibraries([]);
+      setCurrentLibraryState(null);
     } finally {
       setIsLoading(false);
     }

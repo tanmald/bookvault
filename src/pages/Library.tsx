@@ -19,10 +19,14 @@ const STORAGE_KEY = 'bookvault-library-view';
 
 export default function Library() {
   const navigate = useNavigate();
-  const { currentLibrary } = useLibrary();
+  const { currentLibrary, isLoading: librariesLoading } = useLibrary();
+  // Pass undefined if no library (shows all books as fallback)
   const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks(currentLibrary?.id);
   const { progress } = useReadingProgress();
   const { t } = useLanguage();
+
+  console.log('Current library:', currentLibrary);
+  console.log('Books count:', books.length);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
