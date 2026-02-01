@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 interface BookCardProps {
   book: Book;
   progress?: ReadingProgress;
+  compact?: boolean;
 }
 
 const statusColors = {
@@ -19,7 +20,7 @@ const statusColors = {
   read: 'bg-primary text-primary-foreground',
 };
 
-export function BookCard({ book, progress }: BookCardProps) {
+export function BookCard({ book, progress, compact = false }: BookCardProps) {
   const { t } = useLanguage();
   const status = progress?.status ?? 'to_read';
   
@@ -34,8 +35,14 @@ export function BookCard({ book, progress }: BookCardProps) {
 
   return (
     <Link to={`/book/${book.id}`}>
-      <Card className="group overflow-hidden transition-all hover:shadow-lg">
-        <div className="relative aspect-[2/3] overflow-hidden bg-muted">
+      <Card className={cn(
+        "group overflow-hidden transition-all hover:shadow-lg",
+        compact && "hover:shadow-md"
+      )}>
+        <div className={cn(
+          "relative overflow-hidden bg-muted",
+          compact ? "aspect-[3/4]" : "aspect-[2/3]"
+        )}>
           {book.cover_url ? (
             <img
               src={book.cover_url}
@@ -83,10 +90,16 @@ export function BookCard({ book, progress }: BookCardProps) {
           )}
         </div>
 
-        <CardContent className="p-3">
-          <h3 className="font-medium leading-tight line-clamp-2 mb-1">{book.title}</h3>
+        <CardContent className={cn(compact ? "p-2" : "p-3")}>
+          <h3 className={cn(
+            "font-medium leading-tight line-clamp-2 mb-1",
+            compact && "text-sm"
+          )}>{book.title}</h3>
           {book.author && (
-            <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
+            <p className={cn(
+              "text-muted-foreground line-clamp-1",
+              compact ? "text-xs" : "text-sm"
+            )}>{book.author}</p>
           )}
           <div className="mt-2 flex items-center gap-2">
             {book.genre && (

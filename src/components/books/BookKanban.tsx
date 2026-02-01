@@ -68,11 +68,11 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {columns.map((column) => (
         <div key={column.status} className="flex flex-col">
           <div className={cn(
-            "flex items-center gap-2 pb-3 mb-4 border-b-2",
+            "flex items-center gap-2 pb-3 mb-3 border-b-2",
             column.color
           )}>
             {column.icon}
@@ -81,8 +81,8 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
               {booksByStatus[column.status].length}
             </span>
           </div>
-          
-          <div className="flex flex-col gap-4 flex-1">
+
+          <div className="flex flex-col gap-3 flex-1">
             {booksByStatus[column.status].length === 0 ? (
               <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
                 <p className="text-sm text-muted-foreground">{noBooksText}</p>
@@ -93,6 +93,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
                   key={book.id}
                   book={book}
                   progress={progressMap.get(book.id)}
+                  compact={true}
                 />
               ))
             )}

@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'kanban';
 
+const STORAGE_KEY = 'bookvault-library-view';
+
 export default function Library() {
   const navigate = useNavigate();
   const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks();
@@ -24,7 +26,18 @@ export default function Library() {
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [genreFilter, setGenreFilter] = useState<string | 'all'>('all');
   const [authorFilter, setAuthorFilter] = useState<string | 'all'>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'grid' || stored === 'kanban') {
+      return stored;
+    }
+    return 'kanban';
+  });
+
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    localStorage.setItem(STORAGE_KEY, mode);
+  };
 
   const progressMap = useMemo(() => {
     const map = new Map();
