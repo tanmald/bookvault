@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface InviteLink {
   id: string;
   owner_id: string;
+  library_id: string;
   code: string;
   expires_at: string | null;
   max_uses: number | null;
@@ -23,24 +24,26 @@ function generateCode(): string {
   return code;
 }
 
-export function useInvites() {
+export function useInvites(libraryId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const invitesQuery = useQuery({
-    queryKey: ['invites', user?.id],
+    queryKey: ['invites', libraryId],
     queryFn: async () => {
+      if (!libraryId) return [];
+
       const { data, error } = await supabase
         .from('invite_links')
         .select('*')
-        .eq('owner_id', user!.id)
+        .eq('library_id', libraryId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as InviteLink[];
     },
-    enabled: !!user,
+    enabled: !!user && !!libraryId,
   });
 
   const createInvite = useMutation({
@@ -51,6 +54,8 @@ export function useInvites() {
       expiresInDays?: number;
       maxUses?: number;
     }) => {
+      if (!libraryId) throw new Error('No library selected');
+
       const expiresAt = expiresInDays
         ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
@@ -59,6 +64,7 @@ export function useInvites() {
         .from('invite_links')
         .insert({
           owner_id: user!.id,
+          library_id: libraryId,
           code: generateCode(),
           expires_at: expiresAt,
           max_uses: maxUses || null,

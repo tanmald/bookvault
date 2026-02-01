@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { LibraryProvider } from "@/contexts/LibraryContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -26,10 +27,11 @@ const App = () => (
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+          <LibraryProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -85,8 +87,9 @@ const App = () => (
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-          </TooltipProvider>
+            </BrowserRouter>
+            </TooltipProvider>
+          </LibraryProvider>
         </AuthProvider>
       </QueryClientProvider>
     </LanguageProvider>

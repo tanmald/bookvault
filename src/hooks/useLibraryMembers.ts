@@ -7,62 +7,50 @@ import type { Database } from '@/integrations/supabase/types';
 type LibraryRole = Database['public']['Enums']['library_role'];
 
 export interface LibraryMember {
-  id: string;
-  library_owner_id: string;
   user_id: string;
   role: LibraryRole;
   created_at: string;
-  invited_by: string | null;
   // Profile data
   display_name: string | null;
   avatar_url: string | null;
-  is_owner: boolean;
 }
 
-export function useLibraryMembers() {
+export function useLibraryMembers(libraryId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch members of the current user's library using single RPC query
+  // Fetch members of the specified library using single RPC query
   const membersQuery = useQuery({
-    queryKey: ['library-members', user?.id],
+    queryKey: ['library-members', libraryId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!libraryId) return [];
 
       const { data, error } = await supabase
-        .rpc('get_library_members_with_profiles', { p_library_owner_id: user.id });
+        .rpc('get_library_members_with_profiles', { p_library_id: libraryId });
 
       if (error) throw error;
 
-      return (data ?? []).map((m) => ({
-        id: m.member_id,
-        library_owner_id: user.id,
-        user_id: m.user_id,
-        role: m.role as LibraryRole,
-        created_at: m.joined_at,
-        invited_by: null,
-        display_name: m.display_name,
-        avatar_url: m.avatar_url,
-        is_owner: m.user_id === user.id,
-      })) as LibraryMember[];
+      return (data ?? []) as LibraryMember[];
     },
-    enabled: !!user,
+    enabled: !!user && !!libraryId,
   });
 
-  // Check if current user is admin of their own library
+  // Check if current user is admin of the library
   const isAdmin = membersQuery.data?.some(
-    (m) => m.user_id === user?.id && (m.role === 'admin' || m.is_owner)
+    (m) => m.user_id === user?.id && m.role === 'admin'
   ) ?? false;
 
   // Promote member to admin
   const promoteMember = useMutation({
-    mutationFn: async (memberId: string) => {
+    mutationFn: async (memberUserId: string) => {
+      if (!libraryId) throw new Error('No library selected');
+
       const { error } = await supabase
         .from('library_members')
         .update({ role: 'admin' as LibraryRole })
-        .eq('id', memberId)
-        .eq('library_owner_id', user!.id);
+        .eq('library_id', libraryId)
+        .eq('user_id', memberUserId);
 
       if (error) throw error;
     },
@@ -81,12 +69,14 @@ export function useLibraryMembers() {
 
   // Demote admin to member
   const demoteMember = useMutation({
-    mutationFn: async (memberId: string) => {
+    mutationFn: async (memberUserId: string) => {
+      if (!libraryId) throw new Error('No library selected');
+
       const { error } = await supabase
         .from('library_members')
         .update({ role: 'member' as LibraryRole })
-        .eq('id', memberId)
-        .eq('library_owner_id', user!.id);
+        .eq('library_id', libraryId)
+        .eq('user_id', memberUserId);
 
       if (error) throw error;
     },
@@ -103,25 +93,19 @@ export function useLibraryMembers() {
     },
   });
 
-  // Remove member from library (also removes friendship)
+  // Remove member from library
   const removeMember = useMutation({
-    mutationFn: async ({ memberId, memberUserId }: { memberId: string; memberUserId: string }) => {
+    mutationFn: async (memberUserId: string) => {
+      if (!libraryId) throw new Error('No library selected');
+
       // Remove from library_members
-      const { error: memberError } = await supabase
+      const { error } = await supabase
         .from('library_members')
         .delete()
-        .eq('id', memberId)
-        .eq('library_owner_id', user!.id);
+        .eq('library_id', libraryId)
+        .eq('user_id', memberUserId);
 
-      if (memberError) throw memberError;
-
-      // Also remove the friendship
-      const { error: friendshipError } = await supabase
-        .from('friendships')
-        .delete()
-        .or(`and(user_id.eq.${user!.id},friend_id.eq.${memberUserId}),and(user_id.eq.${memberUserId},friend_id.eq.${user!.id})`);
-
-      if (friendshipError) throw friendshipError;
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });

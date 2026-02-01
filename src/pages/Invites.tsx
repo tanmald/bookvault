@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { useInvites } from '@/hooks/useInvites';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
 import { Link2, Plus, Copy, Trash2, Loader2, Check, X } from 'lucide-react';
 
 export default function Invites() {
-  const { invites, isLoading, createInvite, deleteInvite } = useInvites();
+  const { currentLibrary } = useLibrary();
+  const { invites, isLoading, createInvite, deleteInvite } = useInvites(currentLibrary?.id);
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);

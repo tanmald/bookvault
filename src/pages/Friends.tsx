@@ -7,6 +7,7 @@ import { useFriends } from '@/hooks/useFriends';
 import { useLibraryMembers } from '@/hooks/useLibraryMembers';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { Link } from 'react-router-dom';
 import { Users, BookOpen, Star, Loader2, UserMinus, Shield, ShieldOff, Crown } from 'lucide-react';
 import {
@@ -29,8 +30,9 @@ import {
 import { MoreVertical } from 'lucide-react';
 
 export default function Friends() {
+  const { currentLibrary } = useLibrary();
   const { friends, isLoading } = useFriends();
-  const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers();
+  const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers(currentLibrary?.id);
   const { activities, isLoading: activitiesLoading } = useActivityFeed();
   const { t, language } = useLanguage();
 

@@ -20,6 +20,7 @@ import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +42,8 @@ export default function UploadBook() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { books, createBook, addBookFile } = useBooks();
+  const { currentLibrary } = useLibrary();
+  const { books, createBook, addBookFile } = useBooks(currentLibrary?.id);
   const { data: genres } = useGenres();
   const { toast } = useToast();
 
@@ -201,11 +203,11 @@ export default function UploadBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!file || !user) {
+    if (!file || !user || !currentLibrary) {
       toast({
         variant: 'destructive',
         title: t('upload.error'),
-        description: t('upload.selectFile'),
+        description: !currentLibrary ? 'No library selected' : t('upload.selectFile'),
       });
       return;
     }
@@ -327,6 +329,7 @@ export default function UploadBook() {
           file_size: file.size,
           cover_url: coverUrl,
           language: selectedLanguage,
+          library_id: currentLibrary.id,
         });
       }
 

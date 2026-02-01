@@ -8,6 +8,7 @@ import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,8 @@ const STORAGE_KEY = 'bookvault-library-view';
 
 export default function Library() {
   const navigate = useNavigate();
-  const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks();
+  const { currentLibrary } = useLibrary();
+  const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks(currentLibrary?.id);
   const { progress } = useReadingProgress();
   const { t } = useLanguage();
 
@@ -106,9 +108,11 @@ export default function Library() {
       <AppLayout>
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold mb-1">{t('library.title')}</h1>
+            <h1 className="text-2xl font-semibold mb-1">
+              {currentLibrary?.name || t('library.title')}
+            </h1>
             <p className="text-muted-foreground">
-              {books.length} {booksLabel} {collectionText}
+              {books.length} {booksLabel} in this library
             </p>
           </div>
           

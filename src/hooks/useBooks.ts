@@ -49,6 +49,7 @@ export interface CreateBookInput {
   file_type: string;
   file_size?: number;
   language?: string;
+  library_id: string;
 }
 
 export interface AddBookFileInput {
@@ -59,14 +60,14 @@ export interface AddBookFileInput {
   file_size?: number;
 }
 
-export function useBooks() {
+export function useBooks(libraryId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loadAll, setLoadAll] = useState(false);
 
   const booksQuery = useQuery({
-    queryKey: ['books', user?.id, loadAll],
+    queryKey: ['books', user?.id, libraryId, loadAll],
     queryFn: async () => {
       let query = supabase
         .from('books')
@@ -74,8 +75,14 @@ export function useBooks() {
           *,
           genre:genres(id, name, slug),
           book_files(id, book_id, language, file_url, file_type, file_size, created_at)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // Filter by library if provided
+      if (libraryId) {
+        query = query.eq('library_id', libraryId);
+      }
+
+      query = query.order('created_at', { ascending: false});
 
       // Only apply limit if not loading all
       if (!loadAll) {
@@ -102,13 +109,14 @@ export function useBooks() {
     mutationFn: async (input: CreateBookInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { language = 'pt', file_url, file_type, file_size, ...bookData } = input;
+      const { language = 'pt', file_url, file_type, file_size, library_id, ...bookData } = input;
 
       // Create the book record (without file columns - they're now deprecated)
       const { data: book, error: bookError } = await supabase
         .from('books')
         .insert({
           owner_id: user.id,
+          library_id,
           ...bookData,
           // Keep file_url and file_type for backward compatibility
           file_url,
@@ -233,11 +241,11 @@ export function useBooks() {
       await queryClient.cancelQueries({ queryKey: ['books'] });
 
       // Snapshot the previous value
-      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, loadAll]);
+      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, libraryId, loadAll]);
 
       // Optimistically update the cache
       if (previousBooks) {
-        queryClient.setQueryData<Book[]>(['books', user?.id, loadAll], (old) =>
+        queryClient.setQueryData<Book[]>(['books', user?.id, libraryId, loadAll], (old) =>
           old?.map((book) => (book.id === id ? { ...book, ...updates } : book))
         );
       }
@@ -251,7 +259,7 @@ export function useBooks() {
     onError: (error, _variables, context) => {
       // Rollback to previous value on error
       if (context?.previousBooks) {
-        queryClient.setQueryData(['books', user?.id, loadAll], context.previousBooks);
+        queryClient.setQueryData(['books', user?.id, libraryId, loadAll], context.previousBooks);
       }
       toast({
         variant: 'destructive',
@@ -271,11 +279,11 @@ export function useBooks() {
       await queryClient.cancelQueries({ queryKey: ['books'] });
 
       // Snapshot the previous value
-      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, loadAll]);
+      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, libraryId, loadAll]);
 
       // Optimistically remove the book from cache
       if (previousBooks) {
-        queryClient.setQueryData<Book[]>(['books', user?.id, loadAll], (old) =>
+        queryClient.setQueryData<Book[]>(['books', user?.id, libraryId, loadAll], (old) =>
           old?.filter((book) => book.id !== id)
         );
       }
@@ -289,7 +297,7 @@ export function useBooks() {
     onError: (error, _id, context) => {
       // Rollback on error
       if (context?.previousBooks) {
-        queryClient.setQueryData(['books', user?.id, loadAll], context.previousBooks);
+        queryClient.setQueryData(['books', user?.id, libraryId, loadAll], context.previousBooks);
       }
       toast({
         variant: 'destructive',

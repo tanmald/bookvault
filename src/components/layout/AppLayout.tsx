@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
+import { CreateLibraryDialog } from '@/components/library/CreateLibraryDialog';
+import { JoinLibraryDialog } from '@/components/library/JoinLibraryDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -13,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   BookOpen,
-  Library,
+  Library as LibraryIcon,
   Users,
   Link2,
   User,
@@ -21,6 +25,7 @@ import {
   Plus,
   Menu,
   X,
+  UserPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,12 +36,15 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
+  const { currentLibrary, libraries, setCurrentLibrary } = useLibrary();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   const navItems = [
-    { href: '/', label: t('nav.library'), icon: Library },
+    { href: '/', label: t('nav.library'), icon: LibraryIcon },
     { href: '/friends', label: t('nav.friends'), icon: Users },
     { href: '/invites', label: t('nav.invites'), icon: Link2 },
   ];
@@ -57,6 +65,38 @@ export function AppLayout({ children }: AppLayoutProps) {
               <BookOpen className="h-7 w-7 text-accent" />
               <span className="text-xl font-semibold tracking-tight">BookVault</span>
             </Link>
+
+            {/* Library Selector */}
+            {currentLibrary && (
+              <Select
+                value={currentLibrary.id}
+                onValueChange={(value) => {
+                  if (value === '__create__') {
+                    setShowCreateDialog(true);
+                  } else {
+                    const lib = libraries.find(l => l.id === value);
+                    if (lib) setCurrentLibrary(lib);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-48 hidden md:flex">
+                  <LibraryIcon className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {libraries.map(lib => (
+                    <SelectItem key={lib.id} value={lib.id}>
+                      {lib.name}
+                    </SelectItem>
+                  ))}
+                  <SelectSeparator />
+                  <SelectItem value="__create__">
+                    <Plus className="h-4 w-4 mr-2 inline" />
+                    Create New Library
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
@@ -79,6 +119,16 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowJoinDialog(true)}
+              className="hidden sm:flex"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Join Library
+            </Button>
+
             <Button asChild size="sm" className="hidden sm:flex">
               <Link to="/upload">
                 <Plus className="mr-2 h-4 w-4" />
@@ -163,6 +213,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content */}
       <main className="container py-6">{children}</main>
+
+      {/* Dialogs */}
+      <CreateLibraryDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+      <JoinLibraryDialog open={showJoinDialog} onOpenChange={setShowJoinDialog} />
     </div>
   );
 }
