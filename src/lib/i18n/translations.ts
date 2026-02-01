@@ -1,4 +1,5 @@
-export const translations = {
+e// Upload
+// xupload.submitp'upload.coverFormats'ort const translations = {
   pt: {
     // Navigation
     'nav.library': 'Biblioteca',
@@ -96,7 +97,7 @@ export const translations = {
     'invites.copy': 'Copiar Link',
     'invites.copied': 'Link copiado!',
     'invites.uses': 'uso(s)',
-    'invites.expires': 'Expira em',
+ coverFormats   'invites.expires': 'Expira em',
     'invites.noExpiry': 'Sem expiração',
     'invites.deactivate': 'Desativar',
     'invites.activate': 'Ativar',
@@ -154,6 +155,8 @@ export const translations = {
     'upload.bookCoverDesc': 'Opcional - adiciona uma imagem de capa',
     'upload.coverPreview': 'Pré-visualização da capa',
     'upload.removeCover': 'Remover',
+      'upload.coverWarning': 'Aviso: Capa não foi carregada',
+        'upload.coverWarningDesc': 'A capa não pôde ser processada. O livro será criado sem capa.',
     'upload.dragCover': 'Arrasta uma imagem de capa',
     'upload.coverFormats': 'JPG, PNG ou WebP até 5MB',
     'upload.addVersion': 'Adicionar Versão',

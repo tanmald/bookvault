@@ -21,7 +21,7 @@ import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
-import { getGenreTranslationKey } from '@/lib/i18n/translations';
+import { getGenreTranslationKey, translations } from '@/lib/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
@@ -316,7 +316,24 @@ export default function UploadBook() {
             console.error('Error processing extracted cover:', base64Error);
             // Continue without cover - don't fail the entire upload
           }
+                      toast({
+                                      variant: 'destructive',
+                                                    title: t('upload.coverWarning'),
+                                                                  description: t('upload.coverWarningDesc'),
+                                                                              });
+else if (extractedCoverBase64)          
+            // Validate base64 format first
+                      if (!extractedCoverBase64.includes(',') || !extractedCoverBase64.includes(':')) {
+                                    console.warn('Invalid cover base64 format');
+                                                  toast({
+                                                                  variant: 'destructive',
+                                                                                  title: t('upload.coverWarning'),
+                                                                                                  description: t('upload.coverWarningDesc'),
+                                                                                                                });
+                                                                                                                              // Skip cover but continue with upload
+                                                                                                                                          } else {            })
         }
+      }translations
 
         await createBook.mutateAsync({
           title: formData.title.trim(),
