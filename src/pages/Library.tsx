@@ -54,34 +54,41 @@ export default function Library() {
   }, [books]);
 
   const filteredBooks = useMemo(() => {
-    return books.filter((book) => {
-      // Search filter
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const titleMatch = book.title.toLowerCase().includes(searchLower);
-        const authorMatch = book.author?.toLowerCase().includes(searchLower);
-        if (!titleMatch && !authorMatch) return false;
-      }
+    return books
+      .filter((book) => {
+        // Search filter
+        if (search) {
+          const searchLower = search.toLowerCase();
+          const titleMatch = book.title.toLowerCase().includes(searchLower);
+          const authorMatch = book.author?.toLowerCase().includes(searchLower);
+          if (!titleMatch && !authorMatch) return false;
+        }
 
-      // Status filter (only in grid view, kanban shows all statuses)
-      if (statusFilter !== 'all' && viewMode === 'grid') {
-        const bookProgress = progressMap.get(book.id);
-        const bookStatus = bookProgress?.status ?? 'to_read';
-        if (bookStatus !== statusFilter) return false;
-      }
+        // Status filter (only in grid view, kanban shows all statuses)
+        if (statusFilter !== 'all' && viewMode === 'grid') {
+          const bookProgress = progressMap.get(book.id);
+          const bookStatus = bookProgress?.status ?? 'to_read';
+          if (bookStatus !== statusFilter) return false;
+        }
 
-      // Genre filter
-      if (genreFilter !== 'all') {
-        if (book.genre_id !== genreFilter) return false;
-      }
+        // Genre filter
+        if (genreFilter !== 'all') {
+          if (book.genre_id !== genreFilter) return false;
+        }
 
-      // Author filter
-      if (authorFilter !== 'all') {
-        if (book.author !== authorFilter) return false;
-      }
+        // Author filter
+        if (authorFilter !== 'all') {
+          if (book.author !== authorFilter) return false;
+        }
 
-      return true;
-    });
+        return true;
+      })
+      .sort((a, b) => {
+        // Case-insensitive alphabetical sort by title
+        const titleA = a.title.toLowerCase();
+        const titleB = b.title.toLowerCase();
+        return titleA.localeCompare(titleB);
+      });
   }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode]);
 
   const clearFilters = () => {
