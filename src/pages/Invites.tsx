@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Link2, Plus, Copy, Trash2, Loader2, Check, X } from 'lucide-react';
 
 export default function Invites() {
-  const { currentLibrary } = useLibrary();
+  const { currentLibrary, isLoading: libraryLoading } = useLibrary();
   const { invites, isLoading, createInvite, deleteInvite } = useInvites(currentLibrary?.id);
   const { t, language } = useLanguage();
   const { toast } = useToast();
@@ -71,7 +71,7 @@ export default function Invites() {
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={libraryLoading || !currentLibrary}>
               <Plus className="mr-2 h-4 w-4" />
               {t('invites.newInvite')}
             </Button>
@@ -125,7 +125,7 @@ export default function Invites() {
         </Dialog>
       </div>
 
-      {isLoading ? (
+      {libraryLoading || isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>

@@ -30,7 +30,7 @@ import {
 import { MoreVertical } from 'lucide-react';
 
 export default function Friends() {
-  const { currentLibrary } = useLibrary();
+  const { currentLibrary, isLoading: libraryLoading } = useLibrary();
   const { friends, isLoading } = useFriends();
   const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers(currentLibrary?.id);
   const { activities, isLoading: activitiesLoading } = useActivityFeed();
@@ -62,7 +62,7 @@ export default function Friends() {
             {t('friends.myLibrary')} ({members.length > 0 ? members.length : friends.length})
           </h2>
 
-          {isLoading || membersLoading ? (
+          {libraryLoading || isLoading || membersLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>

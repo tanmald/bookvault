@@ -19,6 +19,7 @@ interface LibraryContextType {
   libraries: Library[];
   isLoading: boolean;
   setCurrentLibrary: (library: Library) => void;
+  removeLibrary: (libraryId: string) => void;
   refetch: () => Promise<void>;
 }
 
@@ -37,11 +38,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
+      // Use RPC function to get only libraries where user is owner or member
+      // This explicitly filters to avoid RLS caching issues
       const { data, error } = await supabase
-        .from('libraries')
-        .select('*')
-        .order('is_default', { ascending: false })
-        .order('name');
+        .rpc('get_user_libraries');
 
       if (error) {
         console.error('Error fetching libraries:', error);
@@ -124,12 +124,37 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, library.id);
   };
 
+  const removeLibrary = (libraryId: string) => {
+    // Remove library from state immediately (optimistic update)
+    setLibraries(prev => prev.filter(lib => lib.id !== libraryId));
+
+    // If the removed library is current, switch to a safe alternative
+    if (currentLibrary?.id === libraryId) {
+      const remaining = libraries.filter(lib => lib.id !== libraryId);
+
+      // Find a safe library to switch to
+      const defaultLib = remaining.find(lib => lib.is_default);
+      const ownedLib = remaining.find(lib => lib.created_by === user?.id);
+      const fallbackLib = remaining[0];
+
+      const safeLibrary = defaultLib || ownedLib || fallbackLib || null;
+
+      setCurrentLibraryState(safeLibrary);
+      if (safeLibrary) {
+        localStorage.setItem(STORAGE_KEY, safeLibrary.id);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  };
+
   return (
     <LibraryContext.Provider value={{
       currentLibrary,
       libraries,
       isLoading,
       setCurrentLibrary,
+      removeLibrary,
       refetch: fetchLibraries,
     }}>
       {children}

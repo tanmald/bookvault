@@ -18,7 +18,7 @@ export interface LibraryMember {
 
 export function useLibraryMembers(libraryId?: string) {
   const { user } = useAuth();
-  const { refetch } = useLibrary();
+  const { refetch, removeLibrary } = useLibrary();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -136,13 +136,21 @@ export function useLibraryMembers(libraryId?: string) {
 
       if (error) throw error;
     },
+    onMutate: () => {
+      // Optimistically remove the library from state immediately
+      if (libraryId) {
+        removeLibrary(libraryId);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
       queryClient.invalidateQueries({ queryKey: ['libraries'] });
-      refetch(); // Refresh library list in LibraryContext
+      refetch(); // Refresh library list in LibraryContext for eventual consistency
       toast({ title: 'Saíste da biblioteca' });
     },
     onError: (error) => {
+      // Restore state by refetching if the mutation failed
+      refetch();
       toast({
         variant: 'destructive',
         title: 'Erro ao sair da biblioteca',
