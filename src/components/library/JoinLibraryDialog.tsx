@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface JoinLibraryDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ export function JoinLibraryDialog({ open, onOpenChange }: JoinLibraryDialogProps
   const { user } = useAuth();
   const { refetch } = useLibrary();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const handleJoin = async () => {
     if (!user || !inviteCode.trim()) return;
@@ -34,12 +36,12 @@ export function JoinLibraryDialog({ open, onOpenChange }: JoinLibraryDialogProps
 
       const result = data?.[0];
       if (!result?.success) {
-        throw new Error(result?.error_message || 'Failed to join library');
+        throw new Error(result?.error_message || t('libraries.joinFailed'));
       }
 
       toast({
-        title: 'Successfully joined library',
-        description: 'You can now access books from this library.',
+        title: t('libraries.joined'),
+        description: t('libraries.joinedDesc'),
       });
 
       // Refresh libraries list
@@ -49,8 +51,8 @@ export function JoinLibraryDialog({ open, onOpenChange }: JoinLibraryDialogProps
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: 'Error joining library',
-        description: error instanceof Error ? error.message : 'Invalid invite code',
+        title: t('libraries.joinError'),
+        description: error instanceof Error ? error.message : t('libraries.invalidCode'),
         variant: 'destructive',
       });
     } finally {
@@ -62,20 +64,20 @@ export function JoinLibraryDialog({ open, onOpenChange }: JoinLibraryDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Join a Library</DialogTitle>
+          <DialogTitle>{t('libraries.join')}</DialogTitle>
           <DialogDescription>
-            Enter the invite code shared with you to join a library
+            {t('libraries.joinDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
-            <Label htmlFor="invite-code">Invite Code</Label>
+            <Label htmlFor="invite-code">{t('libraries.inviteCode')}</Label>
             <Input
               id="invite-code"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
-              placeholder="Enter invite code"
+              placeholder={t('libraries.inviteCodePlaceholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && inviteCode.trim()) {
                   handleJoin();
@@ -87,10 +89,10 @@ export function JoinLibraryDialog({ open, onOpenChange }: JoinLibraryDialogProps
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleJoin} disabled={!inviteCode.trim() || isJoining}>
-            {isJoining ? 'Joining...' : 'Join Library'}
+            {isJoining ? t('libraries.joining') : t('libraries.joinButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useLibraries } from '@/hooks/useLibraries';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateLibraryDialogProps {
   open: boolean;
@@ -17,6 +18,7 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
   const [description, setDescription] = useState('');
   const { createLibrary } = useLibraries();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,16 +26,16 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
     try {
       await createLibrary.mutateAsync({ name, description });
       toast({
-        title: 'Library created',
-        description: `${name} has been created successfully.`,
+        title: t('libraries.created'),
+        description: t('libraries.createdDesc').replace('{name}', name),
       });
       setName('');
       setDescription('');
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create library',
+        title: t('libraries.createError'),
+        description: error instanceof Error ? error.message : t('libraries.createFailed'),
         variant: 'destructive',
       });
     }
@@ -44,31 +46,31 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Library</DialogTitle>
+            <DialogTitle>{t('libraries.create')}</DialogTitle>
             <DialogDescription>
-              Create a new library to organize your books
+              {t('libraries.createDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="name">Library Name</Label>
+              <Label htmlFor="name">{t('libraries.name')}</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="My Book Collection"
+                placeholder={t('libraries.namePlaceholder')}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description">{t('libraries.description')}</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your library..."
+                placeholder={t('libraries.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
@@ -76,10 +78,10 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!name || createLibrary.isPending}>
-              Create Library
+              {t('libraries.createButton')}
             </Button>
           </DialogFooter>
         </form>

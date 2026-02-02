@@ -116,7 +116,7 @@ export default function Library() {
               {currentLibrary?.name || t('library.title')}
             </h1>
             <p className="text-muted-foreground">
-              {books.length} {booksLabel} in this library
+              {books.length} {booksLabel} {t('libraries.inThisLibrary')}
             </p>
           </div>
           

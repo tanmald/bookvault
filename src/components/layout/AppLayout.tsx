@@ -92,7 +92,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <SelectSeparator />
                   <SelectItem value="__create__">
                     <Plus className="h-4 w-4 mr-2 inline" />
-                    Create New Library
+                    {t('libraries.create')}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -126,7 +126,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               className="hidden sm:flex"
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Join Library
+              {t('libraries.joinButton')}
             </Button>
 
             <Button asChild size="sm" className="hidden sm:flex">
