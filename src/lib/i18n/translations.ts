@@ -167,6 +167,9 @@ export const translations = {
     'upload.fileTooLarge': 'Ficheiro demasiado grande. Máximo: 50MB',
     'upload.invalidType': 'Tipo de ficheiro não suportado',
     'upload.uploadFileError': 'Erro ao carregar ficheiro',
+    'upload.fetchingCover': 'A procurar capa online...',
+    'upload.coverFetched': 'Capa encontrada automaticamente',
+    'upload.coverNotFound': 'Capa não encontrada online',
     
     // Book Details
     'book.by': 'por',
@@ -516,7 +519,10 @@ export const translations = {
     'upload.fileTooLarge': 'File too large. Maximum: 50MB',
     'upload.invalidType': 'File type not supported',
     'upload.uploadFileError': 'Error uploading file',
-    
+    'upload.fetchingCover': 'Searching for cover online...',
+    'upload.coverFetched': 'Cover found automatically',
+    'upload.coverNotFound': 'Cover not found online',
+
     // Book Details
     'book.by': 'by',
     'book.download': 'Download',

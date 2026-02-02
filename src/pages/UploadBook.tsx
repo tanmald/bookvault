@@ -35,6 +35,7 @@ interface ExtractedMetadata {
   coverBase64: string | null;
   genreSlug: string | null;
   detectedLanguage: string | null;
+  isbn: string | null;
 }
 
 export default function UploadBook() {
@@ -54,8 +55,10 @@ export default function UploadBook() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [extractedCoverBase64, setExtractedCoverBase64] = useState<string | null>(null);
+  const [extractedIsbn, setExtractedIsbn] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
+  const [isFetchingCover, setIsFetchingCover] = useState(false);
 
   // Mode: 'new' for new book, 'existing' for adding to existing book
   const [mode, setMode] = useState<'new' | 'existing'>(bookIdFromUrl ? 'existing' : 'new');
@@ -114,6 +117,11 @@ export default function UploadBook() {
       // Set detected language
       if (metadata.detectedLanguage) {
         setSelectedLanguage(metadata.detectedLanguage);
+      }
+
+      // Store extracted ISBN
+      if (metadata.isbn) {
+        setExtractedIsbn(metadata.isbn);
       }
 
       // Only update form data if we're creating a new book
@@ -197,6 +205,35 @@ export default function UploadBook() {
       setCoverFile(null);
       setCoverPreview(null);
       setExtractedCoverBase64(null);
+    }
+  };
+
+  const fetchCoverAutomatically = async (
+    isbn: string | null,
+    title: string,
+    author?: string
+  ): Promise<string | null> => {
+    if (!isbn && !title) return null;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-cover', {
+        body: { isbn, title, author },
+      });
+
+      if (error) {
+        console.error('Error fetching cover:', error);
+        return null;
+      }
+
+      if (data?.coverUrl) {
+        console.log(`Cover found via ${data.source}:`, data.coverUrl);
+        return data.coverUrl;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error fetching cover:', error);
+      return null;
     }
   };
 
@@ -323,12 +360,56 @@ export default function UploadBook() {
           }
         }
 
+        // If no cover was provided, try to fetch one automatically
+        if (!coverUrl) {
+          setIsFetchingCover(true);
+          try {
+            const fetchedCoverUrl = await fetchCoverAutomatically(
+              extractedIsbn,
+              formData.title.trim(),
+              formData.author.trim() || undefined
+            );
+
+            if (fetchedCoverUrl) {
+              // Download and store the cover in our bucket
+              try {
+                const coverResponse = await fetch(fetchedCoverUrl);
+                const coverBlob = await coverResponse.blob();
+
+                const ext = fetchedCoverUrl.includes('.jpg') || fetchedCoverUrl.includes('.jpeg') ? 'jpg' : 'png';
+                const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+                const { error: uploadError } = await supabase.storage
+                  .from('covers')
+                  .upload(coverName, coverBlob);
+
+                if (!uploadError) {
+                  const { data: coverData } = supabase.storage
+                    .from('covers')
+                    .getPublicUrl(coverName);
+
+                  coverUrl = coverData.publicUrl;
+                  console.log('Auto-fetched cover uploaded successfully');
+                }
+              } catch (fetchError) {
+                console.error('Error downloading/uploading auto-fetched cover:', fetchError);
+                // Continue without cover - don't fail the upload
+              }
+            }
+          } catch (error) {
+            console.error('Error in auto-fetch cover:', error);
+          } finally {
+            setIsFetchingCover(false);
+          }
+        }
+
         await createBook.mutateAsync({
           title: formData.title.trim(),
           author: formData.author.trim() || undefined,
           description: formData.description.trim() || undefined,
           genre_id: formData.genre_id || undefined,
           year: formData.year ? parseInt(formData.year) : undefined,
+          isbn: extractedIsbn || undefined,
           file_url: fileData.publicUrl,
           file_type: fileExt.toUpperCase(),
           file_size: file.size,
@@ -587,25 +668,35 @@ export default function UploadBook() {
             </>
           )}
 
+          {isFetchingCover && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">{t('upload.fetchingCover')}</p>
+                <Progress value={undefined} className="h-1 mt-1" />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate('/')}
-              disabled={isUploading}
+              disabled={isUploading || isFetchingCover}
               className="flex-1"
             >
               {t('common.cancel')}
             </Button>
-            <Button 
-              type="submit" 
-              disabled={!file || isUploading || (mode === 'existing' && !selectedBookId)} 
+            <Button
+              type="submit"
+              disabled={!file || isUploading || isFetchingCover || (mode === 'existing' && !selectedBookId)}
               className="flex-1"
             >
-              {isUploading ? (
+              {isUploading || isFetchingCover ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('upload.uploading')}
+                  {isFetchingCover ? t('upload.fetchingCover') : t('upload.uploading')}
                 </>
               ) : mode === 'existing' ? (
                 <>

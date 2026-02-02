@@ -44,6 +44,7 @@ export interface CreateBookInput {
   description?: string;
   genre_id?: string;
   year?: number;
+  isbn?: string;
   cover_url?: string;
   file_url: string;
   file_type: string;
@@ -118,6 +119,7 @@ export function useBooks(libraryId?: string) {
           owner_id: user.id,
           library_id,
           ...bookData,
+          isbn: input.isbn,
           // Keep file_url and file_type for backward compatibility
           file_url,
           file_type,

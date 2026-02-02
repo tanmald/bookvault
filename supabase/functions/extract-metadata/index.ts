@@ -50,6 +50,7 @@ interface ExtractedMetadata {
   coverBase64: string | null;
   genreSlug: string | null;
   detectedLanguage: string | null;
+  isbn: string | null;
 }
 
 // Parse XML and extract text content from a tag
@@ -251,6 +252,7 @@ async function extractEpubMetadata(
     coverBase64: null,
     genreSlug: null,
     detectedLanguage: null,
+    isbn: null,
   };
 
   let textSample: string | null = null;
@@ -293,6 +295,31 @@ async function extractEpubMetadata(
     const dateStr =
       getTagContent(opfContent, "dc:date") || getTagContent(opfContent, "date");
     result.year = extractYear(dateStr);
+
+    // Extract ISBN from dc:identifier tags
+    const identifierMatches = [...opfContent.matchAll(/<dc:identifier[^>]*>([^<]+)<\/dc:identifier>/gi)];
+    for (const match of identifierMatches) {
+      const identifierText = match[1].trim();
+      // Check if this is an ISBN (13-digit starting with 978/979 or 10-digit)
+      const cleanIsbn = identifierText.replace(/[-\s]/g, '');
+      if (/^(97[89])?\d{9}[\dX]$/i.test(cleanIsbn)) {
+        result.isbn = cleanIsbn;
+        break;
+      }
+    }
+
+    // Also check for identifier with scheme attribute
+    if (!result.isbn) {
+      const schemeMatches = [...opfContent.matchAll(/<(?:dc:)?identifier[^>]*(?:opf:scheme|scheme)=["']isbn["'][^>]*>([^<]+)</gi)];
+      for (const match of schemeMatches) {
+        const identifierText = match[1].trim();
+        const cleanIsbn = identifierText.replace(/[-\s]/g, '');
+        if (/^(97[89])?\d{9}[\dX]$/i.test(cleanIsbn)) {
+          result.isbn = cleanIsbn;
+          break;
+        }
+      }
+    }
 
     // Try to get language from metadata first
     result.detectedLanguage = getLanguageAttr(opfContent);
@@ -398,6 +425,7 @@ async function extractPdfMetadata(
     coverBase64: null,
     genreSlug: null,
     detectedLanguage: null,
+    isbn: null,
   };
 
   try {
@@ -412,6 +440,26 @@ async function extractPdfMetadata(
     const creationDate = pdfDoc.getCreationDate();
     if (creationDate) {
       result.year = creationDate.getFullYear();
+    }
+
+    // Extract ISBN from PDF metadata (keywords or subject fields)
+    const keywords = pdfDoc.getKeywords();
+    const subject = pdfDoc.getSubject();
+
+    // Check keywords field for ISBN
+    if (keywords) {
+      const isbnMatch = keywords.match(/(?:ISBN[:\s-]*)?(?:97[89])?\d{9}[\dX]/i);
+      if (isbnMatch) {
+        result.isbn = isbnMatch[0].replace(/[^\dX]/gi, '');
+      }
+    }
+
+    // Check subject field as fallback
+    if (!result.isbn && subject) {
+      const isbnMatch = subject.match(/(?:ISBN[:\s-]*)?(?:97[89])?\d{9}[\dX]/i);
+      if (isbnMatch) {
+        result.isbn = isbnMatch[0].replace(/[^\dX]/gi, '');
+      }
     }
 
     // For PDFs, we rely more on AI for language detection
