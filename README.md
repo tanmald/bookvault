@@ -53,37 +53,6 @@ Getting started with BookVault is simple:
 
 ---
 
-## Getting Started
-
-### For Users
-
-BookVault is currently available for self-hosting. Follow the developer setup below to run your own instance.
-
-### For Developers
-
-Want to run your own BookVault? Here's how:
-
-1. **Clone and Install**
-   ```bash
-   git clone https://github.com/tanmald/bookvault.git
-   cd bookvault
-   npm install
-   ```
-
-2. **Configure**
-   - Copy `.env.example` to `.env`
-   - Add your credentials (you'll need a free account at supabase.com)
-
-3. **Run**
-   ```bash
-   npm run dev
-   ```
-   Open http://localhost:8080 and you're ready!
-
-For detailed technical setup, database configuration, and deployment instructions, see the [technical documentation](CLAUDE.md).
-
----
-
 ## Built With
 
 BookVault is built with modern web technologies including React, TypeScript, and powered by AI for smart book organization. It uses a real-time backend to keep your library synced across all your devices.
