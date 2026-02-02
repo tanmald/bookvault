@@ -46,7 +46,7 @@ export default function JoinInvite() {
           .from('invite_links')
           .select(`
             *,
-            owner:profiles!invite_links_owner_id_fkey(display_name)
+            owner:profiles!owner_id(display_name)
           `)
           .eq('code', code)
           .eq('is_active', true)
