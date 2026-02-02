@@ -15,6 +15,7 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
+import { LibraryManagementCard } from '@/components/library/LibraryManagementCard';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -94,6 +95,9 @@ export default function Profile() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Library Management */}
+        <LibraryManagementCard />
 
         {/* Settings Card */}
         <Card className="mb-6">

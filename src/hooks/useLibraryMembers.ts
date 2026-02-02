@@ -121,6 +121,33 @@ export function useLibraryMembers(libraryId?: string) {
     },
   });
 
+  // Leave library (remove yourself)
+  const leaveLibrary = useMutation({
+    mutationFn: async () => {
+      if (!libraryId || !user) throw new Error('No library or user');
+
+      const { error } = await supabase
+        .from('library_members')
+        .delete()
+        .eq('library_id', libraryId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-members'] });
+      queryClient.invalidateQueries({ queryKey: ['libraries'] });
+      toast({ title: 'Saíste da biblioteca' });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao sair da biblioteca',
+        description: error.message,
+      });
+    },
+  });
+
   return {
     members: membersQuery.data ?? [],
     isLoading: membersQuery.isLoading,
@@ -128,5 +155,6 @@ export function useLibraryMembers(libraryId?: string) {
     promoteMember,
     demoteMember,
     removeMember,
+    leaveLibrary,
   };
 }
