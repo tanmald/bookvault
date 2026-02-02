@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -17,6 +18,7 @@ export interface LibraryMember {
 
 export function useLibraryMembers(libraryId?: string) {
   const { user } = useAuth();
+  const { refetch } = useLibrary();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -137,6 +139,7 @@ export function useLibraryMembers(libraryId?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
       queryClient.invalidateQueries({ queryKey: ['libraries'] });
+      refetch(); // Refresh library list in LibraryContext
       toast({ title: 'Saíste da biblioteca' });
     },
     onError: (error) => {
