@@ -1,5 +1,4 @@
-e// Upload
-// xupload.submitp'upload.coverFormats'ort const translations = {
+export const translations = {
   pt: {
     // Navigation
     'nav.library': 'Biblioteca',
@@ -97,7 +96,7 @@ e// Upload
     'invites.copy': 'Copiar Link',
     'invites.copied': 'Link copiado!',
     'invites.uses': 'uso(s)',
- coverFormats   'invites.expires': 'Expira em',
+    'invites.expires': 'Expira em',
     'invites.noExpiry': 'Sem expiração',
     'invites.deactivate': 'Desativar',
     'invites.activate': 'Ativar',
@@ -155,8 +154,8 @@ e// Upload
     'upload.bookCoverDesc': 'Opcional - adiciona uma imagem de capa',
     'upload.coverPreview': 'Pré-visualização da capa',
     'upload.removeCover': 'Remover',
-      'upload.coverWarning': 'Aviso: Capa não foi carregada',
-        'upload.coverWarningDesc': 'A capa não pôde ser processada. O livro será criado sem capa.',
+    'upload.coverWarning': 'Aviso: Capa não foi carregada',
+    'upload.coverWarningDesc': 'A capa não pôde ser processada. O livro será criado sem capa.',
     'upload.dragCover': 'Arrasta uma imagem de capa',
     'upload.coverFormats': 'JPG, PNG ou WebP até 5MB',
     'upload.addVersion': 'Adicionar Versão',
@@ -479,6 +478,8 @@ e// Upload
     'upload.bookCoverDesc': 'Optional - add a cover image',
     'upload.coverPreview': 'Cover preview',
     'upload.removeCover': 'Remove',
+    'upload.coverWarning': 'Warning: Cover not uploaded',
+    'upload.coverWarningDesc': 'The cover could not be processed. The book will be created without a cover.',
     'upload.dragCover': 'Drag a cover image',
     'upload.coverFormats': 'JPG, PNG or WebP up to 5MB',
     'upload.addVersion': 'Add Version',
