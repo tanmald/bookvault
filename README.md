@@ -1,110 +1,119 @@
-# BookVault
+# BookVault 📚
 
-A social book library application for managing and sharing your digital book collection.
+**Your digital library, beautifully organized and ready to share.**
 
-## Features
+BookVault helps book lovers organize their digital book collections, discover what friends are reading, and never lose track of a book again. Upload your books once, and let BookVault handle the rest—from organizing your library to tracking your reading journey.
 
-- Upload and organize EPUB and PDF books
-- AI-powered metadata extraction (title, author, genre, language)
-- Share your library with friends via invite links
-- Track reading progress with status and percentage
-- Multiple file versions per book (different languages/formats)
-- Dark/Light/System theme support
-- Multi-language UI (Portuguese/English)
+---
 
-## Tech Stack
+## What You Can Do
 
-- **Frontend:** React 18, TypeScript, Vite
-- **UI:** shadcn/ui, Tailwind CSS, Radix UI
-- **Backend:** Supabase (Auth, PostgreSQL, Edge Functions, Storage)
-- **State:** TanStack React Query, React Context
+### Keep Your Books Organized
+- **Effortless Organization**: Upload your EPUB and PDF books and see them instantly organized in a beautiful library
+- **Smart Book Details**: Book information is automatically extracted—no more manual data entry
+- **Multiple Collections**: Create separate libraries for different purposes (personal reading, work, book clubs, etc.)
+- **Flexible Views**: See your books in grid, list, or kanban views—whatever works best for you
+
+### Track Your Reading
+- **Never Forget a Book**: Mark books as "Want to Read," "Reading," or "Completed"
+- **Monitor Your Progress**: Track how far you've read with visual progress indicators
+- **Reading History**: See everything you've read at a glance
+
+### Share & Connect
+- **Share Your Library**: Invite friends to see your collection with secure, private links
+- **Discover Together**: See what your friends are reading and get inspired
+- **Privacy First**: You control who sees your books—everything is private by default
+
+### Enjoy Anywhere
+- **Light or Dark**: Choose the theme that's comfortable for your eyes
+- **Works Everywhere**: Access your library from any device—phone, tablet, or computer
+- **Your Language**: Available in English and Portuguese
+
+---
+
+## Who This Is For
+
+BookVault is perfect for:
+
+- **Avid Readers** with large digital collections who need better organization
+- **Book Clubs** wanting to share reading lists and track group progress
+- **Digital Nomads** who want to access their book collection from anywhere
+- **Anyone** who has ever lost track of what they've read or where they saved a book
+
+---
+
+## How It Works
+
+Getting started with BookVault is simple:
+
+1. **Create Your Account**: Sign up in seconds with just your email
+2. **Upload Your Books**: Drag and drop your EPUB or PDF files
+3. **Organize Automatically**: BookVault extracts book details and organizes everything for you
+4. **Share & Track**: Invite friends, track your reading progress, and enjoy your organized library
+
+---
 
 ## Getting Started
 
-### Prerequisites
+### For Users
 
-- Node.js 18+
-- npm
-- Supabase account
+BookVault is currently available for self-hosting. Follow the developer setup below to run your own instance.
 
-### Installation
+### For Developers
 
-1. Clone the repository:
+Want to run your own BookVault? Here's how:
+
+1. **Clone and Install**
    ```bash
    git clone https://github.com/tanmald/bookvault.git
    cd bookvault
-   ```
-
-2. Install dependencies:
-   ```bash
    npm install
    ```
 
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Supabase credentials
-   ```
+2. **Configure**
+   - Copy `.env.example` to `.env`
+   - Add your credentials (you'll need a free account at supabase.com)
 
-4. Start the development server:
+3. **Run**
    ```bash
    npm run dev
    ```
+   Open http://localhost:8080 and you're ready!
 
-   The app will be available at http://localhost:8080
+For detailed technical setup, database configuration, and deployment instructions, see the [technical documentation](CLAUDE.md).
 
-## Environment Variables
+---
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key |
+## Built With
 
-### Edge Function Secrets (set in Supabase Dashboard)
+BookVault is built with modern web technologies including React, TypeScript, and powered by AI for smart book organization. It uses a real-time backend to keep your library synced across all your devices.
 
-| Secret | Description |
-|--------|-------------|
-| `OPENAI_API_KEY` | OpenAI API key for AI metadata extraction |
+---
 
-## Scripts
+## Community
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run tests |
+### Join Us
 
-## Deployment
+We're building a community of book lovers and developers who believe digital libraries should be beautiful and easy to use.
 
-### Vercel (Recommended)
+- **Found a bug?** [Open an issue](https://github.com/tanmald/bookvault/issues)
+- **Have an idea?** We'd love to hear it—join the discussion
+- **Want to contribute?** Contributions are welcome! Check out open issues to get started
 
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy
+### Contributing
 
-### Netlify
+Whether you're fixing bugs, adding features, or improving documentation, we appreciate your help. Pull requests are welcome!
 
-1. Connect your GitHub repository to Netlify
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Set environment variables in Netlify dashboard
-
-## Supabase Setup
-
-The app requires a Supabase project with:
-- Authentication (email/password)
-- Database with migrations applied (see `supabase/migrations/`)
-- Storage buckets: `books`, `covers`, `avatars`
-- Edge function: `extract-metadata`
-
-To deploy the edge function:
-```bash
-supabase functions deploy extract-metadata
-supabase secrets set OPENAI_API_KEY=sk-your-key
-```
+---
 
 ## License
 
-MIT
+BookVault is open source and available under the [MIT License](LICENSE).
+
+This means you're free to use, modify, and share BookVault for any purpose—personal or commercial. See the [LICENSE](LICENSE) file for details.
+
+---
+
+**Made with ❤️ for book lovers everywhere**
+
+⭐ Star this project if you find it useful!
