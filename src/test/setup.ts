@@ -5,15 +5,23 @@ import { vi } from "vitest";
 // Load test environment variables
 config({ path: ".env.test" });
 
-// Mock localStorage for Supabase
+// Mock localStorage for Supabase with actual storage
+const localStorageStore: Record<string, string> = {};
 const localStorageMock = {
-  getItem: vi.fn(() => null),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: (key: string) => localStorageStore[key] || null,
+  setItem: (key: string, value: string) => {
+    localStorageStore[key] = value;
+  },
+  removeItem: (key: string) => {
+    delete localStorageStore[key];
+  },
+  clear: () => {
+    Object.keys(localStorageStore).forEach((key) => delete localStorageStore[key]);
+  },
 };
 Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
+  writable: true,
 });
 
 // Mock window.matchMedia
@@ -61,6 +69,7 @@ class MockResizeObserver {
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks();
+  localStorageMock.clear();
 });
 
 // Suppress console errors during tests
