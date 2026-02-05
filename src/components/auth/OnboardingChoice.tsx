@@ -56,18 +56,28 @@ export default function OnboardingChoice() {
     setIsLoading(true);
 
     try {
+      console.log('[use_invite_link] Calling RPC with:', {
+        invite_code: inviteCode.trim(),
+        joining_user_id: user.id,
+      });
+
       const { data, error } = await supabase.rpc('use_invite_link', {
         invite_code: inviteCode.trim(),
         joining_user_id: user.id,
       });
 
+      console.log('[use_invite_link] RPC returned:', { data, error });
+
       if (error) {
+        console.error('[use_invite_link] RPC Error:', error);
         throw error;
       }
 
       const result = data?.[0];
+      console.log('[use_invite_link] Result:', result);
 
       if (!result?.success) {
+        console.error('[use_invite_link] Failed:', result?.error_message);
         toast({
           variant: 'destructive',
           title: t('onboarding.invalidCode'),
@@ -76,6 +86,9 @@ export default function OnboardingChoice() {
         setIsLoading(false);
         return;
       }
+
+      console.log('[use_invite_link] Success!');
+
 
       toast({
         title: t('onboarding.joinedLibrary'),

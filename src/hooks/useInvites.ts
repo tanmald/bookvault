@@ -54,7 +54,22 @@ export function useInvites(libraryId?: string) {
       expiresInDays?: number;
       maxUses?: number;
     }) => {
+      if (!user || !user.id) {
+        throw new Error('Você precisa estar autenticado para criar um convite');
+      }
+
       if (!libraryId) throw new Error('No library selected');
+
+      // Get the profile ID for the current user
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('Perfil do usuário não encontrado. Por favor, tente fazer login novamente.');
+      }
 
       const expiresAt = expiresInDays
         ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
@@ -63,7 +78,7 @@ export function useInvites(libraryId?: string) {
       const { data, error } = await supabase
         .from('invite_links')
         .insert({
-          owner_id: user!.id,
+          owner_id: profile.id,
           library_id: libraryId,
           code: generateCode(),
           expires_at: expiresAt,

@@ -13,5 +13,19 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+  },
+  global: {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        mode: 'cors',
+        credentials: 'omit',
+      });
+    },
+  },
 });
