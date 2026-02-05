@@ -25,9 +25,12 @@ export function useReadingProgress(bookId?: string) {
   const progressQuery = useQuery({
     queryKey: ['reading-progress', user?.id, bookId],
     queryFn: async () => {
+      if (!user) throw new Error('Not authenticated');
+
       let query = supabase
         .from('reading_progress')
-        .select('*');
+        .select('*')
+        .eq('user_id', user.id);
 
       if (bookId) {
         query = query.eq('book_id', bookId);
