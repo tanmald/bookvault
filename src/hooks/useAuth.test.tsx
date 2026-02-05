@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import {
   testUsers,
 } from "@/test/fixtures/users";
 import { cleanupTestData } from "@/test/helpers/cleanup";
+import { supabase } from "@/integrations/supabase/client";
 
 // Create a wrapper with necessary providers
 function createWrapper() {
@@ -48,32 +49,45 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signUpResult = await result.current.signUp(
-        testUsers.owner.email,
-        testUsers.owner.password,
-        testUsers.owner.displayName
-      );
+      // Wait for initial auth check
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(signUpResult.error).toBeNull();
-      expect(result.current.user).not.toBeNull();
+      await act(async () => {
+        const signUpResult = await result.current.signUp(
+          testUsers.owner.email,
+          testUsers.owner.password,
+          testUsers.owner.displayName
+        );
+        expect(signUpResult.error).toBeNull();
+      });
+
+      // Wait for auth state to update
+      await waitFor(() => expect(result.current.user).not.toBeNull());
       expect(result.current.user?.email).toBe(testUsers.owner.email);
     });
 
     it("should fail to create duplicate user", async () => {
-      // First create a user
-      await createTestUser("owner");
+      // First create a user directly
+      await act(async () => {
+        await createTestUser("owner");
+      });
       await signOutUser();
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
       // Try to create the same user again
-      const signUpResult = await result.current.signUp(
-        testUsers.owner.email,
-        testUsers.owner.password,
-        testUsers.owner.displayName
-      );
+      let signUpResult: { error: Error | null } = { error: null };
+      await act(async () => {
+        signUpResult = await result.current.signUp(
+          testUsers.owner.email,
+          testUsers.owner.password,
+          testUsers.owner.displayName
+        );
+      });
 
       // Should either error or succeed (Supabase handles duplicates differently)
       expect(signUpResult).toBeDefined();
@@ -84,11 +98,16 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signUpResult = await result.current.signUp(
-        "invalid-email",
-        testUsers.owner.password,
-        testUsers.owner.displayName
-      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let signUpResult: { error: Error | null } = { error: null };
+      await act(async () => {
+        signUpResult = await result.current.signUp(
+          "invalid-email",
+          testUsers.owner.password,
+          testUsers.owner.displayName
+        );
+      });
 
       expect(signUpResult.error).not.toBeNull();
     });
@@ -98,11 +117,16 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signUpResult = await result.current.signUp(
-        testUsers.owner.email,
-        "short",
-        testUsers.owner.displayName
-      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let signUpResult: { error: Error | null } = { error: null };
+      await act(async () => {
+        signUpResult = await result.current.signUp(
+          testUsers.owner.email,
+          "short",
+          testUsers.owner.displayName
+        );
+      });
 
       expect(signUpResult.error).not.toBeNull();
     });
@@ -111,7 +135,9 @@ describe("useAuth", () => {
   describe("signIn", () => {
     beforeEach(async () => {
       // Create a test user before sign in tests
-      await createTestUser("owner");
+      await act(async () => {
+        await createTestUser("owner");
+      });
       await signOutUser();
     });
 
@@ -120,13 +146,17 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signInResult = await result.current.signIn(
-        testUsers.owner.email,
-        testUsers.owner.password
-      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-      expect(signInResult.error).toBeNull();
-      expect(result.current.user).not.toBeNull();
+      await act(async () => {
+        const signInResult = await result.current.signIn(
+          testUsers.owner.email,
+          testUsers.owner.password
+        );
+        expect(signInResult.error).toBeNull();
+      });
+
+      await waitFor(() => expect(result.current.user).not.toBeNull());
       expect(result.current.user?.email).toBe(testUsers.owner.email);
     });
 
@@ -135,10 +165,15 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signInResult = await result.current.signIn(
-        testUsers.owner.email,
-        "wrongpassword"
-      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let signInResult: { error: Error | null } = { error: null };
+      await act(async () => {
+        signInResult = await result.current.signIn(
+          testUsers.owner.email,
+          "wrongpassword"
+        );
+      });
 
       expect(signInResult.error).not.toBeNull();
       expect(result.current.user).toBeNull();
@@ -149,54 +184,73 @@ describe("useAuth", () => {
         wrapper: createWrapper(),
       });
 
-      const signInResult = await result.current.signIn(
-        "nonexistent@test.local",
-        testUsers.owner.password
-      );
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      let signInResult: { error: Error | null } = { error: null };
+      await act(async () => {
+        signInResult = await result.current.signIn(
+          "nonexistent@test.local",
+          testUsers.owner.password
+        );
+      });
 
       expect(signInResult.error).not.toBeNull();
     });
   });
 
   describe("signOut", () => {
-    beforeEach(async () => {
-      await createTestUser("owner");
-    });
-
     it("should sign out authenticated user", async () => {
+      // Create and sign in user first
+      await act(async () => {
+        await createTestUser("owner");
+      });
+      const { user: signInUser } = await signInTestUser("owner");
+      expect(signInUser).not.toBeNull();
+
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      // Wait for auth state to be ready
+      // Wait for auth state to be ready and user to be authenticated
       await waitFor(() => expect(result.current.loading).toBe(false));
-
-      // User should be authenticated
-      expect(result.current.user).not.toBeNull();
+      await waitFor(() => expect(result.current.user).not.toBeNull());
 
       // Sign out
-      await result.current.signOut();
+      await act(async () => {
+        await result.current.signOut();
+      });
 
       // User should be null after sign out
-      expect(result.current.user).toBeNull();
+      await waitFor(() => expect(result.current.user).toBeNull());
       expect(result.current.session).toBeNull();
     });
   });
 
   describe("session persistence", () => {
     it("should restore session on mount", async () => {
-      // First sign in
-      await createTestUser("owner");
-      const { user: signInUser } = await signInTestUser("owner");
-      const userId = signInUser?.id;
+      // First create a user
+      await act(async () => {
+        await createTestUser("owner");
+      });
 
-      // Render hook - should restore session
+      // Sign in with the Supabase client directly (this stores session in localStorage)
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: testUsers.owner.email,
+        password: testUsers.owner.password,
+      });
+
+      expect(signInError).toBeNull();
+      expect(signInData.user).not.toBeNull();
+      const userId = signInData.user!.id;
+
+      // Render hook - should restore session from localStorage
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
       // Wait for session to be restored
       await waitFor(() => expect(result.current.loading).toBe(false));
+      await waitFor(() => expect(result.current.user).not.toBeNull(), { timeout: 5000 });
 
       expect(result.current.user?.id).toBe(userId);
     });
@@ -231,7 +285,9 @@ describe("useAuth", () => {
     });
 
     it("should set loading during sign in", async () => {
-      await createTestUser("owner");
+      await act(async () => {
+        await createTestUser("owner");
+      });
       await signOutUser();
 
       const { result } = renderHook(() => useAuth(), {
@@ -241,16 +297,18 @@ describe("useAuth", () => {
       // Wait for initial loading to complete
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      // Start sign in (don't await to check loading state)
-      const signInPromise = result.current.signIn(
-        testUsers.owner.email,
-        testUsers.owner.password
-      );
+      // Start sign in
+      await act(async () => {
+        const signInPromise = result.current.signIn(
+          testUsers.owner.email,
+          testUsers.owner.password
+        );
+        // During sign in, loading might be true depending on implementation
+        await signInPromise;
+      });
 
-      // Loading should be managed by the component, not the hook
-      // The hook returns a function that the component calls
-
-      await signInPromise;
+      // After sign in completes, loading should be false
+      expect(result.current.loading).toBe(false);
     });
   });
 });
