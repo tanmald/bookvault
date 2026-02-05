@@ -82,7 +82,7 @@ export default function Friends() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
               {members.map((member) => (
-                <Card key={member.id}>
+                <Card key={member.user_id}>
                   <CardContent className="flex items-center gap-4 p-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback>
@@ -94,7 +94,7 @@ export default function Friends() {
                         <h3 className="font-medium truncate">
                           {member.display_name || t('friends.user')}
                         </h3>
-                        {member.is_owner ? (
+                        {member.user_id === currentLibrary?.created_by ? (
                           <Badge variant="default" className="gap-1">
                             <Crown className="h-3 w-3" />
                             {t('friends.owner')}
@@ -114,7 +114,7 @@ export default function Friends() {
                     </div>
                     
                     {/* Admin actions - can't modify the owner */}
-                    {isAdmin && !member.is_owner && (
+                    {isAdmin && member.user_id !== currentLibrary?.created_by && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -124,7 +124,7 @@ export default function Friends() {
                         <DropdownMenuContent align="end">
                           {member.role === 'member' ? (
                             <DropdownMenuItem
-                              onClick={() => promoteMember.mutate(member.id)}
+                              onClick={() => promoteMember.mutate(member.user_id)}
                               disabled={promoteMember.isPending}
                             >
                               <Shield className="h-4 w-4 mr-2" />
@@ -132,7 +132,7 @@ export default function Friends() {
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
-                              onClick={() => demoteMember.mutate(member.id)}
+                              onClick={() => demoteMember.mutate(member.user_id)}
                               disabled={demoteMember.isPending}
                             >
                               <ShieldOff className="h-4 w-4 mr-2" />
@@ -159,7 +159,7 @@ export default function Friends() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => removeMember.mutate({ memberId: member.id, memberUserId: member.user_id })}
+                                  onClick={() => removeMember.mutate(member.user_id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   {t('friends.kick')}

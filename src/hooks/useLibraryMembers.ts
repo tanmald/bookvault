@@ -14,6 +14,8 @@ export interface LibraryMember {
   // Profile data
   display_name: string | null;
   avatar_url: string | null;
+  // Owner flag (set by component based on library owner)
+  is_owner?: boolean;
 }
 
 export function useLibraryMembers(libraryId?: string) {
