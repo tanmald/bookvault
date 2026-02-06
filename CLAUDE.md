@@ -56,3 +56,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<supabase-anon-key>
 ## Edge Function
 
 The `extract-metadata` edge function uses OpenAI (gpt-4o-mini) for AI-powered book genre and language detection. The `OPENAI_API_KEY` secret must be set in the Supabase dashboard.
+
+## Kanban Drag-and-Drop
+
+The Kanban board uses **@dnd-kit** for drag-and-drop functionality:
+- Drag books between columns to change their reading status instantly
+- Supports mouse, touch (mobile), and keyboard navigation
+- Integrates seamlessly with React Query optimistic updates
+- Accessible: Keyboard users can use Space to pick up, Arrow keys to move, and Space to drop books
+- Touch devices: Long-press (150ms) activates drag without interfering with scrolling
+
+**Key components**:
+- `BookKanban`: Main component with DndContext, sensors, and drag handlers
+- `SortableBookCard`: Draggable wrapper for BookCard using `useSortable()` hook
+- `DroppableColumn`: Drop zone wrapper for status columns
+- Status changes are handled via `useReadingProgress().updateProgress` mutation with automatic rollback on errors

@@ -12,6 +12,7 @@ interface BookCardProps {
   book: Book;
   progress?: ReadingProgress;
   compact?: boolean;
+  isDragging?: boolean;
 }
 
 const statusColors = {
@@ -21,7 +22,7 @@ const statusColors = {
   read: 'bg-primary text-primary-foreground',
 };
 
-export function BookCard({ book, progress, compact = false }: BookCardProps) {
+export function BookCard({ book, progress, compact = false, isDragging = false }: BookCardProps) {
   const { t } = useLanguage();
   const status = progress?.status ?? 'not_planned';
 
@@ -31,16 +32,16 @@ export function BookCard({ book, progress, compact = false }: BookCardProps) {
     reading: t('status.reading'),
     read: t('status.read'),
   };
-  
+
   // Count available language versions
   const languageCount = book.book_files?.length ?? (book.file_url ? 1 : 0);
 
-  return (
-    <Link to={`/book/${book.id}`}>
-      <Card className={cn(
-        "group overflow-hidden transition-all hover:shadow-lg",
-        compact && "hover:shadow-md"
-      )}>
+  const cardContent = (
+    <Card className={cn(
+      "group overflow-hidden transition-all hover:shadow-lg",
+      compact && "hover:shadow-md",
+      isDragging && "cursor-grabbing"
+    )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
           compact ? "aspect-[3/4]" : "aspect-[2/3]"
@@ -111,7 +112,17 @@ export function BookCard({ book, progress, compact = false }: BookCardProps) {
             )}
           </div>
         </CardContent>
-      </Card>
+    </Card>
+  );
+
+  // Disable navigation during drag
+  if (isDragging) {
+    return cardContent;
+  }
+
+  return (
+    <Link to={`/book/${book.id}`}>
+      {cardContent}
     </Link>
   );
 }

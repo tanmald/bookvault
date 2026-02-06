@@ -23,6 +23,8 @@ export const translations = {
 
     // Kanban
     'kanban.noBooks': 'Sem livros',
+    'kanban.dragHelp': 'Arraste livros entre colunas para alterar o estado',
+    'kanban.keyboardHelp': 'Teclado: Espaço para pegar, Setas para mover, Espaço para soltar',
     
     // Book status
     'status.notPlanned': 'Não Planeado',
@@ -431,6 +433,8 @@ export const translations = {
 
     // Kanban
     'kanban.noBooks': 'No books',
+    'kanban.dragHelp': 'Drag books between columns to change status',
+    'kanban.keyboardHelp': 'Keyboard: Space to pick up, Arrow keys to move, Space to drop',
     
     // Book status
     'status.notPlanned': 'Not Planned',
