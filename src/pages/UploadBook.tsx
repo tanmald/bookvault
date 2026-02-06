@@ -88,11 +88,20 @@ export default function UploadBook() {
       const formDataPayload = new FormData();
       formDataPayload.append('file', selectedFile);
 
-      // Use Supabase's built-in functions.invoke() for automatic auth handling
+      // Get current session to pass JWT explicitly
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // Use Supabase's built-in functions.invoke() with explicit auth
       const { data: metadata, error: invokeError } = await supabase.functions.invoke<ExtractedMetadata>(
         'extract-metadata',
         {
           body: formDataPayload,
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         }
       );
 

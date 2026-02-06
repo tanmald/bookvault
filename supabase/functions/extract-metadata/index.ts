@@ -370,9 +370,32 @@ async function extractEpubMetadata(
 
     if (!result.coverBase64) {
       const files = Object.keys(zip.files);
-      const coverFile = files.find(
+
+      // Strategy 1: Look for files with "cover" in the name
+      let coverFile = files.find(
         (f) => /cover/i.test(f) && /\.(jpg|jpeg|png|gif)$/i.test(f)
       );
+
+      // Strategy 2: If we have a cover ID, try to find a matching image file
+      if (!coverFile && coverId) {
+        // Remove common prefixes like "x", "cover", etc and try to match
+        const cleanCoverId = coverId.replace(/^(x|cover[-_]?)/i, '');
+
+        coverFile = files.find(f => {
+          if (!/\.(jpg|jpeg|png|gif)$/i.test(f)) return false;
+          const fileName = f.split('/').pop() || '';
+          return fileName.toLowerCase().includes(cleanCoverId.toLowerCase()) ||
+                 cleanCoverId.toLowerCase().includes(fileName.toLowerCase().replace(/\.(jpg|jpeg|png|gif)$/i, ''));
+        });
+      }
+
+      // Strategy 3: Try first image file in common cover locations
+      if (!coverFile) {
+        const imageFiles = files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f));
+        // Prefer images in common cover directories
+        coverFile = imageFiles.find(f => /\/(images?|img|cover|graphics)\//i.test(f)) || imageFiles[0];
+      }
+
       if (coverFile) {
         const file = zip.file(coverFile);
         if (file) {

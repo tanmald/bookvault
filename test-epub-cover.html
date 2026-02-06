@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test EPUB Cover Extraction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <h1>Test EPUB Cover Extraction</h1>
+    <input type="file" id="epubFile" accept=".epub" />
+    <div id="output"></div>
+    <div id="cover"></div>
+
+    <script>
+        document.getElementById('epubFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const output = document.getElementById('output');
+            const coverDiv = document.getElementById('cover');
+            output.innerHTML = '<p>Processing...</p>';
+            coverDiv.innerHTML = '';
+
+            try {
+                const buffer = await file.arrayBuffer();
+                const zip = await JSZip.loadAsync(buffer);
+
+                let log = [];
+                log.push(`✓ EPUB loaded (${buffer.byteLength} bytes)`);
+
+                // Get container.xml
+                const containerFile = zip.file("META-INF/container.xml");
+                if (!containerFile) {
+                    log.push('✗ No container.xml found');
+                    output.innerHTML = log.join('<br>');
+                    return;
+                }
+                log.push('✓ container.xml found');
+
+                const containerXml = await containerFile.async("string");
+                const rootfileMatch = containerXml.match(/full-path="([^"]+)"/);
+                if (!rootfileMatch) {
+                    log.push('✗ No rootfile path found');
+                    output.innerHTML = log.join('<br>');
+                    return;
+                }
+
+                const opfPath = rootfileMatch[1];
+                log.push(`✓ OPF path: ${opfPath}`);
+
+                const opfFile = zip.file(opfPath);
+                if (!opfFile) {
+                    log.push(`✗ OPF file not found at: ${opfPath}`);
+                    output.innerHTML = log.join('<br>');
+                    return;
+                }
+
+                const opfContent = await opfFile.async("string");
+                log.push(`✓ OPF loaded (${opfContent.length} chars)`);
+
+                // Try to find cover
+                const coverIdMatch = opfContent.match(/<meta[^>]*name="cover"[^>]*content="([^"]+)"/i);
+                let coverId = coverIdMatch ? coverIdMatch[1] : null;
+                log.push(`Cover ID from meta: ${coverId || 'not found'}`);
+
+                if (!coverId) {
+                    const coverItemMatch = opfContent.match(/<item[^>]*id="([^"]*cover[^"]*)"[^>]*href="([^"]+)"/i);
+                    if (coverItemMatch) {
+                        coverId = coverItemMatch[1];
+                        log.push(`Cover ID from item: ${coverId}`);
+                    }
+                }
+
+                let coverExtracted = false;
+
+                if (coverId) {
+                    const itemMatch = opfContent.match(new RegExp(`<item[^>]*id="${coverId}"[^>]*href="([^"]+)"`, "i"));
+                    if (itemMatch) {
+                        const coverHref = itemMatch[1];
+                        const opfDir = opfPath.substring(0, opfPath.lastIndexOf("/") + 1);
+                        const coverPath = coverHref.startsWith("/") ? coverHref.substring(1) : opfDir + coverHref;
+
+                        log.push(`Trying path: ${coverPath}`);
+
+                        const coverFile = zip.file(coverPath);
+                        if (coverFile) {
+                            const coverData = await coverFile.async("base64");
+                            const ext = coverPath.split(".").pop()?.toLowerCase() || "jpg";
+                            const mimeType = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : "image/jpeg";
+                            const coverBase64 = `data:${mimeType};base64,${coverData}`;
+
+                            log.push(`✓ Cover extracted (${coverData.length} bytes)`);
+                            coverDiv.innerHTML = `<img src="${coverBase64}" style="max-width: 300px;" />`;
+                            coverExtracted = true;
+                        } else {
+                            log.push(`✗ Cover file not found at: ${coverPath}`);
+                        }
+                    }
+                }
+
+                if (!coverExtracted) {
+                    log.push('Trying fallback search...');
+                    const files = Object.keys(zip.files);
+                    log.push(`EPUB contains ${files.length} files`);
+
+                    const imageFiles = files.filter(f => /\.(jpg|jpeg|png|gif)$/i.test(f));
+                    log.push(`Image files: ${imageFiles.join(', ') || 'none'}`);
+
+                    // Strategy 1: Look for files with "cover" in the name
+                    let coverFile = files.find(f => /cover/i.test(f) && /\.(jpg|jpeg|png|gif)$/i.test(f));
+
+                    // Strategy 2: If we have a cover ID, try to find a matching image file
+                    if (!coverFile && coverId) {
+                        log.push('Trying to match cover ID to image files...');
+                        const cleanCoverId = coverId.replace(/^(x|cover[-_]?)/i, '');
+                        log.push(`Cleaned cover ID: ${cleanCoverId}`);
+
+                        coverFile = files.find(f => {
+                            if (!/\.(jpg|jpeg|png|gif)$/i.test(f)) return false;
+                            const fileName = f.split('/').pop() || '';
+                            return fileName.toLowerCase().includes(cleanCoverId.toLowerCase()) ||
+                                   cleanCoverId.toLowerCase().includes(fileName.toLowerCase().replace(/\.(jpg|jpeg|png|gif)$/i, ''));
+                        });
+
+                        if (coverFile) {
+                            log.push(`Found match by cover ID: ${coverFile}`);
+                        }
+                    }
+
+                    // Strategy 3: Try first image file in common cover locations
+                    if (!coverFile) {
+                        coverFile = imageFiles.find(f => /\/(images?|img|cover|graphics)\//i.test(f)) || imageFiles[0];
+                        if (coverFile) {
+                            log.push(`Using first available image: ${coverFile}`);
+                        }
+                    }
+
+                    if (coverFile) {
+                        const file = zip.file(coverFile);
+                        if (file) {
+                            const coverData = await file.async("base64");
+                            const ext = coverFile.split(".").pop()?.toLowerCase() || "jpg";
+                            const mimeType = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : "image/jpeg";
+                            const coverBase64 = `data:${mimeType};base64,${coverData}`;
+
+                            log.push(`✓ Cover from fallback (${coverData.length} bytes)`);
+                            coverDiv.innerHTML = `<img src="${coverBase64}" style="max-width: 300px;" />`;
+                        }
+                    } else {
+                        log.push('✗ No cover found in fallback search');
+                    }
+                }
+
+                output.innerHTML = log.join('<br>');
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>
