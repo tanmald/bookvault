@@ -82,7 +82,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
             </span>
           </div>
 
-          <div className="flex flex-col gap-3 flex-1">
+          <div className="flex flex-col gap-3 flex-1 min-h-full">
             {booksByStatus[column.status].length === 0 ? (
               <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
                 <p className="text-sm text-muted-foreground">{noBooksText}</p>
