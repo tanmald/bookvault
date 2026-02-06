@@ -84,12 +84,12 @@ export function useFriendsBookProgress(bookId: string | undefined) {
         };
       });
 
-      // Step 5: Sort - read (by time), reading (by progress), to_read, then null
+      // Step 5: Sort - read (by time), reading (by progress), to_read, not_planned, then null
       return friendsProgress.sort((a, b) => {
-        // Priority order: read > reading > to_read > null
-        const statusOrder = { read: 0, reading: 1, to_read: 2 };
-        const aOrder = a.status ? statusOrder[a.status] : 3;
-        const bOrder = b.status ? statusOrder[b.status] : 3;
+        // Priority order: read > reading > to_read > not_planned > null
+        const statusOrder = { read: 0, reading: 1, to_read: 2, not_planned: 3 };
+        const aOrder = a.status ? statusOrder[a.status] : 4;
+        const bOrder = b.status ? statusOrder[b.status] : 4;
 
         if (aOrder !== bOrder) return aOrder - bOrder;
 

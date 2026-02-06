@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { BookOpen, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, CircleDashed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BookKanbanProps {
@@ -17,10 +17,16 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
 
   const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
     {
+      status: 'not_planned',
+      label: t('status.notPlanned'),
+      icon: <CircleDashed className="h-4 w-4" />,
+      color: 'border-muted-foreground/30'
+    },
+    {
       status: 'to_read',
       label: t('status.toRead'),
       icon: <Clock className="h-4 w-4" />,
-      color: 'border-muted-foreground/30'
+      color: 'border-muted-foreground/50'
     },
     {
       status: 'reading',
@@ -38,6 +44,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
 
   const booksByStatus = useMemo(() => {
     const grouped: Record<ReadingStatus, Book[]> = {
+      not_planned: [],
       to_read: [],
       reading: [],
       read: [],
@@ -45,7 +52,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
 
     books.forEach((book) => {
       const progress = progressMap.get(book.id);
-      const status = progress?.status ?? 'to_read';
+      const status = progress?.status ?? 'not_planned';
       grouped[status].push(book);
     });
 
@@ -68,7 +75,7 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       {columns.map((column) => (
         <div key={column.status} className="flex flex-col">
           <div className={cn(

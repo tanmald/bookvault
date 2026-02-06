@@ -15,6 +15,7 @@ interface BookCardProps {
 }
 
 const statusColors = {
+  not_planned: 'bg-muted-foreground/20 text-muted-foreground',
   to_read: 'bg-muted text-muted-foreground',
   reading: 'bg-accent text-accent-foreground',
   read: 'bg-primary text-primary-foreground',
@@ -22,9 +23,10 @@ const statusColors = {
 
 export function BookCard({ book, progress, compact = false }: BookCardProps) {
   const { t } = useLanguage();
-  const status = progress?.status ?? 'to_read';
-  
+  const status = progress?.status ?? 'not_planned';
+
   const statusLabels = {
+    not_planned: t('status.notPlanned'),
     to_read: t('status.toRead'),
     reading: t('status.reading'),
     read: t('status.read'),

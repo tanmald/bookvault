@@ -7,6 +7,7 @@ import { BookGridSkeleton, BookKanbanSkeleton } from '@/components/books/BookCar
 import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
+import { useNotPlannedVisibility } from '@/hooks/useNotPlannedVisibility';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function Library() {
   // Pass undefined if no library (shows all books as fallback)
   const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks(currentLibrary?.id);
   const { progress } = useReadingProgress();
+  const { showNotPlanned, setShowNotPlanned } = useNotPlannedVisibility();
   const { t } = useLanguage();
 
   console.log('Current library:', currentLibrary);
@@ -62,6 +64,13 @@ export default function Library() {
   const filteredBooks = useMemo(() => {
     return books
       .filter((book) => {
+        // Hide not_planned books if toggle is off
+        if (!showNotPlanned) {
+          const bookProgress = progressMap.get(book.id);
+          const bookStatus = bookProgress?.status ?? 'not_planned';
+          if (bookStatus === 'not_planned') return false;
+        }
+
         // Search filter
         if (search) {
           const searchLower = search.toLowerCase();
@@ -73,7 +82,7 @@ export default function Library() {
         // Status filter (only in grid view, kanban shows all statuses)
         if (statusFilter !== 'all' && viewMode === 'grid') {
           const bookProgress = progressMap.get(book.id);
-          const bookStatus = bookProgress?.status ?? 'to_read';
+          const bookStatus = bookProgress?.status ?? 'not_planned';
           if (bookStatus !== statusFilter) return false;
         }
 
@@ -95,7 +104,7 @@ export default function Library() {
         const titleB = b.title.toLowerCase();
         return titleA.localeCompare(titleB);
       });
-  }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode]);
+  }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode, showNotPlanned]);
 
   const clearFilters = () => {
     setSearch('');
@@ -160,6 +169,8 @@ export default function Library() {
           authors={uniqueAuthors}
           onClearFilters={clearFilters}
           hideStatusFilter={viewMode === 'kanban'}
+          showNotPlanned={showNotPlanned}
+          onToggleNotPlanned={setShowNotPlanned}
         />
 
         {isLoading ? (

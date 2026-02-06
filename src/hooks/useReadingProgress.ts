@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type ReadingStatus = 'to_read' | 'reading' | 'read';
+export type ReadingStatus = 'not_planned' | 'to_read' | 'reading' | 'read';
 
 export interface ReadingProgress {
   id: string;
@@ -103,7 +103,7 @@ export function useReadingProgress(bookId?: string) {
       const optimisticUpdate: Partial<ReadingProgress> = {
         book_id: bookId,
         user_id: user?.id,
-        status: status ?? existingProgress?.status ?? 'to_read',
+        status: status ?? existingProgress?.status ?? 'not_planned',
         progress: status === 'read' ? 100 : (progressValue ?? existingProgress?.progress ?? 0),
         updated_at: now,
       };

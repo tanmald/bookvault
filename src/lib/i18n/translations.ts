@@ -25,6 +25,7 @@ export const translations = {
     'kanban.noBooks': 'Sem livros',
     
     // Book status
+    'status.notPlanned': 'Não Planeado',
     'status.toRead': 'Para Ler',
     'status.reading': 'A Ler',
     'status.read': 'Lido',
@@ -37,6 +38,7 @@ export const translations = {
     'filters.allGenres': 'Todos os géneros',
     'filters.author': 'Autor',
     'filters.allAuthors': 'Todos os autores',
+    'filters.showNotPlanned': 'Mostrar Não Planeados',
     
     // Profile
     'profile.title': 'O Meu Perfil',
@@ -170,7 +172,19 @@ export const translations = {
     'upload.fetchingCover': 'A procurar capa online...',
     'upload.coverFetched': 'Capa encontrada automaticamente',
     'upload.coverNotFound': 'Capa não encontrada online',
-    
+    'upload.fetchAnotherCover': 'Procurar outra capa',
+    'upload.previousCover': 'Capa anterior',
+    'upload.nextCover': 'Próxima capa',
+    'upload.coverCounter': '{current} / {total}',
+    'upload.coversFound': 'Capas encontradas',
+    'upload.coversFoundDesc': 'Encontradas {count} capas alternativas',
+    'upload.noCoversFound': 'Nenhuma capa encontrada',
+    'upload.noCoversFoundDesc': 'Não foram encontradas capas alternativas para este livro',
+    'upload.missingInfo': 'Informação em falta',
+    'upload.needTitleOrIsbn': 'É necessário título ou ISBN para procurar capas',
+    'upload.currentCover': 'Capa atual',
+    'upload.alternativeCovers': 'Capas alternativas',
+
     // Book Details
     'book.by': 'por',
     'book.download': 'Download',
@@ -202,7 +216,14 @@ export const translations = {
     'book.removeVersion': 'Remover esta versão?',
     'book.removeVersionDesc': 'Esta ação irá remover a versão em {language} ({type}). Esta ação não pode ser desfeita.',
     'book.remove': 'Remover',
-    
+    'book.coverUpdated': 'Capa atualizada',
+    'book.coverUpdatedDesc': 'A capa do livro foi atualizada com sucesso',
+    'book.coverUpdateError': 'Erro ao atualizar capa',
+    'book.coverUpdateErrorDesc': 'Não foi possível atualizar a capa. Tenta novamente.',
+    'book.changeCover': 'Alterar capa',
+    'book.saveCover': 'Guardar capa',
+    'book.cancelCover': 'Cancelar',
+
     // Scoreboard
     'scoreboard.title': 'Scoreboard dos Amigos',
     'scoreboard.noFriends': 'Ainda não tens amigos!',
@@ -412,6 +433,7 @@ export const translations = {
     'kanban.noBooks': 'No books',
     
     // Book status
+    'status.notPlanned': 'Not Planned',
     'status.toRead': 'To Read',
     'status.reading': 'Reading',
     'status.read': 'Read',
@@ -424,6 +446,7 @@ export const translations = {
     'filters.allGenres': 'All genres',
     'filters.author': 'Author',
     'filters.allAuthors': 'All authors',
+    'filters.showNotPlanned': 'Show Not Planned',
     
     // Profile
     'profile.title': 'My Profile',
@@ -557,6 +580,18 @@ export const translations = {
     'upload.fetchingCover': 'Searching for cover online...',
     'upload.coverFetched': 'Cover found automatically',
     'upload.coverNotFound': 'Cover not found online',
+    'upload.fetchAnotherCover': 'Fetch another cover',
+    'upload.previousCover': 'Previous cover',
+    'upload.nextCover': 'Next cover',
+    'upload.coverCounter': '{current} / {total}',
+    'upload.coversFound': 'Covers found',
+    'upload.coversFoundDesc': 'Found {count} alternative covers',
+    'upload.noCoversFound': 'No covers found',
+    'upload.noCoversFoundDesc': 'No alternative covers found for this book',
+    'upload.missingInfo': 'Missing information',
+    'upload.needTitleOrIsbn': 'Title or ISBN is required to search for covers',
+    'upload.currentCover': 'Current cover',
+    'upload.alternativeCovers': 'Alternative covers',
 
     // Book Details
     'book.by': 'by',
@@ -589,7 +624,14 @@ export const translations = {
     'book.removeVersion': 'Remove this version?',
     'book.removeVersionDesc': 'This action will remove the {language} ({type}) version. This action cannot be undone.',
     'book.remove': 'Remove',
-    
+    'book.coverUpdated': 'Cover updated',
+    'book.coverUpdatedDesc': 'The book cover has been updated successfully',
+    'book.coverUpdateError': 'Error updating cover',
+    'book.coverUpdateErrorDesc': 'Could not update the cover. Please try again.',
+    'book.changeCover': 'Change cover',
+    'book.saveCover': 'Save cover',
+    'book.cancelCover': 'Cancel',
+
     // Scoreboard
     'scoreboard.title': 'Friends Scoreboard',
     'scoreboard.noFriends': "You don't have friends yet!",

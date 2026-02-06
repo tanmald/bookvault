@@ -7,6 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Search, X } from 'lucide-react';
 import { useGenres } from '@/hooks/useGenres';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,6 +27,8 @@ interface BookFiltersProps {
   authors: string[];
   onClearFilters: () => void;
   hideStatusFilter?: boolean;
+  showNotPlanned: boolean;
+  onToggleNotPlanned: (value: boolean) => void;
 }
 
 export function BookFilters({
@@ -39,6 +43,8 @@ export function BookFilters({
   authors,
   onClearFilters,
   hideStatusFilter = false,
+  showNotPlanned,
+  onToggleNotPlanned,
 }: BookFiltersProps) {
   const { data: genres } = useGenres();
   const { t } = useLanguage();
@@ -64,6 +70,7 @@ export function BookFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('status.all')}</SelectItem>
+            <SelectItem value="not_planned">{t('status.notPlanned')}</SelectItem>
             <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
             <SelectItem value="reading">{t('status.reading')}</SelectItem>
             <SelectItem value="read">{t('status.read')}</SelectItem>
@@ -100,6 +107,17 @@ export function BookFilters({
           </SelectContent>
         </Select>
       )}
+
+      <div className="flex items-center gap-2 px-3 py-1 border rounded-md bg-background">
+        <Switch
+          id="show-not-planned"
+          checked={showNotPlanned}
+          onCheckedChange={onToggleNotPlanned}
+        />
+        <Label htmlFor="show-not-planned" className="text-sm cursor-pointer">
+          {t('filters.showNotPlanned')}
+        </Label>
+      </div>
 
       {hasActiveFilters && (
         <Button variant="ghost" size="icon" onClick={onClearFilters}>
