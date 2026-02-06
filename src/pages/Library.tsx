@@ -120,8 +120,7 @@ export default function Library() {
             </p>
           </div>
           
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
-            <Button
+            <div className="flex flex-col sm:flex-row items-center gap-1 bg-muted p-1 rounded-lg"></div>            <Button
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('kanban')}
