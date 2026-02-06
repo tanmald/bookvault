@@ -29,19 +29,18 @@ jobs:
       - name: Run TypeScript type check
         run: npx tsc --noEmit
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 1.145.4
-
-      - name: Verify Supabase CLI
+      - name: Install Supabase CLI
         run: |
+          curl -fsSL https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/scripts/get-supabase-cli.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
           which supabase
           supabase --version
 
       - name: Start Supabase Local
         run: |
-          supabase start --workdir . --debug || (echo "Supabase start failed"; exit 1)
+          export PATH="$HOME/.local/bin:$PATH"
+          supabase start || (echo "Supabase start failed"; exit 1)
         timeout-minutes: 5
 
       - name: Run tests
@@ -60,7 +59,9 @@ jobs:
 
       - name: Stop Supabase
         if: always()
-        run: supabase stop
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          supabase stop
 
   build:
     runs-on: ubuntu-latest
