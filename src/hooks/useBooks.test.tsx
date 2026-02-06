@@ -2,12 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useBooks } from "./useBooks";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth, AuthProvider } from "@/contexts/AuthContext";
 import { LibraryProvider } from "@/contexts/LibraryContext";
 import {
-  createTestUser,
-  signInTestUser,
-  createTestLibrary,
   signOutUser,
   testBooks,
 } from "@/test/fixtures/users";
@@ -34,71 +31,10 @@ function createWrapper() {
   };
 }
 
-// Helper to setup test user and library within a test
-async function setupTestUserAndLibrary(email: string) {
-  // Create test user
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email,
-    password: "TestPass123!",
-    options: {
-      data: {
-        display_name: "Test Owner",
-      },
-    },
-  });
-
-  let userId: string;
-  if (signUpError) {
-    // User might already exist, try signing in
-    const { data: signInData } = await supabase.auth.signInWithPassword({
-      email,
-      password: "TestPass123!",
-    });
-    userId = signInData.user!.id;
-  } else {
-    userId = signUpData.user!.id;
-  }
-  
-  // Create test library
-  const { data: library, error: libError } = await supabase
-    .from("libraries")
-    .insert({
-      name: "Test Personal Library",
-      description: "A test library for personal use",
-      is_public: false,
-      allow_member_uploads: true,
-      created_by: userId,
-    })
-    .select()
-    .single();
-
-  if (libError) throw libError;
-  
-  // Add user as library member (required for RLS policies)
-  const { error: memberError } = await supabase
-    .from("library_members")
-    .insert({
-      library_id: library!.id,
-      user_id: userId,
-      role: "admin",
-    });
-  
-  if (memberError) throw memberError;
-  
-  return { userId, libraryId: library!.id };
-}
-
 describe("useBooks", () => {
-  let testLibraryId: string;
-  let testUserId: string;
-  let testEmail: string;
-
   beforeEach(async () => {
     await cleanupTestData();
     await signOutUser();
-    
-    // Generate unique email for this test
-    testEmail = `test-owner-${Date.now()}@test.local`;
   });
 
   afterEach(async () => {
@@ -108,12 +44,63 @@ describe("useBooks", () => {
 
   describe("fetching books", () => {
     it("should fetch books for a library", async () => {
-      // Setup user and library first
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-fetch-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
+      // First render useAuth to sign in through AuthContext
+      const { result: authResult } = renderHook(() => useAuth(), {
+        wrapper: createWrapper(),
+      });
 
-      // Create a book directly
+      // Wait for auth initialization
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      // Generate unique email
+      const testEmail = `test-fetch-${Date.now()}@test.local`;
+      
+      // Sign up through AuthContext
+      await act(async () => {
+        const { error } = await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+        if (error && error.message !== "User already registered") {
+          throw error;
+        }
+      });
+
+      // Sign in through AuthContext
+      await act(async () => {
+        const { error } = await authResult.current.signIn(testEmail, "TestPass123!");
+        expect(error).toBeNull();
+      });
+
+      // Wait for user to be set
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      // Create library
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Personal Library",
+          description: "A test library for personal use",
+          is_public: false,
+          allow_member_uploads: true,
+          created_by: testUserId,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      // Add user as library member
+      const { error: memberError } = await supabase
+        .from("library_members")
+        .insert({
+          library_id: testLibraryId,
+          user_id: testUserId,
+          role: "admin",
+        });
+
+      expect(memberError).toBeNull();
+
+      // Create a book
       await act(async () => {
         const { error } = await supabase
           .from("books")
@@ -127,30 +114,60 @@ describe("useBooks", () => {
         expect(error).toBeNull();
       });
 
-      // Now render the hook with the library ID
+      // Now render useBooks hook - it will see the authenticated user
       const { result } = renderHook(() => useBooks(testLibraryId), {
         wrapper: createWrapper(),
       });
 
-      // Wait for data to load
+      // Wait for books to load
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.books.length).toBe(1), { timeout: 5000 });
 
-      // Wait for data to load
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
-
-      expect(result.current.books).toHaveLength(1);
       expect(result.current.books[0].title).toBe(testBooks.book1.title);
     });
 
     it("should return empty array when no books", async () => {
-      const { result } = renderHook(() => useBooks(testLibraryId), {
+      const { result: authResult } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-empty-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      const testEmail = `test-empty-${Date.now()}@test.local`;
+      
+      await act(async () => {
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
+
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      
+      await supabase.from("library_members").insert({
+        library_id: library!.id,
+        user_id: testUserId,
+        role: "admin",
+      });
+
+      const { result } = renderHook(() => useBooks(library!.id), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
@@ -158,52 +175,44 @@ describe("useBooks", () => {
     });
 
     it("should respect pagination limit", async () => {
-      const { result } = renderHook(() => useBooks(testLibraryId), {
+      const { result: authResult } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-page-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
 
-      // Wait for auth to be ready
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      const testEmail = `test-page-${Date.now()}@test.local`;
+      
+      await act(async () => {
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
 
-      // Create more than 100 books
-      const books = Array.from({ length: 105 }, (_, i) => ({
-        title: `Book ${i}`,
-        author: "Test Author",
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      await supabase.from("library_members").insert({
         library_id: testLibraryId,
-        owner_id: testUserId,
-        file_url: "https://example.com/book.pdf",
-        file_type: "application/pdf",
-      }));
-
-      await act(async () => {
-        const { error } = await supabase.from("books").insert(books);
-        expect(error).toBeNull();
+        user_id: testUserId,
+        role: "admin",
       });
-
-      // Refetch to get the new books
-      await act(async () => {
-        await result.current.refetch();
-      });
-
-      // Should be limited to 100
-      expect(result.current.books.length).toBeLessThanOrEqual(100);
-      expect(result.current.hasMore).toBe(true);
-    });
-
-    it("should load all books when requested", async () => {
-      const { result } = renderHook(() => useBooks(testLibraryId), {
-        wrapper: createWrapper(),
-      });
-
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-all-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
 
       // Create 105 books
       const books = Array.from({ length: 105 }, (_, i) => ({
@@ -215,35 +224,132 @@ describe("useBooks", () => {
         file_type: "application/pdf",
       }));
 
+      await supabase.from("books").insert(books);
+
+      const { result } = renderHook(() => useBooks(testLibraryId), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.books.length).toBeGreaterThan(0), { timeout: 5000 });
+
+      expect(result.current.books.length).toBeLessThanOrEqual(100);
+      expect(result.current.hasMore).toBe(true);
+    });
+
+    it("should load all books when requested", async () => {
+      const { result: authResult } = renderHook(() => useAuth(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      const testEmail = `test-all-${Date.now()}@test.local`;
+      
       await act(async () => {
-        const { error } = await supabase.from("books").insert(books);
-        expect(error).toBeNull();
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
+
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      await supabase.from("library_members").insert({
+        library_id: testLibraryId,
+        user_id: testUserId,
+        role: "admin",
+      });
+
+      // Create 105 books
+      const books = Array.from({ length: 105 }, (_, i) => ({
+        title: `Book ${i}`,
+        author: "Test Author",
+        library_id: testLibraryId,
+        owner_id: testUserId,
+        file_url: "https://example.com/book.pdf",
+        file_type: "application/pdf",
+      }));
+
+      await supabase.from("books").insert(books);
+
+      const { result } = renderHook(() => useBooks(testLibraryId), {
+        wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
-      // Load all books
       await act(async () => {
         result.current.loadAllBooks();
       });
 
       await waitFor(() => expect(result.current.isLoadingAll).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.books.length).toBe(105), { timeout: 5000 });
 
-      expect(result.current.books.length).toBe(105);
       expect(result.current.hasMore).toBe(false);
     });
   });
 
   describe("createBook", () => {
     it("should create a new book", async () => {
-      const { result } = renderHook(() => useBooks(testLibraryId), {
+      const { result: authResult } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-create-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      const testEmail = `test-create-${Date.now()}@test.local`;
+      
+      await act(async () => {
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
+
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      await supabase.from("library_members").insert({
+        library_id: testLibraryId,
+        user_id: testUserId,
+        role: "admin",
+      });
+
+      const { result } = renderHook(() => useBooks(testLibraryId), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
@@ -261,15 +367,13 @@ describe("useBooks", () => {
       });
 
       expect(newBook.title).toBe(testBooks.book1.title);
-
-      // Should update the list
       await waitFor(() => expect(result.current.books).toHaveLength(1));
     });
 
     it("should fail without authentication", async () => {
       await signOutUser();
 
-      const { result } = renderHook(() => useBooks(testLibraryId), {
+      const { result } = renderHook(() => useBooks("test-lib-id"), {
         wrapper: createWrapper(),
       });
 
@@ -279,7 +383,7 @@ describe("useBooks", () => {
         act(async () => {
           await result.current.createBook.mutateAsync({
             title: "Test Book",
-            library_id: testLibraryId,
+            library_id: "test-lib-id",
             file_url: "https://example.com/book.pdf",
             file_type: "application/pdf",
           });
@@ -290,92 +394,145 @@ describe("useBooks", () => {
 
   describe("updateBook", () => {
     it("should update book with optimistic UI", async () => {
+      const { result: authResult } = renderHook(() => useAuth(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      const testEmail = `test-update-${Date.now()}@test.local`;
+      
+      await act(async () => {
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
+
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      await supabase.from("library_members").insert({
+        library_id: testLibraryId,
+        user_id: testUserId,
+        role: "admin",
+      });
+
+      // Create a book first
+      const { data: book, error: bookError } = await supabase
+        .from("books")
+        .insert({
+          ...testBooks.book1,
+          library_id: testLibraryId,
+          owner_id: testUserId,
+          file_url: "https://example.com/book.pdf",
+          file_type: "application/pdf",
+        })
+        .select()
+        .single();
+
+      expect(bookError).toBeNull();
+
       const { result } = renderHook(() => useBooks(testLibraryId), {
         wrapper: createWrapper(),
       });
 
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-update-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
-
-      // Create a book first
-      let bookId: string;
-      await act(async () => {
-        const { data, error } = await supabase
-          .from("books")
-          .insert({
-            ...testBooks.book1,
-            library_id: testLibraryId,
-            owner_id: testUserId,
-            file_url: "https://example.com/book.pdf",
-            file_type: "application/pdf",
-          })
-          .select()
-          .single();
-        
-        expect(error).toBeNull();
-        bookId = data!.id;
-      });
-
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
-      // Update the book
       let updatedBook: any;
       await act(async () => {
         updatedBook = await result.current.updateBook.mutateAsync({
-          id: bookId!,
+          id: book!.id,
           title: "Updated Title",
         });
       });
 
       expect(updatedBook.title).toBe("Updated Title");
-
-      // Should update in list
-      await waitFor(() => {
-        expect(result.current.books[0].title).toBe("Updated Title");
-      });
+      await waitFor(() => expect(result.current.books[0].title).toBe("Updated Title"));
     });
   });
 
   describe("deleteBook", () => {
     it("should delete book with optimistic UI", async () => {
+      const { result: authResult } = renderHook(() => useAuth(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(authResult.current.loading).toBe(false), { timeout: 5000 });
+
+      const testEmail = `test-delete-${Date.now()}@test.local`;
+      
+      await act(async () => {
+        await authResult.current.signUp(testEmail, "TestPass123!", "Test Owner");
+      });
+
+      await act(async () => {
+        await authResult.current.signIn(testEmail, "TestPass123!");
+      });
+
+      await waitFor(() => expect(authResult.current.user).not.toBeNull(), { timeout: 5000 });
+      const testUserId = authResult.current.user!.id;
+
+      const { data: library, error: libError } = await supabase
+        .from("libraries")
+        .insert({
+          name: "Test Library",
+          created_by: testUserId,
+          is_public: false,
+          allow_member_uploads: true,
+        })
+        .select()
+        .single();
+
+      expect(libError).toBeNull();
+      const testLibraryId = library!.id;
+
+      await supabase.from("library_members").insert({
+        library_id: testLibraryId,
+        user_id: testUserId,
+        role: "admin",
+      });
+
+      // Create a book first
+      const { data: book, error: bookError } = await supabase
+        .from("books")
+        .insert({
+          ...testBooks.book1,
+          library_id: testLibraryId,
+          owner_id: testUserId,
+          file_url: "https://example.com/book.pdf",
+          file_type: "application/pdf",
+        })
+        .select()
+        .single();
+
+      expect(bookError).toBeNull();
+
       const { result } = renderHook(() => useBooks(testLibraryId), {
         wrapper: createWrapper(),
       });
 
-      // Setup user and library
-      const { userId, libraryId } = await setupTestUserAndLibrary(`test-delete-${Date.now()}@test.local`);
-      testUserId = userId;
-      testLibraryId = libraryId;
-
-      // Create a book first
-      let bookId: string;
-      await act(async () => {
-        const { data, error } = await supabase
-          .from("books")
-          .insert({
-            ...testBooks.book1,
-            library_id: testLibraryId,
-            owner_id: testUserId,
-            file_url: "https://example.com/book.pdf",
-            file_type: "application/pdf",
-          })
-          .select()
-          .single();
-        
-        expect(error).toBeNull();
-        bookId = data!.id;
-      });
-
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
-      // Delete the book
       await act(async () => {
-        await result.current.deleteBook.mutateAsync(bookId!);
+        await result.current.deleteBook.mutateAsync(book!.id);
       });
 
-      // Should remove from list
       await waitFor(() => expect(result.current.books).toHaveLength(0));
     });
   });

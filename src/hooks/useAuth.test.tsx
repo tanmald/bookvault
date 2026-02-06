@@ -32,10 +32,14 @@ function createWrapper() {
 }
 
 describe("useAuth", () => {
+  let testEmail: string;
+
   beforeEach(async () => {
     // Ensure clean state
     await signOutUser();
     await cleanupTestData();
+    // Generate unique email for this test
+    testEmail = `test-auth-${Date.now()}@test.local`;
   });
 
   afterEach(async () => {
@@ -54,7 +58,7 @@ describe("useAuth", () => {
 
       await act(async () => {
         const signUpResult = await result.current.signUp(
-          testUsers.owner.email,
+          testEmail,
           testUsers.owner.password,
           testUsers.owner.displayName
         );
@@ -63,34 +67,40 @@ describe("useAuth", () => {
 
       // Wait for auth state to update
       await waitFor(() => expect(result.current.user).not.toBeNull());
-      expect(result.current.user?.email).toBe(testUsers.owner.email);
+      expect(result.current.user?.email).toBe(testEmail);
     });
 
     it("should fail to create duplicate user", async () => {
-      // First create a user directly
-      await act(async () => {
-        await createTestUser("owner");
-      });
-      await signOutUser();
-
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      // Try to create the same user again
-      let signUpResult: { error: Error | null } = { error: null };
+      // First create a user
       await act(async () => {
-        signUpResult = await result.current.signUp(
-          testUsers.owner.email,
+        const signUpResult = await result.current.signUp(
+          testEmail,
+          testUsers.owner.password,
+          testUsers.owner.displayName
+        );
+        expect(signUpResult.error).toBeNull();
+      });
+
+      await signOutUser();
+
+      // Try to create the same user again
+      let signUpResult2: { error: Error | null } = { error: null };
+      await act(async () => {
+        signUpResult2 = await result.current.signUp(
+          testEmail,
           testUsers.owner.password,
           testUsers.owner.displayName
         );
       });
 
-      // Should either error or succeed (Supabase handles duplicates differently)
-      expect(signUpResult).toBeDefined();
+      // Should error with duplicate user
+      expect(signUpResult2.error).not.toBeNull();
     });
 
     it("should validate email format", async () => {
@@ -122,7 +132,7 @@ describe("useAuth", () => {
       let signUpResult: { error: Error | null } = { error: null };
       await act(async () => {
         signUpResult = await result.current.signUp(
-          testUsers.owner.email,
+          testEmail,
           "short",
           testUsers.owner.displayName
         );
@@ -133,10 +143,19 @@ describe("useAuth", () => {
   });
 
   describe("signIn", () => {
+    let signInTestEmail: string;
+
     beforeEach(async () => {
       // Create a test user before sign in tests
-      await act(async () => {
-        await createTestUser("owner");
+      signInTestEmail = `test-signin-${Date.now()}@test.local`;
+      await supabase.auth.signUp({
+        email: signInTestEmail,
+        password: "TestPass123!",
+        options: {
+          data: {
+            display_name: "Test Owner",
+          },
+        },
       });
       await signOutUser();
     });
@@ -150,14 +169,14 @@ describe("useAuth", () => {
 
       await act(async () => {
         const signInResult = await result.current.signIn(
-          testUsers.owner.email,
-          testUsers.owner.password
+          signInTestEmail,
+          "TestPass123!"
         );
         expect(signInResult.error).toBeNull();
       });
 
       await waitFor(() => expect(result.current.user).not.toBeNull());
-      expect(result.current.user?.email).toBe(testUsers.owner.email);
+      expect(result.current.user?.email).toBe(signInTestEmail);
     });
 
     it("should fail with invalid password", async () => {
@@ -170,7 +189,7 @@ describe("useAuth", () => {
       let signInResult: { error: Error | null } = { error: null };
       await act(async () => {
         signInResult = await result.current.signIn(
-          testUsers.owner.email,
+          signInTestEmail,
           "wrongpassword"
         );
       });
