@@ -353,7 +353,7 @@ describe("useBooks", () => {
 
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
-      let newBook: any;
+      let newBook: { title: string } | null = null;
       await act(async () => {
         newBook = await result.current.createBook.mutateAsync({
           title: testBooks.book1.title,
@@ -454,7 +454,7 @@ describe("useBooks", () => {
 
       await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
 
-      let updatedBook: any;
+      let updatedBook: { title: string } | null = null;
       await act(async () => {
         updatedBook = await result.current.updateBook.mutateAsync({
           id: book!.id,
