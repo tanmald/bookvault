@@ -31,9 +31,7 @@ jobs:
 
       - name: Install Supabase CLI
         run: |
-          curl -L "https://github.com/supabase/supabase/releases/download/v1.145.4/supabase_1.145.4_linux_amd64.deb" -o supabase.deb
-          sudo dpkg -i supabase.deb
-          rm supabase.deb
+          npm install -g supabase
           supabase --version
 
       - name: Start Supabase Local
