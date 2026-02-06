@@ -30,12 +30,16 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
+        run: |
+          curl -L "https://github.com/supabase/supabase/releases/download/v1.145.4/supabase_1.145.4_linux_amd64.deb" -o supabase.deb
+          sudo dpkg -i supabase.deb
+          rm supabase.deb
+          supabase --version
 
       - name: Start Supabase Local
-        run: supabase start --workdir .
+        run: |
+          supabase start --workdir .
+          echo "Supabase started successfully"
 
       - name: Run tests
         run: npm test
