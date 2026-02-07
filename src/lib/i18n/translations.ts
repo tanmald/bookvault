@@ -395,9 +395,9 @@ export const translations = {
     // Kobo Send
     'kobo.send': 'Enviar para Kobo',
     'kobo.title': 'Enviar para Kobo',
-    'kobo.description': 'Transferir "{title}" para o teu e-reader Kobo',
+    'kobo.description': 'Transferir livro para o teu Kobo',
     'kobo.generating': 'A gerar link...',
-    'kobo.scanInstructions': 'Escaneia com o telemóvel ou escreve o URL no browser do Kobo',
+    'kobo.scanInstructions': 'Scaneia com o telemóvel ou escreve o URL no browser do Kobo',
     'kobo.directUrl': 'URL direto',
     'kobo.copied': 'URL copiado!',
     'kobo.instructionsTitle': 'Como transferir',
