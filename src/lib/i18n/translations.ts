@@ -392,6 +392,17 @@ export const translations = {
     'common.next': 'Seguinte',
     'common.languages': 'idiomas',
     
+    // Copy Book
+    'copyBook.title': 'Copiar para Biblioteca',
+    'copyBook.description': 'Seleciona a biblioteca de destino para "{title}"',
+    'copyBook.selectLibrary': 'Selecionar biblioteca',
+    'copyBook.createNew': 'Criar nova biblioteca',
+    'copyBook.copying': 'A copiar...',
+    'copyBook.success': 'Livro copiado com sucesso!',
+    'copyBook.copyButton': 'Copiar Livro',
+    'copyBook.noLibraries': 'Não estás em nenhuma outra biblioteca',
+    'copyBook.copyProgress': 'Copiar progresso atual de leitura',
+
     // Kobo Send
     'kobo.send': 'Enviar para Kobo',
     'kobo.title': 'Enviar para Kobo',
@@ -816,6 +827,17 @@ export const translations = {
     'common.next': 'Next',
     'common.languages': 'languages',
     
+    // Copy Book
+    'copyBook.title': 'Copy to Library',
+    'copyBook.description': 'Select target library for "{title}"',
+    'copyBook.selectLibrary': 'Select library',
+    'copyBook.createNew': 'Create new library',
+    'copyBook.copying': 'Copying...',
+    'copyBook.success': 'Book copied successfully!',
+    'copyBook.copyButton': 'Copy Book',
+    'copyBook.noLibraries': "You're not in any other libraries",
+    'copyBook.copyProgress': 'Copy current reading progress',
+
     // Kobo Send
     'kobo.send': 'Send to Kobo',
     'kobo.title': 'Send to Kobo',

@@ -32,9 +32,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
+import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
+import { useLibrary } from '@/contexts/LibraryContext';
 import {
   ArrowLeft,
+  ArrowRight,
   Trash2,
   BookOpen,
   Calendar,
@@ -74,6 +77,10 @@ export default function BookDetails() {
   });
   const [previewCoverUrl, setPreviewCoverUrl] = useState<string | null>(null);
   const [isUpdatingCover, setIsUpdatingCover] = useState(false);
+
+  // Copy book dialog state
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const { currentLibrary } = useLibrary();
 
   // Check if current user is admin of the book owner's library
   const { data: isAdmin } = useQuery({
@@ -423,6 +430,16 @@ export default function BookDetails() {
             </CardContent>
           </Card>
 
+          {/* Copy Book Button */}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setIsCopyDialogOpen(true)}
+          >
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Copiar para outra biblioteca
+          </Button>
+
           {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -575,6 +592,21 @@ export default function BookDetails() {
           </Card>
         </div>
       </div>
+
+      {/* Copy Book Dialog */}
+      <CopyBookDialog
+        isOpen={isCopyDialogOpen}
+        onClose={() => setIsCopyDialogOpen(false)}
+        bookId={book?.id || ''}
+        bookTitle={book?.title || ''}
+        currentLibraryId={currentLibrary?.id || ''}
+        onSuccess={() => {
+          // Navigate to the selected library after successful copy
+          if (currentLibrary) {
+            navigate(`/?library=${currentLibrary.id}`);
+          }
+        }}
+      />
     </AppLayout>
   );
 }
