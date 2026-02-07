@@ -32,7 +32,7 @@ export const translations = {
     'status.toRead': 'Para Ler',
     'status.reading': 'A Ler',
     'status.read': 'Lido',
-    'status.all': 'Todos',
+    'status.all': 'Todos os estados',
     
     // Filters
     'filters.search': 'Pesquisar por título ou autor...',
@@ -472,7 +472,7 @@ export const translations = {
     'status.toRead': 'To Read',
     'status.reading': 'Reading',
     'status.read': 'Read',
-    'status.all': 'All',
+    'status.all': 'All statuses',
     
     // Filters
     'filters.search': 'Search by title or author...',
