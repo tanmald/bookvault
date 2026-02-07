@@ -49,7 +49,14 @@ import {
   ImageIcon,
   ChevronLeft,
   ChevronRight,
+  Pencil,
 } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useAlternativeCovers } from '@/hooks/useAlternativeCovers';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,7 +66,7 @@ export default function BookDetails() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
-  const { progress, updateProgress } = useReadingProgress(id);
+  const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
   const { toast } = useToast();
 
   const book = books.find((b) => b.id === id);
@@ -81,6 +88,9 @@ export default function BookDetails() {
   // Copy book dialog state
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const { currentLibrary } = useLibrary();
+
+  // Date picker state for finished date
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Check if current user is admin of the book owner's library
   const { data: isAdmin } = useQuery({
@@ -544,6 +554,51 @@ export default function BookDetails() {
                       {t('book.finishedOn')} {formatDate(bookProgress.finished_at)}
                     </span>
                   )}
+                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        title={t('book.editFinishedDate')}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={bookProgress?.finished_at ? new Date(bookProgress.finished_at) : undefined}
+                        onSelect={(date) => {
+                          if (date && id) {
+                            // Validate date is not in the future
+                            const now = new Date();
+                            now.setHours(0, 0, 0, 0);
+                            if (date > now) {
+                              toast({
+                                variant: 'destructive',
+                                title: t('common.error'),
+                                description: t('book.futureDateError'),
+                              });
+                              return;
+                            }
+                            updateFinishedDate.mutate({
+                              bookId: id,
+                              finishedAt: date.toISOString(),
+                            });
+                            setIsDatePickerOpen(false);
+                          }
+                        }}
+                        disabled={(date) => {
+                          // Disable future dates
+                          const now = new Date();
+                          now.setHours(0, 0, 0, 0);
+                          return date > now;
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </CardContent>

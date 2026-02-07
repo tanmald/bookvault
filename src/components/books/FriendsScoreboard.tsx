@@ -1,11 +1,11 @@
 import { useFriendsBookProgress, FriendProgress } from '@/hooks/useFriendsBookProgress';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Trophy, Users, BookOpen, Clock, CheckCircle } from 'lucide-react';
+import { Trophy, Users, BookOpen, Clock, CheckCircle, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface FriendsScoreboardProps {
@@ -23,6 +23,7 @@ function getInitials(name: string | null): string {
 }
 
 export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
+  const { user } = useAuth();
   const { data: friendsProgress, isLoading } = useFriendsBookProgress(bookId);
   const { t } = useLanguage();
 
@@ -31,6 +32,12 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     if (days === 0) return t('scoreboard.lessThanDay');
     if (days === 1) return t('scoreboard.oneDay');
     return `${days} ${t('scoreboard.days')}`;
+  };
+
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   // Count readers by status for summary
@@ -57,72 +64,99 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     const isRead = friend.status === 'read';
     const isReading = friend.status === 'reading';
     const isTopThree = isRead && rank <= 3;
+    const hasReview = friend.review_rating !== null;
 
     return (
-      <div className="flex items-center gap-3 py-2">
-        {/* Rank for completed readers */}
-        <div className="w-8 flex-shrink-0 text-center">
-        {isRead && (
-            <>
-              {rank === 1 && <Trophy className="h-5 w-5 text-primary mx-auto" />}
-              {rank === 2 && <Trophy className="h-5 w-5 text-muted-foreground mx-auto" />}
-              {rank === 3 && <Trophy className="h-5 w-5 text-accent-foreground mx-auto" />}
-              {rank > 3 && (
-                <span className="text-sm text-muted-foreground">{rank}º</span>
+      <div className="py-2">
+        <div className="flex items-center gap-3">
+          {/* Rank for completed readers */}
+          <div className="w-8 flex-shrink-0 text-center">
+            {isRead && (
+              <>
+                {rank === 1 && <Trophy className="h-5 w-5 text-primary mx-auto" />}
+                {rank === 2 && <Trophy className="h-5 w-5 text-muted-foreground mx-auto" />}
+                {rank === 3 && <Trophy className="h-5 w-5 text-accent-foreground mx-auto" />}
+                {rank > 3 && (
+                  <span className="text-sm text-muted-foreground">{rank}º</span>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Avatar */}
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={friend.avatar_url || undefined} />
+            <AvatarFallback className="text-xs">
+              {getInitials(friend.display_name)}
+            </AvatarFallback>
+          </Avatar>
+
+          {/* Name and status */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-medium truncate">
+                {friend.display_name || t('friends.user')}
+              </p>
+              {friend.user_id === user?.id && (
+                <Badge variant="outline" className="text-xs flex-shrink-0">
+                  {t('scoreboard.you')}
+                </Badge>
               )}
-            </>
-          )}
-        </div>
-
-        {/* Avatar */}
-        <Avatar className="h-9 w-9">
-          <AvatarImage src={friend.avatar_url || undefined} />
-          <AvatarFallback className="text-xs">
-            {getInitials(friend.display_name)}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Name and status */}
-        <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">
-            {friend.display_name || t('friends.user')}
-          </p>
-          {isReading && (
-            <div className="flex items-center gap-2 mt-1">
-              <Progress value={friend.progress} className="h-2 flex-1" />
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                {friend.progress}%
-              </span>
             </div>
-          )}
+          </div>
+
+          {/* Status badge / reading time */}
+          <div className="flex-shrink-0">
+            {isRead && friend.finished_at && (
+              <Badge
+                variant={isTopThree ? 'default' : 'secondary'}
+                className="flex items-center gap-1"
+              >
+                <Clock className="h-3 w-3" />
+                {formatDate(friend.finished_at)}
+              </Badge>
+            )}
+            {isReading && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                {t('status.reading')}
+              </Badge>
+            )}
+            {friend.status === 'to_read' && (
+              <Badge variant="secondary" className="text-muted-foreground">
+                {t('status.toRead')}
+              </Badge>
+            )}
+            {!friend.status && (
+              <span className="text-xs text-muted-foreground">—</span>
+            )}
+          </div>
         </div>
 
-        {/* Status badge / reading time */}
-        <div className="flex-shrink-0">
-          {isRead && friend.reading_time_days !== null && (
-            <Badge
-              variant={isTopThree ? 'default' : 'secondary'}
-              className="flex items-center gap-1"
-            >
-              <Clock className="h-3 w-3" />
-              {formatReadingTime(friend.reading_time_days)}
-            </Badge>
-          )}
-          {isReading && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              <BookOpen className="h-3 w-3" />
-              {t('status.reading')}
-            </Badge>
-          )}
-          {friend.status === 'to_read' && (
-            <Badge variant="secondary" className="text-muted-foreground">
-              {t('status.toRead')}
-            </Badge>
-          )}
-          {!friend.status && (
-            <span className="text-xs text-muted-foreground">—</span>
-          )}
-        </div>
+        {/* Review section for completed readers with reviews */}
+        {isRead && hasReview && (
+          <div className="mt-2 ml-11 pl-3 border-l-2 border-muted">
+            {/* Star rating */}
+            <div className="flex items-center gap-1 mb-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-3 w-3 ${
+                    star <= (friend.review_rating || 0)
+                      ? 'fill-accent text-accent'
+                      : 'text-muted-foreground'
+                  }`}
+                />
+              ))}
+            </div>
+            {/* Comment (if exists) */}
+            {friend.review_content && (
+              <p className="text-sm text-muted-foreground italic line-clamp-2">
+                "{friend.review_content}"
+              </p>
+            )}
+          </div>
+        )}
       </div>
     );
   };

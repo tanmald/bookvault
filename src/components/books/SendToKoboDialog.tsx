@@ -1,5 +1,4 @@
-import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ExternalLink, Clock, QrCode, Copy } from 'lucide-react';
+import { useShortUrl } from '@/hooks/useShortUrl';
+import { Loader2, ExternalLink, Clock, Copy, RotateCcw, Link2 } from 'lucide-react';
 
 interface SendToKoboDialogProps {
   isOpen: boolean;
@@ -31,57 +31,96 @@ export function SendToKoboDialog({
 }: SendToKoboDialogProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { shortUrl, isLoading: isShortening, error, shortenUrl, retry } = useShortUrl();
+
+  // Shorten URL when dialog opens and signedUrl is available
+  useEffect(() => {
+    if (isOpen && signedUrl && !shortUrl && !isShortening) {
+      shortenUrl(signedUrl);
+    }
+  }, [isOpen, signedUrl, shortUrl, isShortening, shortenUrl]);
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      // The hook will reset on next open
+    }
+  }, [isOpen]);
 
   const handleCopyUrl = () => {
-    if (signedUrl) {
-      navigator.clipboard.writeText(signedUrl);
+    const urlToCopy = shortUrl || signedUrl;
+    if (urlToCopy) {
+      navigator.clipboard.writeText(urlToCopy);
       toast({ title: t('kobo.copied') });
     }
   };
+
+  const displayUrl = shortUrl || signedUrl;
+  const isShortened = shortUrl && shortUrl !== signedUrl;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <QrCode className="h-5 w-5" />
+            <Link2 className="h-5 w-5" />
             {t('kobo.title')}
           </DialogTitle>
           <DialogDescription>{t('kobo.description').replace('{title}', bookTitle)}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {isLoading ? (
+          {isLoading || isShortening ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('kobo.generating')}</p>
+              <p className="text-sm text-muted-foreground">
+                {isShortening ? t('kobo.shortening') : t('kobo.generating')}
+              </p>
             </div>
-          ) : signedUrl ? (
+          ) : displayUrl ? (
             <>
-              {/* QR Code */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="p-4 bg-white rounded-lg border">
-                  <QRCodeSVG value={signedUrl} size={200} level="M" />
-                </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  {t('kobo.scanInstructions')}
-                </p>
-              </div>
-
-              {/* Direct URL */}
+              {/* Short URL */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('kobo.directUrl')}</Label>
                 <div className="flex gap-2">
-                  <Input value={signedUrl} readOnly className="text-xs font-mono" />
+                  <Input 
+                    value={displayUrl} 
+                    readOnly 
+                    className={`text-xs font-mono ${isShortened ? 'text-green-600 dark:text-green-400' : ''}`}
+                  />
                   <Button
                     size="icon"
                     variant="outline"
                     onClick={handleCopyUrl}
+                    title={t('kobo.copy')}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                {isShortened && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {t('kobo.shortened')}
+                  </p>
+                )}
               </div>
+
+              {/* Retry button if there was an error */}
+              {error && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-destructive">
+                    {t('kobo.shortenError')}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={retry}
+                    className="w-fit"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {t('kobo.retry')}
+                  </Button>
+                </div>
+              )}
 
               {/* Instructions */}
               <div className="bg-muted rounded-lg p-4 space-y-3">
@@ -97,8 +136,8 @@ export function SendToKoboDialog({
               </div>
 
               {/* Expiry notice */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>{t('kobo.expiryNotice')}</span>
               </div>
             </>

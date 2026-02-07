@@ -7,6 +7,7 @@ export const translations = {
     'nav.addBook': 'Adicionar Livro',
     'nav.profile': 'Perfil',
     'nav.logout': 'Sair',
+    'nav.currentLibrary': 'Biblioteca Atual',
     
     // Library
     'library.title': 'A Minha Biblioteca',
@@ -31,7 +32,7 @@ export const translations = {
     'status.toRead': 'Para Ler',
     'status.reading': 'A Ler',
     'status.read': 'Lido',
-    'status.all': 'Todos',
+    'status.all': 'Todos os estados',
     
     // Filters
     'filters.search': 'Pesquisar por título ou autor...',
@@ -41,6 +42,9 @@ export const translations = {
     'filters.author': 'Autor',
     'filters.allAuthors': 'Todos os autores',
     'filters.showNotPlanned': 'Mostrar Não Planeados',
+    'filters.show': 'Filtros',
+    'filters.hide': 'Ocultar Filtros',
+    'filters.clear': 'Limpar Filtros',
     
     // Profile
     'profile.title': 'O Meu Perfil',
@@ -208,6 +212,8 @@ export const translations = {
     'book.progressLabel': 'Progresso:',
     'book.finished': '✓ Livro concluído',
     'book.finishedOn': 'em',
+    'book.editFinishedDate': 'Editar data de conclusão',
+    'book.futureDateError': 'A data não pode ser no futuro',
     'book.descriptionTitle': 'Descrição',
     'book.infoTitle': 'Informações',
     'book.addedOn': 'Adicionado em:',
@@ -236,7 +242,27 @@ export const translations = {
     'scoreboard.lessThanDay': 'menos de 1 dia',
     'scoreboard.oneDay': '1 dia',
     'scoreboard.days': 'dias',
-    
+    'scoreboard.finishedOn': 'Terminado em',
+    'scoreboard.you': 'Você',
+
+    // Review
+    'review.title': 'Avaliar Livro',
+    'review.description': 'Como foi "{bookTitle}"? Deixa a tua avaliação!',
+    'review.rating': 'Avaliação',
+    'review.ratingRequired': 'Avaliação obrigatória',
+    'review.comment': 'Comentário',
+    'review.optional': 'opcional',
+    'review.commentPlaceholder': 'Escreve o que achaste do livro...',
+    'review.cancel': 'Cancelar',
+    'review.submit': 'Submeter',
+    'review.saving': 'A guardar...',
+    'review.edit': 'Editar avaliação',
+    'review.delete': 'Apagar avaliação',
+    'review.deleteConfirm': 'Tens a certeza que queres apagar esta avaliação?',
+    'review.yourReview': 'A tua avaliação',
+    'review.noReview': 'Ainda não avaliaste este livro',
+    'review.add': 'Adicionar avaliação',
+
     // Onboarding
     'onboarding.welcome': 'Bem-vindo ao BookVault!',
     'onboarding.chooseOption': 'Como queres começar?',
@@ -408,14 +434,18 @@ export const translations = {
     'kobo.title': 'Enviar para Kobo',
     'kobo.description': 'Transferir livro para o teu Kobo',
     'kobo.generating': 'A gerar link...',
-    'kobo.scanInstructions': 'Scaneia com o telemóvel ou escreve o URL no browser do Kobo',
-    'kobo.directUrl': 'URL direto',
+    'kobo.shortening': 'A encurtar URL...',
+    'kobo.directUrl': 'URL',
+    'kobo.copy': 'Copiar',
     'kobo.copied': 'URL copiado!',
+    'kobo.shortened': 'URL encurtado (mais fácil de escrever)',
+    'kobo.shortenError': 'Não foi possível encurtar o URL. A usar URL completo.',
+    'kobo.retry': 'Tentar novamente',
     'kobo.instructionsTitle': 'Como transferir',
     'kobo.step1': 'No Kobo: Definições → Funcionalidades Beta → Browser',
-    'kobo.step2': 'Escreve o URL ou escaneia o código QR com o telemóvel',
+    'kobo.step2': 'Escreve o URL abaixo no browser do Kobo',
     'kobo.step3': 'O download começa automaticamente',
-    'kobo.expiryNotice': 'Link válido por 30 minutos',
+    'kobo.expiryNotice': 'Link válido por 30 minutos (independentemente do URL encurtado)',
 
     // Genres
     'genre.autoajuda': 'Autoajuda',
@@ -442,6 +472,7 @@ export const translations = {
     'nav.addBook': 'Add Book',
     'nav.profile': 'Profile',
     'nav.logout': 'Logout',
+    'nav.currentLibrary': 'Current Library',
     
     // Library
     'library.title': 'My Library',
@@ -466,7 +497,7 @@ export const translations = {
     'status.toRead': 'To Read',
     'status.reading': 'Reading',
     'status.read': 'Read',
-    'status.all': 'All',
+    'status.all': 'All statuses',
     
     // Filters
     'filters.search': 'Search by title or author...',
@@ -476,6 +507,9 @@ export const translations = {
     'filters.author': 'Author',
     'filters.allAuthors': 'All authors',
     'filters.showNotPlanned': 'Show Not Planned',
+    'filters.show': 'Filters',
+    'filters.hide': 'Hide Filters',
+    'filters.clear': 'Clear Filters',
     
     // Profile
     'profile.title': 'My Profile',
@@ -643,6 +677,8 @@ export const translations = {
     'book.progressLabel': 'Progress:',
     'book.finished': '✓ Book completed',
     'book.finishedOn': 'on',
+    'book.editFinishedDate': 'Edit completion date',
+    'book.futureDateError': 'Date cannot be in the future',
     'book.descriptionTitle': 'Description',
     'book.infoTitle': 'Information',
     'book.addedOn': 'Added on:',
@@ -671,7 +707,27 @@ export const translations = {
     'scoreboard.lessThanDay': 'less than 1 day',
     'scoreboard.oneDay': '1 day',
     'scoreboard.days': 'days',
-    
+    'scoreboard.finishedOn': 'Finished on',
+    'scoreboard.you': 'You',
+
+    // Review
+    'review.title': 'Review Book',
+    'review.description': 'How was "{bookTitle}"? Leave your review!',
+    'review.rating': 'Rating',
+    'review.ratingRequired': 'Rating is required',
+    'review.comment': 'Comment',
+    'review.optional': 'optional',
+    'review.commentPlaceholder': 'Write what you thought about the book...',
+    'review.cancel': 'Cancel',
+    'review.submit': 'Submit',
+    'review.saving': 'Saving...',
+    'review.edit': 'Edit review',
+    'review.delete': 'Delete review',
+    'review.deleteConfirm': 'Are you sure you want to delete this review?',
+    'review.yourReview': 'Your review',
+    'review.noReview': 'You haven\'t reviewed this book yet',
+    'review.add': 'Add review',
+
     // Onboarding
     'onboarding.welcome': 'Welcome to BookVault!',
     'onboarding.chooseOption': 'How would you like to start?',
@@ -843,14 +899,18 @@ export const translations = {
     'kobo.title': 'Send to Kobo',
     'kobo.description': 'Transfer "{title}" to your Kobo e-reader',
     'kobo.generating': 'Generating link...',
-    'kobo.scanInstructions': 'Scan with your phone or type the URL in Kobo browser',
-    'kobo.directUrl': 'Direct URL',
+    'kobo.shortening': 'Shortening URL...',
+    'kobo.directUrl': 'URL',
+    'kobo.copy': 'Copy',
     'kobo.copied': 'URL copied!',
+    'kobo.shortened': 'URL shortened (easier to type)',
+    'kobo.shortenError': 'Could not shorten URL. Using full URL.',
+    'kobo.retry': 'Try again',
     'kobo.instructionsTitle': 'How to transfer',
     'kobo.step1': 'On Kobo: Settings → Beta Features → Browser',
-    'kobo.step2': 'Type the URL or scan the QR code with your phone',
+    'kobo.step2': 'Type the URL below in Kobo browser',
     'kobo.step3': 'Download starts automatically',
-    'kobo.expiryNotice': 'Link valid for 30 minutes',
+    'kobo.expiryNotice': 'Link valid for 30 minutes (regardless of shortened URL)',
 
     // Genres
     'genre.autoajuda': 'Self-Help',
