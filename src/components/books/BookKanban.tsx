@@ -26,9 +26,10 @@ import { cn } from '@/lib/utils';
 interface BookKanbanProps {
   books: Book[];
   progressMap: Map<string, ReadingProgress>;
+  showNotPlanned: boolean;
 }
 
-export function BookKanban({ books, progressMap }: BookKanbanProps) {
+export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanProps) {
   const { t } = useLanguage();
   const { updateProgress } = useReadingProgress();
 
@@ -78,6 +79,13 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
       color: 'border-primary'
     },
   ];
+
+  // Filter out not_planned column if toggle is off
+  const visibleColumns = useMemo(() => {
+    return showNotPlanned
+      ? columns
+      : columns.filter(col => col.status !== 'not_planned');
+  }, [showNotPlanned, columns]);
 
   const booksByStatus = useMemo(() => {
     const grouped: Record<ReadingStatus, Book[]> = {
@@ -163,8 +171,13 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {columns.map((column) => (
+      <div className={cn(
+        "grid gap-3 md:gap-4",
+        showNotPlanned
+          ? "grid-cols-2 md:grid-cols-4"
+          : "grid-cols-2 md:grid-cols-3"
+      )}>
+        {visibleColumns.map((column) => (
           <div key={column.status} className="flex flex-col min-w-0">
             <div className={cn(
               "flex items-center gap-2 pb-3 mb-3 border-b-2",

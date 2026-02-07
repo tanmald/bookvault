@@ -176,7 +176,7 @@ export default function Library() {
         {isLoading ? (
           viewMode === 'kanban' ? <BookKanbanSkeleton /> : <BookGridSkeleton />
         ) : viewMode === 'kanban' ? (
-          <BookKanban books={filteredBooks} progressMap={progressMap} />
+          <BookKanban books={filteredBooks} progressMap={progressMap} showNotPlanned={showNotPlanned} />
         ) : (
           <BookGrid books={filteredBooks} progressMap={progressMap} />
         )}
