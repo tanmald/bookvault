@@ -164,51 +164,6 @@ BookVault is perfect for:
 
 ---
 
-## 🤝 Contributing
-
-We love contributions! Whether you're fixing bugs, adding features, or improving documentation, your help is welcome.
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/tanmald/bookvault.git
-cd bookvault
-
-# Install dependencies
-npm install
-
-# Create .env file with Supabase credentials
-cp .env.example .env
-
-# Start the development server
-npm run dev
-```
-
-The app will be available at `http://localhost:8080`
-
-### Available Commands
-
-```bash
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-```
-
-### Before You Submit a PR
-
-- Run `npm run lint` to check code style
-- Run `npm run test` to ensure tests pass
-- Update documentation if needed
-- Write a clear commit message
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
-
 ## 🐛 Found a Bug?
 
 Please [open an issue on GitHub](https://github.com/tanmald/bookvault/issues) with:
@@ -238,7 +193,7 @@ This means you're free to use, modify, and share BookVault for any purpose—per
 
 ## 🎉 Recent Updates
 
-### v1.2.0 — Mobile Experience & Social Reading (Feb 7, 2026)
+### v1.1.0 — Mobile Experience & Social Reading (Feb 7, 2026)
 - ✅ **Zero horizontal scroll** — Fully responsive mobile design
 - ✅ **See yourself in the scoreboard** — Compare your reading progress with friends
 - ✅ **Edit finish dates** — Update when you finished a book
