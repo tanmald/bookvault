@@ -120,8 +120,8 @@ export default function Library() {
     <>
       <AppLayout>
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold mb-1">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold mb-1 truncate">
               {currentLibrary?.name || t('library.title')}
             </h1>
             <p className="text-muted-foreground">
@@ -135,24 +135,24 @@ export default function Library() {
               size="sm"
               onClick={() => setViewMode('kanban')}
               className={cn(
-                "h-8 px-3",
+                "h-8 px-2 md:px-3",
                 viewMode === 'kanban' && "bg-background shadow-sm"
               )}
             >
-              <Columns3 className="h-4 w-4 mr-1.5" />
-              {t('library.viewKanban')}
+              <Columns3 className="h-4 w-4 mr-0 md:mr-1.5" />
+              <span className="hidden md:inline">{t('library.viewKanban')}</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('grid')}
               className={cn(
-                "h-8 px-3",
+                "h-8 px-2 md:px-3",
                 viewMode === 'grid' && "bg-background shadow-sm"
               )}
             >
-              <LayoutGrid className="h-4 w-4 mr-1.5" />
-              {t('library.viewGrid')}
+              <LayoutGrid className="h-4 w-4 mr-0 md:mr-1.5" />
+              <span className="hidden md:inline">{t('library.viewGrid')}</span>
             </Button>
           </div>
         </div>

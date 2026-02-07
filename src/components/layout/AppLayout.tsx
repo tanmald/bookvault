@@ -56,10 +56,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const initials = user?.email?.substring(0, 2).toUpperCase() ?? 'U';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between overflow-hidden">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
               <BookOpen className="h-7 w-7 text-accent" />

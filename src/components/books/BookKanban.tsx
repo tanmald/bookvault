@@ -165,13 +165,13 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {columns.map((column) => (
-          <div key={column.status} className="flex flex-col">
+          <div key={column.status} className="flex flex-col min-w-0">
             <div className={cn(
               "flex items-center gap-2 pb-3 mb-3 border-b-2",
               column.color
             )}>
               {column.icon}
-              <h2 className="font-semibold">{column.label}</h2>
+              <h2 className="font-semibold truncate">{column.label}</h2>
               <span className="ml-auto text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 {booksByStatus[column.status].length}
               </span>
