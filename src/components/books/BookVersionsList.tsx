@@ -45,7 +45,14 @@ export function BookVersionsList({
     try {
       setDownloadingId(file.id);
       const url = await signedUrl.mutateAsync({ filePath: file.file_url });
-      window.open(url, '_blank');
+
+      // Create temporary anchor element to force download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.file_url.split('/').pop() || `book.${file.file_type.toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('Download failed:', error);
     } finally {
