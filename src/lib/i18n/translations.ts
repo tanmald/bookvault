@@ -42,6 +42,9 @@ export const translations = {
     'filters.author': 'Autor',
     'filters.allAuthors': 'Todos os autores',
     'filters.showNotPlanned': 'Mostrar Não Planeados',
+    'filters.show': 'Filtros',
+    'filters.hide': 'Ocultar Filtros',
+    'filters.clear': 'Limpar Filtros',
     
     // Profile
     'profile.title': 'O Meu Perfil',
@@ -482,6 +485,9 @@ export const translations = {
     'filters.author': 'Author',
     'filters.allAuthors': 'All authors',
     'filters.showNotPlanned': 'Show Not Planned',
+    'filters.show': 'Filters',
+    'filters.hide': 'Hide Filters',
+    'filters.clear': 'Clear Filters',
     
     // Profile
     'profile.title': 'My Profile',
