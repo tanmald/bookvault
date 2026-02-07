@@ -53,39 +53,39 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
     useSensor(KeyboardSensor)
   );
 
-  const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
-    {
-      status: 'not_planned',
-      label: t('status.notPlanned'),
-      icon: <CircleDashed className="h-4 w-4" />,
-      color: 'border-muted-foreground/30'
-    },
-    {
-      status: 'to_read',
-      label: t('status.toRead'),
-      icon: <Clock className="h-4 w-4" />,
-      color: 'border-muted-foreground/50'
-    },
-    {
-      status: 'reading',
-      label: t('status.reading'),
-      icon: <BookOpen className="h-4 w-4" />,
-      color: 'border-accent'
-    },
-    {
-      status: 'read',
-      label: t('status.read'),
-      icon: <CheckCircle className="h-4 w-4" />,
-      color: 'border-primary'
-    },
-  ];
-
   // Filter out not_planned column if toggle is off
   const visibleColumns = useMemo(() => {
+    const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
+      {
+        status: 'not_planned',
+        label: t('status.notPlanned'),
+        icon: <CircleDashed className="h-4 w-4" />,
+        color: 'border-muted-foreground/30'
+      },
+      {
+        status: 'to_read',
+        label: t('status.toRead'),
+        icon: <Clock className="h-4 w-4" />,
+        color: 'border-muted-foreground/50'
+      },
+      {
+        status: 'reading',
+        label: t('status.reading'),
+        icon: <BookOpen className="h-4 w-4" />,
+        color: 'border-accent'
+      },
+      {
+        status: 'read',
+        label: t('status.read'),
+        icon: <CheckCircle className="h-4 w-4" />,
+        color: 'border-primary'
+      },
+    ];
+
     return showNotPlanned
       ? columns
       : columns.filter(col => col.status !== 'not_planned');
-  }, [showNotPlanned, columns]);
+  }, [showNotPlanned, t]);
 
   const booksByStatus = useMemo(() => {
     const grouped: Record<ReadingStatus, Book[]> = {
