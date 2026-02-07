@@ -120,7 +120,7 @@ export default function Library() {
             </p>
           </div>
           
-            <div className="flex flex-col sm:flex-row items-center gap-1 bg-muted p-1 rounded-lg"></div>            <Button
+            <div className="flex flex-col sm:flex-row items-center gap-1 bg-muted p-1 rounded-l>iv>            <Button
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('kanban')}
@@ -140,6 +140,7 @@ export default function Library() {
                 "h-8 px-3",
                 viewMode === 'grid' && "bg-background shadow-sm"
               )}
+              </
             >
               <LayoutGrid className="h-4 w-4 mr-1.5" />
               {t('library.viewGrid')}
