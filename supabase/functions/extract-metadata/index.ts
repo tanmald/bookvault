@@ -553,8 +553,7 @@ serve(async (req) => {
     const jwt = authHeader.replace(/^Bearer\s+/i, '');
 
     // CRITICAL FIX: Pass JWT directly to getUser(jwt)
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
-
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError) {
       console.error("JWT verification failed:", authError);
       return new Response(JSON.stringify({
