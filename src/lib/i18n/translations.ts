@@ -242,7 +242,27 @@ export const translations = {
     'scoreboard.lessThanDay': 'menos de 1 dia',
     'scoreboard.oneDay': '1 dia',
     'scoreboard.days': 'dias',
-    
+    'scoreboard.finishedOn': 'Terminado em',
+    'scoreboard.you': 'Você',
+
+    // Review
+    'review.title': 'Avaliar Livro',
+    'review.description': 'Como foi "{bookTitle}"? Deixa a tua avaliação!',
+    'review.rating': 'Avaliação',
+    'review.ratingRequired': 'Avaliação obrigatória',
+    'review.comment': 'Comentário',
+    'review.optional': 'opcional',
+    'review.commentPlaceholder': 'Escreve o que achaste do livro...',
+    'review.cancel': 'Cancelar',
+    'review.submit': 'Submeter',
+    'review.saving': 'A guardar...',
+    'review.edit': 'Editar avaliação',
+    'review.delete': 'Apagar avaliação',
+    'review.deleteConfirm': 'Tens a certeza que queres apagar esta avaliação?',
+    'review.yourReview': 'A tua avaliação',
+    'review.noReview': 'Ainda não avaliaste este livro',
+    'review.add': 'Adicionar avaliação',
+
     // Onboarding
     'onboarding.welcome': 'Bem-vindo ao BookVault!',
     'onboarding.chooseOption': 'Como queres começar?',
@@ -687,7 +707,27 @@ export const translations = {
     'scoreboard.lessThanDay': 'less than 1 day',
     'scoreboard.oneDay': '1 day',
     'scoreboard.days': 'days',
-    
+    'scoreboard.finishedOn': 'Finished on',
+    'scoreboard.you': 'You',
+
+    // Review
+    'review.title': 'Review Book',
+    'review.description': 'How was "{bookTitle}"? Leave your review!',
+    'review.rating': 'Rating',
+    'review.ratingRequired': 'Rating is required',
+    'review.comment': 'Comment',
+    'review.optional': 'optional',
+    'review.commentPlaceholder': 'Write what you thought about the book...',
+    'review.cancel': 'Cancel',
+    'review.submit': 'Submit',
+    'review.saving': 'Saving...',
+    'review.edit': 'Edit review',
+    'review.delete': 'Delete review',
+    'review.deleteConfirm': 'Are you sure you want to delete this review?',
+    'review.yourReview': 'Your review',
+    'review.noReview': 'You haven\'t reviewed this book yet',
+    'review.add': 'Add review',
+
     // Onboarding
     'onboarding.welcome': 'Welcome to BookVault!',
     'onboarding.chooseOption': 'How would you like to start?',

@@ -12,6 +12,8 @@ export interface FriendProgress {
   started_at: string | null;
   finished_at: string | null;
   reading_time_days: number | null;
+  review_rating: number | null;
+  review_content: string | null;
 }
 
 function calculateReadingDays(startedAt: string | null, finishedAt: string | null): number | null {
@@ -64,10 +66,20 @@ export function useFriendsBookProgress(bookId: string | undefined) {
 
       if (progressError) throw progressError;
 
-      // Step 4: Combine data - include all friends, even those without progress
+      // Step 4: Get reviews for this book from friends
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('user_id, rating, content')
+        .eq('book_id', bookId)
+        .in('user_id', friendIds);
+
+      if (reviewsError) throw reviewsError;
+
+      // Step 5: Combine data - include all friends, even those without progress
       const friendsProgress: FriendProgress[] = friendIds.map((friendId) => {
         const profile = profiles?.find((p) => p.user_id === friendId);
         const progress = progressData?.find((p) => p.user_id === friendId);
+        const review = reviewsData?.find((r) => r.user_id === friendId);
 
         return {
           user_id: friendId,
@@ -81,11 +93,53 @@ export function useFriendsBookProgress(bookId: string | undefined) {
             progress?.started_at || null,
             progress?.finished_at || null
           ),
+          review_rating: review?.rating ?? null,
+          review_content: review?.content ?? null,
         };
       });
 
-      // Step 5: Sort - read (by time), reading (by progress), to_read, not_planned, then null
-      return friendsProgress.sort((a, b) => {
+      // Step 6: Add current user's data to the scoreboard
+      const { data: currentUserProfile } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: currentUserProgress } = await supabase
+        .from('reading_progress')
+        .select('user_id, status, progress, started_at, finished_at')
+        .eq('book_id', bookId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const { data: currentUserReview } = await supabase
+        .from('reviews')
+        .select('user_id, rating, content')
+        .eq('book_id', bookId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const currentUserData: FriendProgress = {
+        user_id: user.id,
+        display_name: currentUserProfile?.display_name || null,
+        avatar_url: currentUserProfile?.avatar_url || null,
+        status: currentUserProgress?.status || null,
+        progress: currentUserProgress?.progress || 0,
+        started_at: currentUserProgress?.started_at || null,
+        finished_at: currentUserProgress?.finished_at || null,
+        reading_time_days: calculateReadingDays(
+          currentUserProgress?.started_at || null,
+          currentUserProgress?.finished_at || null
+        ),
+        review_rating: currentUserReview?.rating ?? null,
+        review_content: currentUserReview?.content ?? null,
+      };
+
+      // Merge current user with friends
+      const allProgress = [currentUserData, ...friendsProgress];
+
+      // Step 7: Sort - read (by time), reading (by progress), to_read, not_planned, then null
+      return allProgress.sort((a, b) => {
         // Priority order: read > reading > to_read > not_planned > null
         const statusOrder = { read: 0, reading: 1, to_read: 2, not_planned: 3 };
         const aOrder = a.status ? statusOrder[a.status] : 4;
@@ -95,10 +149,10 @@ export function useFriendsBookProgress(bookId: string | undefined) {
 
         // Within same status, sort by specific criteria
         if (a.status === 'read' && b.status === 'read') {
-          // Sort by reading time (faster first)
-          const aTime = a.reading_time_days ?? Infinity;
-          const bTime = b.reading_time_days ?? Infinity;
-          return aTime - bTime;
+          // Sort by finished_at date (earliest first - who finished first)
+          const aFinished = a.finished_at ? new Date(a.finished_at).getTime() : Infinity;
+          const bFinished = b.finished_at ? new Date(b.finished_at).getTime() : Infinity;
+          return aFinished - bFinished;
         }
 
         if (a.status === 'reading' && b.status === 'reading') {
