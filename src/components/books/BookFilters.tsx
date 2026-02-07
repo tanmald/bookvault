@@ -63,21 +63,6 @@ export function BookFilters({
         />
       </div>
 
-      {!hideStatusFilter && (
-        <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as ReadingStatus | 'all')}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder={t('filters.status')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('status.all')}</SelectItem>
-            <SelectItem value="not_planned">{t('status.notPlanned')}</SelectItem>
-            <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
-            <SelectItem value="reading">{t('status.reading')}</SelectItem>
-            <SelectItem value="read">{t('status.read')}</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-
       <Select value={genreFilter} onValueChange={(v) => onGenreChange(v)}>
         <SelectTrigger className="w-full sm:w-40">
           <SelectValue placeholder={t('filters.genre')} />
@@ -104,6 +89,21 @@ export function BookFilters({
                 {author}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {!hideStatusFilter && (
+        <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as ReadingStatus | 'all')}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder={t('filters.status')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('status.all')}</SelectItem>
+            <SelectItem value="not_planned">{t('status.notPlanned')}</SelectItem>
+            <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
+            <SelectItem value="reading">{t('status.reading')}</SelectItem>
+            <SelectItem value="read">{t('status.read')}</SelectItem>
           </SelectContent>
         </Select>
       )}
