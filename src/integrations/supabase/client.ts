@@ -17,9 +17,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     detectSessionInUrl: true,
   },
   global: {
-    headers: {
-      'Content-Type': 'application/json',
-    },
     fetch: (url, options = {}) => {
       return fetch(url, {
         ...options,

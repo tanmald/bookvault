@@ -648,10 +648,11 @@ export default function UploadBook() {
                           alt={t('upload.coverPreview')}
                           className="w-32 h-48 object-cover rounded-md"
                         />
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3 w-full max-w-sm">
                           <Button
                             type="button"
                             variant="outline"
+                            className="h-12 px-6 text-base"
                             onClick={handleClearCover}
                             disabled={isUploading || alternativeCovers.isLoading}
                           >
@@ -660,10 +661,11 @@ export default function UploadBook() {
                           <Button
                             type="button"
                             variant="secondary"
+                            className="h-12 px-6 text-base"
                             onClick={handleFetchAlternativeCovers}
                             disabled={isUploading || alternativeCovers.isLoading || (!formData.title && !extractedIsbn)}
                           >
-                            <ImageIcon className="mr-2 h-4 w-4" />
+                            <ImageIcon className="mr-2 h-5 w-5" />
                             {alternativeCovers.isLoading ? t('upload.fetchingCover') : t('upload.fetchAnotherCover')}
                           </Button>
                         </div>
