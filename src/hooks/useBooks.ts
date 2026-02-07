@@ -28,6 +28,7 @@ export interface Book {
   description: string | null;
   genre_id: string | null;
   year: number | null;
+  isbn: string | null;
   cover_url: string | null;
   file_url: string;
   file_type: string;

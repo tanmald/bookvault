@@ -24,8 +24,9 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
+import { Loader2, Upload, Sparkles, Plus, BookCopy, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useAlternativeCovers } from '@/hooks/useAlternativeCovers';
 
 interface ExtractedMetadata {
   title: string | null;
@@ -58,7 +59,7 @@ export default function UploadBook() {
   const [extractedIsbn, setExtractedIsbn] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
-  const [isFetchingCover, setIsFetchingCover] = useState(false);
+
 
   // Mode: 'new' for new book, 'existing' for adding to existing book
   const [mode, setMode] = useState<'new' | 'existing'>(bookIdFromUrl ? 'existing' : 'new');
@@ -71,6 +72,13 @@ export default function UploadBook() {
     description: '',
     genre_id: '',
     year: '',
+  });
+
+  // Alternative covers functionality
+  const alternativeCovers = useAlternativeCovers({
+    title: formData.title,
+    author: formData.author,
+    isbn: extractedIsbn || undefined,
   });
 
   const extractMetadata = useCallback(async (selectedFile: File) => {
@@ -204,6 +212,66 @@ export default function UploadBook() {
     setCoverFile(null);
     setCoverPreview(null);
     setExtractedCoverBase64(null);
+    alternativeCovers.reset();
+  };
+
+  const handleFetchAlternativeCovers = async () => {
+    if (!formData.title && !extractedIsbn) {
+      toast({
+        variant: 'destructive',
+        title: t('upload.missingInfo'),
+        description: t('upload.needTitleOrIsbn'),
+      });
+      return;
+    }
+
+    const newCovers = await alternativeCovers.fetchCovers(0);
+    if (newCovers && newCovers.length > 0) {
+      // Set the first fetched cover as preview
+      const firstCover = newCovers[0];
+      setCoverPreview(firstCover.coverUrl);
+      setCoverFile(null);
+      setExtractedCoverBase64(null);
+      toast({
+        title: t('upload.coversFound'),
+        description: t('upload.coversFoundDesc').replace('{count}', String(newCovers.length)),
+      });
+    } else {
+      toast({
+        variant: 'default',
+        title: t('upload.noCoversFound'),
+        description: t('upload.noCoversFoundDesc'),
+      });
+    }
+  };
+
+  const handleNextCover = async () => {
+    if (alternativeCovers.canGoNext) {
+      // Navigate to next existing cover
+      const nextCover = alternativeCovers.goToNext();
+      if (nextCover) {
+        setCoverPreview(nextCover.coverUrl);
+        setCoverFile(null);
+        setExtractedCoverBase64(null);
+      }
+    } else if (alternativeCovers.canFetchMore) {
+      // Need to fetch more covers explicitly
+      const newCover = await alternativeCovers.fetchMore();
+      if (newCover) {
+        setCoverPreview(newCover.coverUrl);
+        setCoverFile(null);
+        setExtractedCoverBase64(null);
+      }
+    }
+  };
+
+  const handlePreviousCover = () => {
+    const prevCover = alternativeCovers.goToPrevious();
+    if (prevCover) {
+      setCoverPreview(prevCover.coverUrl);
+      setCoverFile(null);
+      setExtractedCoverBase64(null);
+    }
   };
 
   const handleModeChange = (isExisting: boolean) => {
@@ -214,35 +282,6 @@ export default function UploadBook() {
       setCoverFile(null);
       setCoverPreview(null);
       setExtractedCoverBase64(null);
-    }
-  };
-
-  const fetchCoverAutomatically = async (
-    isbn: string | null,
-    title: string,
-    author?: string
-  ): Promise<string | null> => {
-    if (!isbn && !title) return null;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('fetch-cover', {
-        body: { isbn, title, author },
-      });
-
-      if (error) {
-        console.error('Error fetching cover:', error);
-        return null;
-      }
-
-      if (data?.coverUrl) {
-        console.log(`Cover found via ${data.source}:`, data.coverUrl);
-        return data.coverUrl;
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error fetching cover:', error);
-      return null;
     }
   };
 
@@ -369,48 +408,7 @@ export default function UploadBook() {
           }
         }
 
-        // If no cover was provided, try to fetch one automatically
-        if (!coverUrl) {
-          setIsFetchingCover(true);
-          try {
-            const fetchedCoverUrl = await fetchCoverAutomatically(
-              extractedIsbn,
-              formData.title.trim(),
-              formData.author.trim() || undefined
-            );
 
-            if (fetchedCoverUrl) {
-              // Download and store the cover in our bucket
-              try {
-                const coverResponse = await fetch(fetchedCoverUrl);
-                const coverBlob = await coverResponse.blob();
-
-                const ext = fetchedCoverUrl.includes('.jpg') || fetchedCoverUrl.includes('.jpeg') ? 'jpg' : 'png';
-                const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-                const { error: uploadError } = await supabase.storage
-                  .from('covers')
-                  .upload(coverName, coverBlob);
-
-                if (!uploadError) {
-                  const { data: coverData } = supabase.storage
-                    .from('covers')
-                    .getPublicUrl(coverName);
-
-                  coverUrl = coverData.publicUrl;
-                  console.log('Auto-fetched cover uploaded successfully');
-                }
-              } catch (fetchError) {
-                console.error('Error downloading/uploading auto-fetched cover:', fetchError);
-                // Continue without cover - don't fail the upload
-              }
-            }
-          } catch (error) {
-            console.error('Error in auto-fetch cover:', error);
-          } finally {
-            setIsFetchingCover(false);
-          }
-        }
 
         await createBook.mutateAsync({
           title: formData.title.trim(),
@@ -643,48 +641,105 @@ export default function UploadBook() {
                 </CardHeader>
                 <CardContent>
                   {coverPreview ? (
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={coverPreview}
-                        alt={t('upload.coverPreview')}
-                        className="w-32 h-48 object-cover rounded-md"
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-4">
+                        <img
+                          src={coverPreview}
+                          alt={t('upload.coverPreview')}
+                          className="w-32 h-48 object-cover rounded-md"
+                        />
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleClearCover}
+                            disabled={isUploading || alternativeCovers.isLoading}
+                          >
+                            {t('upload.removeCover')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleFetchAlternativeCovers}
+                            disabled={isUploading || alternativeCovers.isLoading || (!formData.title && !extractedIsbn)}
+                          >
+                            <ImageIcon className="mr-2 h-4 w-4" />
+                            {alternativeCovers.isLoading ? t('upload.fetchingCover') : t('upload.fetchAnotherCover')}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Alternative cover navigation */}
+                      {alternativeCovers.totalCovers > 0 && (
+                        <div className="flex items-center justify-center gap-2 pt-2 border-t">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handlePreviousCover}
+                            disabled={!alternativeCovers.canGoPrevious || alternativeCovers.isLoading}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+                            {t('upload.coverCounter')
+                              .replace('{current}', String(alternativeCovers.currentIndex + 1))
+                              .replace('{total}', String(alternativeCovers.totalCovers))}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleNextCover}
+                            disabled={alternativeCovers.isLoading}
+                            title={alternativeCovers.canFetchMore ? 'Fetch more covers' : 'Next cover'}
+                          >
+                            {alternativeCovers.isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : alternativeCovers.canFetchMore ? (
+                              <ImageIcon className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {alternativeCovers.currentCover && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          {t('upload.currentCover')}: {alternativeCovers.currentCover.source}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <FileUpload
+                        onFileSelect={handleCoverSelect}
+                        accept={{
+                          'image/jpeg': ['.jpg', '.jpeg'],
+                          'image/png': ['.png'],
+                          'image/webp': ['.webp'],
+                        }}
+                        maxSize={5 * 1024 * 1024}
+                        label={t('upload.dragCover')}
+                        description={t('upload.coverFormats')}
+                        isUploading={isUploading}
                       />
                       <Button
                         type="button"
-                        variant="outline"
-                        onClick={handleClearCover}
-                        disabled={isUploading}
+                        variant="secondary"
+                        className="w-full"
+                        onClick={handleFetchAlternativeCovers}
+                        disabled={isUploading || alternativeCovers.isLoading || (!formData.title && !extractedIsbn)}
                       >
-                        {t('upload.removeCover')}
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        {alternativeCovers.isLoading ? t('upload.fetchingCover') : t('upload.fetchAnotherCover')}
                       </Button>
                     </div>
-                  ) : (
-                    <FileUpload
-                      onFileSelect={handleCoverSelect}
-                      accept={{
-                        'image/jpeg': ['.jpg', '.jpeg'],
-                        'image/png': ['.png'],
-                        'image/webp': ['.webp'],
-                      }}
-                      maxSize={5 * 1024 * 1024}
-                      label={t('upload.dragCover')}
-                      description={t('upload.coverFormats')}
-                      isUploading={isUploading}
-                    />
                   )}
                 </CardContent>
               </Card>
             </>
-          )}
-
-          {isFetchingCover && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
-              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">{t('upload.fetchingCover')}</p>
-                <Progress value={undefined} className="h-1 mt-1" />
-              </div>
-            </div>
           )}
 
           <div className="flex gap-3">
@@ -692,20 +747,20 @@ export default function UploadBook() {
               type="button"
               variant="outline"
               onClick={() => navigate('/')}
-              disabled={isUploading || isFetchingCover}
+              disabled={isUploading}
               className="flex-1"
             >
               {t('common.cancel')}
             </Button>
             <Button
               type="submit"
-              disabled={!file || isUploading || isFetchingCover || (mode === 'existing' && !selectedBookId)}
+              disabled={!file || isUploading || (mode === 'existing' && !selectedBookId)}
               className="flex-1"
             >
-              {isUploading || isFetchingCover ? (
+              {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isFetchingCover ? t('upload.fetchingCover') : t('upload.uploading')}
+                  {t('upload.uploading')}
                 </>
               ) : mode === 'existing' ? (
                 <>

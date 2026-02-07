@@ -392,6 +392,20 @@ export const translations = {
     'common.next': 'Seguinte',
     'common.languages': 'idiomas',
     
+    // Kobo Send
+    'kobo.send': 'Enviar para Kobo',
+    'kobo.title': 'Enviar para Kobo',
+    'kobo.description': 'Transferir "{title}" para o teu e-reader Kobo',
+    'kobo.generating': 'A gerar link...',
+    'kobo.scanInstructions': 'Escaneia com o telemóvel ou escreve o URL no browser do Kobo',
+    'kobo.directUrl': 'URL direto',
+    'kobo.copied': 'URL copiado!',
+    'kobo.instructionsTitle': 'Como transferir',
+    'kobo.step1': 'No Kobo: Definições → Funcionalidades Beta → Browser',
+    'kobo.step2': 'Escreve o URL ou escaneia o código QR com o telemóvel',
+    'kobo.step3': 'O download começa automaticamente',
+    'kobo.expiryNotice': 'Link válido por 30 minutos',
+
     // Genres
     'genre.autoajuda': 'Autoajuda',
     'genre.biografia': 'Biografia',
@@ -802,6 +816,20 @@ export const translations = {
     'common.next': 'Next',
     'common.languages': 'languages',
     
+    // Kobo Send
+    'kobo.send': 'Send to Kobo',
+    'kobo.title': 'Send to Kobo',
+    'kobo.description': 'Transfer "{title}" to your Kobo e-reader',
+    'kobo.generating': 'Generating link...',
+    'kobo.scanInstructions': 'Scan with your phone or type the URL in Kobo browser',
+    'kobo.directUrl': 'Direct URL',
+    'kobo.copied': 'URL copied!',
+    'kobo.instructionsTitle': 'How to transfer',
+    'kobo.step1': 'On Kobo: Settings → Beta Features → Browser',
+    'kobo.step2': 'Type the URL or scan the QR code with your phone',
+    'kobo.step3': 'Download starts automatically',
+    'kobo.expiryNotice': 'Link valid for 30 minutes',
+
     // Genres
     'genre.autoajuda': 'Self-Help',
     'genre.biografia': 'Biography',

@@ -418,6 +418,7 @@ export default function BookDetails() {
                 isOwner={isOwner}
                 onDeleteFile={handleDeleteFile}
                 isDeleting={deleteBookFile.isPending}
+                bookTitle={book.title}
               />
             </CardContent>
           </Card>
