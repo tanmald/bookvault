@@ -208,6 +208,17 @@ export const translations = {
     'book.removeVersionDesc': 'Esta ação irá remover a versão em {language} ({type}). Esta ação não pode ser desfeita.',
     'book.remove': 'Remover',
     
+    // Copy Book
+    'copyBook.title': 'Copiar para Biblioteca',
+    'copyBook.description': 'Seleciona a biblioteca de destino para "{title}"',
+    'copyBook.selectLibrary': 'Selecionar biblioteca',
+    'copyBook.createNew': 'Criar nova biblioteca',
+    'copyBook.copying': 'A copiar...',
+    'copyBook.success': 'Livro copiado com sucesso!',
+    'copyBook.copyButton': 'Copiar Livro',
+    'copyBook.noLibraries': 'Não estás em nenhuma outra biblioteca',
+    'copyBook.copyProgress': 'Copiar progresso atual de leitura',
+    
     // Scoreboard
     'scoreboard.title': 'Scoreboard dos Amigos',
     'scoreboard.noFriends': 'Ainda não tens amigos!',
@@ -599,6 +610,17 @@ export const translations = {
     'book.removeVersion': 'Remove this version?',
     'book.removeVersionDesc': 'This action will remove the {language} ({type}) version. This action cannot be undone.',
     'book.remove': 'Remove',
+    
+    // Copy Book
+    'copyBook.title': 'Copy to Library',
+    'copyBook.description': 'Select target library for "{title}"',
+    'copyBook.selectLibrary': 'Select library',
+    'copyBook.createNew': 'Create new library',
+    'copyBook.copying': 'Copying...',
+    'copyBook.success': 'Book copied successfully!',
+    'copyBook.copyButton': 'Copy Book',
+    'copyBook.noLibraries': "You're not in any other libraries",
+    'copyBook.copyProgress': 'Copy current reading progress',
     
     // Scoreboard
     'scoreboard.title': 'Friends Scoreboard',

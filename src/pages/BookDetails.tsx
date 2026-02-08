@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -29,11 +30,14 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
+import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import {
   ArrowLeft,
+  ArrowRight,
   Trash2,
   BookOpen,
   Calendar,
@@ -51,6 +55,8 @@ export default function BookDetails() {
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress } = useReadingProgress(id);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const { currentLibrary } = useLibrary();
 
   const book = books.find((b) => b.id === id);
   const bookProgress = progress.find((p) => p.book_id === id);
@@ -207,6 +213,15 @@ export default function BookDetails() {
             </CardContent>
           </Card>
 
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setIsCopyDialogOpen(true)}
+          >
+            <ArrowRight className="mr-2 h-4 w-4" />
+            {t('copyBook.title')}
+          </Button>
+
           {isAdmin && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -358,6 +373,19 @@ export default function BookDetails() {
           </Card>
         </div>
       </div>
+
+      <CopyBookDialog
+        isOpen={isCopyDialogOpen}
+        onClose={() => setIsCopyDialogOpen(false)}
+        bookId={book?.id || ''}
+        bookTitle={book?.title || ''}
+        currentLibraryId={currentLibrary?.id || ''}
+        onSuccess={() => {
+          if (currentLibrary) {
+            navigate(`/?library=${currentLibrary.id}`);
+          }
+        }}
+      />
     </AppLayout>
   );
 }
