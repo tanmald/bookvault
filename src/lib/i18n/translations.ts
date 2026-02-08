@@ -58,6 +58,8 @@ export const translations = {
     'profile.bioPlaceholder': 'Conta-nos um pouco sobre ti...',
     'profile.save': 'Guardar Alterações',
     'profile.saving': 'A guardar...',
+    'profile.addPhoto': 'Adicionar Foto',
+    'profile.changePhoto': 'Alterar Foto',
     
     // Settings
     'settings.title': 'Definições',
@@ -481,6 +483,8 @@ export const translations = {
     'profile.bioPlaceholder': 'Tell us a bit about yourself...',
     'profile.save': 'Save Changes',
     'profile.saving': 'Saving...',
+    'profile.addPhoto': 'Add Photo',
+    'profile.changePhoto': 'Change Photo',
     
     // Settings
     'settings.title': 'Settings',

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { CreateLibraryDialog } from '@/components/library/CreateLibraryDialog';
@@ -37,6 +38,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
   const { currentLibrary, libraries, setCurrentLibrary } = useLibrary();
+  const { profile } = useProfile();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -164,7 +166,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   aria-label={t('nav.profile')}
                 >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="" alt="" />
+                    <AvatarImage src={profile?.avatar_url || ''} alt="" />
                     <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
                 </Button>
