@@ -12,6 +12,7 @@ interface BookCardProps {
   book: Book;
   progress?: ReadingProgress;
   compact?: boolean;
+  isDragging?: boolean;
 }
 
 const statusColors = {
@@ -20,7 +21,7 @@ const statusColors = {
   read: 'bg-primary text-primary-foreground',
 };
 
-export function BookCard({ book, progress, compact = false }: BookCardProps) {
+export function BookCard({ book, progress, compact = false, isDragging = false }: BookCardProps) {
   const { t } = useLanguage();
   const status = progress?.status ?? 'to_read';
   
@@ -37,7 +38,8 @@ export function BookCard({ book, progress, compact = false }: BookCardProps) {
     <Link to={`/book/${book.id}`}>
       <Card className={cn(
         "group overflow-hidden transition-all hover:shadow-lg",
-        compact && "hover:shadow-md"
+        compact && "hover:shadow-md",
+        isDragging && "ring-2 ring-accent shadow-lg rotate-1"
       )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
