@@ -53,6 +53,11 @@ export default function Friends() {
       </div>
 
       <div className="grid md:grid-cols-[2fr_1fr] lg:grid-cols-[1fr_400px] gap-6 md:gap-8">
+        {/* 🚨 CRITICAL: Left=library_members, Right=friendships activity
+         * LEFT COLUMN: Shows library members from useLibraryMembers (access control)
+         * RIGHT COLUMN: Shows activity from useActivityFeed (friendships/social)
+         * NEVER mix these two data sources!
+         */}
         {/* Library Members / Friends List */}
         <div>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">

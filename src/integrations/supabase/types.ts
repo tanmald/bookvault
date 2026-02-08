@@ -157,6 +157,62 @@ export type Database = {
           },
         ]
       }
+      demo_books: {
+        Row: {
+          author: string
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          file_size: number | null
+          file_type: string
+          file_url: string
+          genre_slug: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          title: string
+          year: number | null
+        }
+        Insert: {
+          author: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          genre_slug?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          title: string
+          year?: number | null
+        }
+        Update: {
+          author?: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          genre_slug?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          title?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_books_genre_slug_fkey"
+            columns: ["genre_slug"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -337,8 +393,12 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          demo_book_created: boolean
           display_name: string | null
+          has_completed_onboarding: boolean
           id: string
+          onboarding_completed_at: string | null
+          onboarding_step: number
           updated_at: string
           user_id: string
         }
@@ -346,8 +406,12 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          demo_book_created?: boolean
           display_name?: string | null
+          has_completed_onboarding?: boolean
           id?: string
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
           updated_at?: string
           user_id: string
         }
@@ -355,8 +419,12 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          demo_book_created?: boolean
           display_name?: string | null
+          has_completed_onboarding?: boolean
           id?: string
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
           updated_at?: string
           user_id?: string
         }
@@ -492,18 +560,18 @@ export type Database = {
         }[]
       }
       get_library_friends_book_progress: {
-        Args: { p_user_id: string; p_book_id: string }
+        Args: { p_book_id: string; p_user_id: string }
         Returns: {
+          avatar_url: string | null
+          display_name: string | null
+          finished_at: string | null
           friend_id: string
-          display_name: string
-          avatar_url: string
-          status: Database["public"]["Enums"]["reading_status"]
           progress: number
-          started_at: string
-          finished_at: string
-          review_id: string
-          review_rating: number
-          review_text: string
+          review_id: string | null
+          review_rating: number | null
+          review_text: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["reading_status"]
         }[]
       }
       get_library_members_with_profiles: {

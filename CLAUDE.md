@@ -59,6 +59,29 @@ The `extract-metadata` edge function uses OpenAI (gpt-4o-mini) for AI-powered bo
 
 ## Business Rules — Social & Scoreboard
 
+### 🚨 CRITICAL BUSINESS RULES - DO NOT CHANGE WITHOUT EXPLICIT APPROVAL
+
+#### Rule 1: /friends Page Layout
+- **Left column**: Library members of the current library via `useLibraryMembers(currentLibrary?.id)`
+- **Right column**: Recent activity from direct friendships via `useActivityFeed()`
+- **CRITICAL**: Must maintain separation between `library_members` (access control) and `friendships` (social)
+
+#### Rule 2: /book/:id Scoreboard Filtering
+- **MUST** only show members of the book's library (from `library_members` table, NOT `friendships`)
+- **MUST** include the current user
+- **MUST** only show members with status: `to_read`, `reading`, or `read`
+- **MUST NOT** show members with `not_planned` status
+- **MUST NOT** show members with no reading progress
+- Uses RPC function: `get_library_friends_book_progress`
+- Implementation: `FriendsScoreboard.tsx` + `useFriendsBookProgress.ts`
+
+#### Rule 3: Data Model Distinction
+- `friendships` table = global social relationships
+- `library_members` table = per-library access control
+- **Never mix these two for scoreboard or member listing**
+
+---
+
 ### Data Model: `friendships` vs `library_members`
 - **`friendships`**: Global social relationship between invite creator and joiner. Used for the activity feed.
 - **`library_members`**: Per-library access control. Determines who belongs to which library.

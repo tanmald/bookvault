@@ -22,6 +22,12 @@ function getInitials(name: string | null): string {
     .slice(0, 2);
 }
 
+/**
+ * 🚨 CRITICAL: Only shows library_members, NOT friendships
+ * This scoreboard MUST only display members of the book's library.
+ * It should NEVER show global friends who aren't library members.
+ * Uses get_library_friends_book_progress RPC which filters by library_members.
+ */
 export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
   const { data: friendsProgress, isLoading } = useFriendsBookProgress(bookId);
   const { t } = useLanguage();

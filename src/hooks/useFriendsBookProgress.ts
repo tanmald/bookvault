@@ -25,6 +25,15 @@ function calculateReadingDays(startedAt: string | null, finishedAt: string | nul
   return Math.max(diffDays, 0);
 }
 
+/**
+ * 🚨 CRITICAL: Filters out not_planned and no-progress members
+ * This hook ONLY returns library members with reading progress.
+ * It MUST filter out:
+ * - Members with not_planned status
+ * - Members with no reading_progress entry
+ * - Non-library friends (friendships table)
+ * Uses get_library_friends_book_progress RPC for filtering.
+ */
 export function useFriendsBookProgress(bookId: string | undefined) {
   const { user } = useAuth();
 
