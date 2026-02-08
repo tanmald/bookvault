@@ -28,6 +28,7 @@ export const translations = {
     'status.toRead': 'Para Ler',
     'status.reading': 'A Ler',
     'status.read': 'Lido',
+    'status.notPlanned': 'Não Planeado',
     'status.all': 'Todos',
     
     // Filters
@@ -37,6 +38,10 @@ export const translations = {
     'filters.allGenres': 'Todos os géneros',
     'filters.author': 'Autor',
     'filters.allAuthors': 'Todos os autores',
+    'filters.showNotPlanned': 'Mostrar Não Planeados',
+    'filters.show': 'Filtros',
+    'filters.hide': 'Ocultar Filtros',
+    'filters.clear': 'Limpar Filtros',
     
     // Profile
     'profile.title': 'O Meu Perfil',
@@ -415,6 +420,7 @@ export const translations = {
     'status.toRead': 'To Read',
     'status.reading': 'Reading',
     'status.read': 'Read',
+    'status.notPlanned': 'Not Planned',
     'status.all': 'All',
     
     // Filters
@@ -424,6 +430,10 @@ export const translations = {
     'filters.allGenres': 'All genres',
     'filters.author': 'Author',
     'filters.allAuthors': 'All authors',
+    'filters.showNotPlanned': 'Show Not Planned',
+    'filters.show': 'Filters',
+    'filters.hide': 'Hide Filters',
+    'filters.clear': 'Clear Filters',
     
     // Profile
     'profile.title': 'My Profile',

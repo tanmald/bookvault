@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type ReadingStatus = 'to_read' | 'reading' | 'read';
+export type ReadingStatus = 'to_read' | 'reading' | 'read' | 'not_planned';
 
 export interface ReadingProgress {
   id: string;

@@ -4,18 +4,25 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { BookOpen, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BookKanbanProps {
   books: Book[];
   progressMap: Map<string, ReadingProgress>;
+  showNotPlanned?: boolean;
 }
 
-export function BookKanban({ books, progressMap }: BookKanbanProps) {
+export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKanbanProps) {
   const { t } = useLanguage();
 
-  const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
+  const allColumns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
+    {
+      status: 'not_planned',
+      label: t('status.notPlanned'),
+      icon: <Ban className="h-4 w-4" />,
+      color: 'border-destructive/30'
+    },
     {
       status: 'to_read',
       label: t('status.toRead'),
@@ -36,8 +43,11 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
     },
   ];
 
+  const columns = showNotPlanned ? allColumns : allColumns.filter(c => c.status !== 'not_planned');
+
   const booksByStatus = useMemo(() => {
-    const grouped: Record<ReadingStatus, Book[]> = {
+    const grouped: Record<string, Book[]> = {
+      not_planned: [],
       to_read: [],
       reading: [],
       read: [],
@@ -45,8 +55,8 @@ export function BookKanban({ books, progressMap }: BookKanbanProps) {
 
     books.forEach((book) => {
       const progress = progressMap.get(book.id);
-      const status = progress?.status ?? 'to_read';
-      grouped[status].push(book);
+      const status = (progress?.status ?? 'to_read') as string;
+      grouped[status]?.push(book);
     });
 
     return grouped;

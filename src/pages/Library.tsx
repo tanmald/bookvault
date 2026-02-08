@@ -32,6 +32,7 @@ export default function Library() {
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [genreFilter, setGenreFilter] = useState<string | 'all'>('all');
   const [authorFilter, setAuthorFilter] = useState<string | 'all'>('all');
+  const [showNotPlanned, setShowNotPlanned] = useState(true);
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'grid' || stored === 'kanban') {
@@ -120,32 +121,32 @@ export default function Library() {
             </p>
           </div>
           
-            <div className="flex flex-col sm:flex-row items-center gap-1 bg-muted ppy-1 px-01 rounded-l>iv w-full>            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className={cn(
-                "h-8 px-3",
-                viewMode === 'kanban' && "bg-background shadow-sm"
-              )}
-            >
-              <Columns3 className="h-4 w-4 mr-1.5" />
-              {t('library.viewKanban')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "h-8 px-3",
-                viewMode === 'grid' && "bg-background shadow-sm"
-              )}
-              </
-            >
-              <LayoutGrid className="h-4 w-4 mr-1.5" />
-              {t('library.viewGrid')}
-            </Button>
-          </div>
+            <div className="flex flex-col sm:flex-row items-center gap-1 bg-muted py-1 px-2 rounded-lg">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className={cn(
+                  "h-8 px-3",
+                  viewMode === 'kanban' && "bg-background shadow-sm"
+                )}
+              >
+                <Columns3 className="h-4 w-4 mr-1.5" />
+                {t('library.viewKanban')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "h-8 px-3",
+                  viewMode === 'grid' && "bg-background shadow-sm"
+                )}
+              >
+                <LayoutGrid className="h-4 w-4 mr-1.5" />
+                {t('library.viewGrid')}
+              </Button>
+            </div>
         </div>
 
         <BookFilters
@@ -160,12 +161,14 @@ export default function Library() {
           authors={uniqueAuthors}
           onClearFilters={clearFilters}
           hideStatusFilter={viewMode === 'kanban'}
+          showNotPlanned={showNotPlanned}
+          onToggleNotPlanned={setShowNotPlanned}
         />
 
         {isLoading ? (
           viewMode === 'kanban' ? <BookKanbanSkeleton /> : <BookGridSkeleton />
         ) : viewMode === 'kanban' ? (
-          <BookKanban books={filteredBooks} progressMap={progressMap} />
+          <BookKanban books={filteredBooks} progressMap={progressMap} showNotPlanned={showNotPlanned} />
         ) : (
           <BookGrid books={filteredBooks} progressMap={progressMap} />
         )}

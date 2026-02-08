@@ -118,23 +118,43 @@ export function AppLayout({ children }: AppLayoutProps) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowJoinDialog(true)}
-              className="hidden sm:flex"
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              {t('libraries.joinButton')}
-            </Button>
+          <div className="flex items-center gap-2">
+            {/* Tablet: Icon only */}
+            <div className="hidden sm:flex lg:hidden items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowJoinDialog(true)}
+                title={t('libraries.joinButton')}
+              >
+                <UserPlus className="h-4 w-4" />
+              </Button>
 
-            <Button asChild size="sm" className="hidden sm:flex">
-              <Link to="/upload">
-                <Plus className="mr-2 h-4 w-4" />
-                {t('nav.addBook')}
-              </Link>
-            </Button>
+              <Button asChild size="icon">
+                <Link to="/upload" title={t('nav.addBook')}>
+                  <Plus className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Desktop: Full buttons with text */}
+            <div className="hidden lg:flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowJoinDialog(true)}
+              >
+                <UserPlus className="h-4 w-4" />
+                {t('libraries.joinButton')}
+              </Button>
+
+              <Button asChild size="sm">
+                <Link to="/upload">
+                  <Plus className="h-4 w-4" />
+                  {t('nav.addBook')}
+                </Link>
+              </Button>
+            </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
