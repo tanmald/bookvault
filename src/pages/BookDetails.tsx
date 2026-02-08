@@ -35,18 +35,22 @@ import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
   ArrowRight,
   Trash2,
   BookOpen,
-  Calendar,
   User,
   Tag,
   Loader2,
   Plus,
   Globe,
+  Pencil,
+  Calendar,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function BookDetails() {
   const { id } = useParams<{ id: string }>();
@@ -54,9 +58,11 @@ export default function BookDetails() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
-  const { progress, updateProgress } = useReadingProgress(id);
+  const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const { currentLibrary } = useLibrary();
+  const { toast } = useToast();
 
   const book = books.find((b) => b.id === id);
   const bookProgress = progress.find((p) => p.book_id === id);
@@ -325,6 +331,51 @@ export default function BookDetails() {
                       {t('book.finishedOn')} {formatDate(bookProgress.finished_at)}
                     </span>
                   )}
+                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        title={t('book.editFinishedDate')}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      {isDatePickerOpen && (
+                        <CalendarComponent
+                          mode="single"
+                          selected={bookProgress?.finished_at ? new Date(bookProgress.finished_at) : undefined}
+                          onSelect={(date) => {
+                            if (date && id) {
+                              const now = new Date();
+                              now.setHours(0, 0, 0, 0);
+                              if (date > now) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: t('common.error'),
+                                  description: t('book.futureDateError'),
+                                });
+                                return;
+                              }
+                              updateFinishedDate.mutate({
+                                bookId: id,
+                                finishedAt: date.toISOString(),
+                              });
+                              setIsDatePickerOpen(false);
+                            }
+                          }}
+                          disabled={(date) => {
+                            const now = new Date();
+                            now.setHours(0, 0, 0, 0);
+                            return date > now;
+                          }}
+                          initialFocus
+                        />
+                      )}
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </CardContent>

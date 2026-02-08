@@ -154,9 +154,47 @@ export function useReadingProgress(bookId?: string) {
     },
   });
 
+  const updateFinishedDate = useMutation({
+    mutationFn: async ({ bookId, finishedAt }: { bookId: string; finishedAt: string }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('reading_progress')
+        .upsert({
+          user_id: user.id,
+          book_id: bookId,
+          finished_at: finishedAt,
+          status: 'read',
+          progress: 100,
+        }, {
+          onConflict: 'user_id,book_id',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as ReadingProgress;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+      toast({
+        title: 'Data atualizada',
+        description: 'A data de conclusão foi atualizada com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar data',
+        description: error.message,
+      });
+    },
+  });
+
   return {
     progress: progressQuery.data ?? [],
     isLoading: progressQuery.isLoading,
     updateProgress,
+    updateFinishedDate,
   };
 }

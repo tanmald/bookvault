@@ -39,6 +39,16 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     return `${days} ${t('scoreboard.days')}`;
   };
 
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('default', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
   // Count readers by status for summary
   const readCount = friendsProgress?.filter((f) => f.status === 'read').length || 0;
   const readingCount = friendsProgress?.filter((f) => f.status === 'reading').length || 0;
@@ -105,7 +115,16 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
 
         {/* Status badge / reading time */}
         <div className="flex-shrink-0">
-          {isRead && friend.reading_time_days !== null && (
+          {isRead && friend.finished_at && (
+            <Badge
+              variant={isTopThree ? 'default' : 'secondary'}
+              className="flex items-center gap-1"
+            >
+              <Clock className="h-3 w-3" />
+              {formatDate(friend.finished_at)}
+            </Badge>
+          )}
+          {isRead && !friend.finished_at && friend.reading_time_days !== null && (
             <Badge
               variant={isTopThree ? 'default' : 'secondary'}
               className="flex items-center gap-1"

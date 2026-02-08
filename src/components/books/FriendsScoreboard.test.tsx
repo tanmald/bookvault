@@ -58,7 +58,7 @@ describe("FriendsScoreboard", () => {
 
   describe("CRITICAL: Library members only", () => {
     it("should render scoreboard with library members only", () => {
-      mockUseFriendsBookProgress.mockReturnValue({
+     mockUseFriendsBookProgress.mockReturnValue({
         data: [
           {
             user_id: "user-1",
@@ -77,6 +77,16 @@ describe("FriendsScoreboard", () => {
             status: "reading",
             progress: 50,
             started_at: "2024-01-03",
+            finished_at: null,
+            reading_time_days: null,
+          },
+          {
+            user_id: "user-3",
+            display_name: "Charlie",
+            avatar_url: null,
+            status: "to_read",
+            progress: 0,
+            started_at: null,
             finished_at: null,
             reading_time_days: null,
           },
@@ -108,6 +118,9 @@ describe("FriendsScoreboard", () => {
 
       expect(screen.getByText("Alice")).toBeInTheDocument();
       expect(screen.getByText("Bob")).toBeInTheDocument();
+      expect(screen.getByText("Jan 5, 2024")).toBeInTheDocument();
+      expect(screen.getByText("Reading")).toBeInTheDocument();
+      expect(screen.getByText("To Read")).toBeInTheDocument();
     });
 
     it("should display correct status badges for different statuses", () => {
@@ -149,7 +162,7 @@ describe("FriendsScoreboard", () => {
 
       render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
-      expect(screen.getByText("4 days")).toBeInTheDocument();
+      expect(screen.getByText("Jan 5, 2024")).toBeInTheDocument();
       expect(screen.getByText("Reading")).toBeInTheDocument();
       expect(screen.getByText("To Read")).toBeInTheDocument();
     });
