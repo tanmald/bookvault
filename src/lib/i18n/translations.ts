@@ -242,7 +242,7 @@ export const translations = {
     // Scoreboard
     'scoreboard.title': 'Scoreboard dos Amigos',
     'scoreboard.noFriends': 'Nenhum amigo nesta biblioteca leu este livro ou está a pensar lê-lo!',
-    'scoreboard.inviteFriends': 'Convida amigos para esta biblioteca para veres o progresso de leitura.',
+    'scoreboard.inviteFriends': 'Quando os teus amigos nesta biblioteca começarem a ler este livro, verás o progresso aqui.',
     'scoreboard.read': 'leu',
     'scoreboard.readPlural': 'leram',
     'scoreboard.currentlyReading': 'a ler',
@@ -665,7 +665,7 @@ export const translations = {
     // Scoreboard
     'scoreboard.title': 'Friends Scoreboard',
     'scoreboard.noFriends': 'None of your friends in this library have read this book or are planning to read it!',
-    'scoreboard.inviteFriends': 'Invite friends to this library to see reading progress.',
+    'scoreboard.inviteFriends': "When your friends in this library start reading this book, you'll see their progress here.",
     'scoreboard.read': 'read',
     'scoreboard.readPlural': 'read',
     'scoreboard.currentlyReading': 'reading',

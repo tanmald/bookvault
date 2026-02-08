@@ -13,7 +13,7 @@ vi.mock("@/contexts/LanguageContext", () => ({
       const translations: Record<string, string> = {
         "scoreboard.title": "Reading Race",
         "scoreboard.noFriends": "None of your friends in this library have read this book or are planning to read it!",
-        "scoreboard.inviteFriends": "Invite friends to this library to see reading progress.",
+        "scoreboard.inviteFriends": "When your friends in this library start reading this book, you'll see their progress here.",
         "scoreboard.lessThanDay": "<1 day",
         "scoreboard.oneDay": "1 day",
         "scoreboard.days": "days",
@@ -272,7 +272,7 @@ describe("FriendsScoreboard", () => {
       render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
       expect(screen.getByText("None of your friends in this library have read this book or are planning to read it!")).toBeInTheDocument();
-      expect(screen.getByText("Invite friends to this library to see reading progress.")).toBeInTheDocument();
+      expect(screen.getByText("When your friends in this library start reading this book, you'll see their progress here.")).toBeInTheDocument();
     });
   });
 
