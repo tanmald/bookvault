@@ -112,12 +112,32 @@ export default function BookDetails() {
 
   const handleStatusChange = (status: ReadingStatus) => {
     if (!id) return;
-    updateProgress.mutate({ bookId: id, status });
+    updateProgress.mutate(
+      { bookId: id, status },
+      {
+        onSuccess: () => {
+          toast({
+            title: t('common.success'),
+            description: t('book.progressSaved'),
+          });
+        },
+      }
+    );
   };
 
   const handleProgressChange = (value: number[]) => {
     if (!id) return;
-    updateProgress.mutate({ bookId: id, progress: value[0] });
+    updateProgress.mutate(
+      { bookId: id, progress: value[0] },
+      {
+        onSuccess: () => {
+          toast({
+            title: t('common.success'),
+            description: t('book.progressSaved'),
+          });
+        },
+      }
+    );
   };
 
   const handleDelete = async () => {

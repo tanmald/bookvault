@@ -110,7 +110,7 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-6">
-              <BookOpen className="h-8 w-8 text-muted-foreground mb-2" />
+              <BookOpen className="h-8 w-8 text-accent mb-2" />
               <span className="text-2xl font-semibold">{totalBooks}</span>
               <span className="text-sm text-muted-foreground">{t('profile.books')}</span>
             </CardContent>
