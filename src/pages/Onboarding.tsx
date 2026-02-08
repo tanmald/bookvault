@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import OnboardingChoice from '@/components/auth/OnboardingChoice';
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 
 export default function Onboarding() {
   const { user, loading } = useAuth();
@@ -10,7 +10,6 @@ export default function Onboarding() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // If not authenticated and not loading, redirect to register
     if (!loading && !user) {
       const code = searchParams.get('code');
       navigate(code ? `/register?code=${code}` : '/register', { replace: true });
@@ -29,5 +28,5 @@ export default function Onboarding() {
     return null;
   }
 
-  return <OnboardingChoice />;
+  return <OnboardingWizard />;
 }

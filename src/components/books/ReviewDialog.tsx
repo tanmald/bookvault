@@ -18,7 +18,6 @@ interface ReviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   bookId: string;
-  bookTitle: string;
   onSubmit: () => void;
   onCancel?: () => void;
 }
@@ -29,7 +28,6 @@ export function ReviewDialog({
   isOpen,
   onClose,
   bookId,
-  bookTitle,
   onSubmit,
   onCancel,
 }: ReviewDialogProps) {
@@ -52,13 +50,13 @@ export function ReviewDialog({
   }, [isOpen, myReview]);
 
   const handleSubmit = async () => {
-    if (rating === 0) return;
-
-    await upsertReview.mutateAsync({
-      bookId,
-      rating,
-      content: content.trim() || undefined,
-    });
+    if (rating > 0) {
+      await upsertReview.mutateAsync({
+        bookId,
+        rating,
+        content: content.trim() || undefined,
+      });
+    }
 
     onSubmit();
     onClose();
@@ -85,7 +83,7 @@ export function ReviewDialog({
             {t('review.title')}
           </DialogTitle>
           <DialogDescription>
-            {t('review.description', { bookTitle })}
+            {t('review.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,9 +111,6 @@ export function ReviewDialog({
                 </button>
               ))}
             </div>
-            {rating === 0 && (
-              <p className="text-sm text-destructive">{t('review.ratingRequired')}</p>
-            )}
           </div>
 
           {/* Comment */}
@@ -154,7 +149,7 @@ export function ReviewDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={rating === 0 || upsertReview.isPending}
+            disabled={upsertReview.isPending}
           >
             {upsertReview.isPending ? (
               <>

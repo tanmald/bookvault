@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useFriendsBookProgress, FriendProgress } from '@/hooks/useFriendsBookProgress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Trophy, Users, BookOpen, Clock, CheckCircle } from 'lucide-react';
+import { Trophy, Users, BookOpen, Clock, CheckCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface FriendsScoreboardProps {
   bookId: string;
@@ -31,6 +34,19 @@ function getInitials(name: string | null): string {
 export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
   const { data: friendsProgress, isLoading } = useFriendsBookProgress(bookId);
   const { t } = useLanguage();
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+
+  const toggleComment = (userId: string) => {
+    setExpandedComments(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
 
   const formatReadingTime = (days: number | null): string => {
     if (days === null) return '';
@@ -39,29 +55,23 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     return `${days} ${t('scoreboard.days')}`;
   };
 
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('default', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   // Count readers by status for summary
   const readCount = friendsProgress?.filter((f) => f.status === 'read').length || 0;
   const readingCount = friendsProgress?.filter((f) => f.status === 'reading').length || 0;
 
-  // Calculate rank only for readers who finished
-  let readRank = 0;
-  const friendsWithRank = friendsProgress?.map((friend) => {
-    if (friend.status === 'read') {
-      readRank++;
-      return { ...friend, rank: readRank };
-    }
-    return { ...friend, rank: 0 };
-  });
+  // Sort: read (by reading time, fastest first) > reading > to_read
+  interface FriendWithRank extends FriendProgress {
+    rank?: number;
+  }
+
+  const friendsWithRank: FriendWithRank[] = [
+    ...(friendsProgress
+      ?.filter((f) => f.status === 'read')
+      .sort((a, b) => (a.reading_time_days ?? 999) - (b.reading_time_days ?? 999))
+      .map((friend, idx) => ({ ...friend, rank: idx + 1 })) || []),
+    ...(friendsProgress?.filter((f) => f.status === 'reading') || []),
+    ...(friendsProgress?.filter((f) => f.status === 'to_read') || []),
+  ];
 
   const showRank = readCount > 0;
 
@@ -104,9 +114,26 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
 
         {/* Name and status */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">
-            {friend.display_name || t('friends.user')}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium truncate">
+              {friend.display_name || t('friends.user')}
+            </p>
+            {friend.review_rating && (
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={cn(
+                      "h-3 w-3",
+                      i < friend.review_rating!
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-muted-foreground/30"
+                    )}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
           {isReading && (
             <div className="flex items-center gap-2 mt-1">
               <Progress value={friend.progress} className="h-2 flex-1" />
@@ -115,20 +142,38 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
               </span>
             </div>
           )}
+          {isRead && friend.review_text && (
+            <div className="mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                onClick={() => toggleComment(friend.user_id)}
+              >
+                {expandedComments.has(friend.user_id) ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    {t('review.hideComment')}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    {t('review.showComment')}
+                  </>
+                )}
+              </Button>
+              {expandedComments.has(friend.user_id) && (
+                <p className="mt-1 text-sm text-muted-foreground italic border-l-2 border-muted pl-2">
+                  "{friend.review_text}"
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Status badge / reading time */}
         <div className="flex-shrink-0">
-          {isRead && friend.finished_at && (
-            <Badge
-              variant={isTopThree ? 'default' : 'secondary'}
-              className="flex items-center gap-1"
-            >
-              <Clock className="h-3 w-3" />
-              {formatDate(friend.finished_at)}
-            </Badge>
-          )}
-          {isRead && !friend.finished_at && friend.reading_time_days !== null && (
+          {isRead && (
             <Badge
               variant={isTopThree ? 'default' : 'secondary'}
               className="flex items-center gap-1"

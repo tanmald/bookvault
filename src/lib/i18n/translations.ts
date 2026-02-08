@@ -95,7 +95,21 @@ export const translations = {
     'friends.kickTitle': 'Expulsar membro?',
     'friends.kickDesc': 'Esta ação irá remover {name} da tua biblioteca. Eles deixarão de ter acesso aos teus livros e a amizade será removida.',
     'friends.kick': 'Expulsar',
-    
+
+    // Review
+    'review.title': 'Avaliar Livro',
+    'review.description': 'Como foi ler este livro?',
+    'review.rating': 'Classificação',
+    'review.comment': 'Comentário',
+    'review.optional': '(opcional)',
+    'review.commentPlaceholder': 'Partilha as tuas thoughts sobre este livro...',
+    'review.cancel': 'Cancelar',
+    'review.submit': 'Guardar',
+    'review.saving': 'A guardar...',
+    'review.showComment': 'Ver comentário',
+    'review.hideComment': 'Ocultar',
+    'review.noComment': 'Sem comentário',
+
     // Invites
     'invites.title': 'Convites',
     'invites.subtitle': 'Gera links para convidar amigos para a tua biblioteca',
@@ -231,13 +245,6 @@ export const translations = {
     'book.removeVersion': 'Remover esta versão?',
     'book.removeVersionDesc': 'Esta ação irá remover a versão em {language} ({type}). Esta ação não pode ser desfeita.',
     'book.remove': 'Remover',
-    'upload.duplicateDetected': 'Este livro já existe na tua biblioteca',
-    'upload.duplicateDetectedDesc': 'Seleciona o livro existente para adicionar este ficheiro como nova versão',
-    'upload.duplicateSelectBook': 'Selecionar Livro Existente',
-    'upload.noneOfThese': 'Nenhum destes - criar novo',
-    'upload.matchingBooks': 'Livros encontrados',
-    'upload.matchingBooksDesc': 'Encontrámos livros similares na tua biblioteca. Escolhe um para adicionar o ficheiro como nova versão, ou cria um livro novo.',
-    'upload.addingToExisting': 'Adicionando ao livro existente',
     
     // Copy Book
     'copyBook.title': 'Copiar para Biblioteca',
@@ -281,6 +288,16 @@ export const translations = {
     
     // Onboarding
     'onboarding.welcome': 'Bem-vindo ao BookVault!',
+    'onboarding.step1Title': 'Cria ou Junta-te a uma Biblioteca',
+    'onboarding.howToStart': 'Começa por criar a tua própria biblioteca ou junta-te a uma existente',
+    'onboarding.libraryName': 'Nome da Biblioteca',
+    'onboarding.libraryNamePlaceholder': 'A Minha Coleção de Livros',
+    'onboarding.libraryDesc': 'Descrição (opcional)',
+    'onboarding.libraryDescPlaceholder': 'Descreve a tua biblioteca...',
+    'onboarding.creatingLibrary': 'A criar biblioteca...',
+    'onboarding.joiningLibrary': 'A juntar à biblioteca...',
+    'onboarding.libraryCreated': 'Biblioteca criada!',
+    'onboarding.libraryJoined': 'Juntaste-te à biblioteca!',
     'onboarding.chooseOption': 'Como queres começar?',
     'onboarding.createLibrary': 'Criar biblioteca nova',
     'onboarding.createLibraryDesc': 'Começa do zero com a tua própria coleção de livros',
@@ -305,6 +322,31 @@ export const translations = {
     'onboarding.joinedLibrary': 'Juntaste-te à biblioteca!',
     'onboarding.joinedLibraryDesc': 'Agora tens acesso aos livros partilhados.',
     'onboarding.error': 'Ocorreu um erro ao processar o convite. Tenta novamente.',
+    // Step 2
+    'onboarding.step2Title': 'Adiciona o Teu Primeiro Livro',
+    'onboarding.addFirstBook': 'Adiciona livros à tua biblioteca para começar a organizar a tua coleção',
+    'onboarding.demoBookTitle': 'The Time Machine',
+    'onboarding.demoBookAuthor': 'de H.G. Wells',
+    'onboarding.aiExtraction': 'Inteligência Artificial na Extração de Metadados',
+    // Step 3
+    'onboarding.step3Title': 'Amigos e Scoreboard',
+    'onboarding.friendsTitle': 'Amigos',
+    'onboarding.friendsDesc': 'Vê o que os teus amigos estão a ler e compete com eles',
+    'onboarding.scoreboardTitle': 'Scoreboard de Leituras',
+    'onboarding.inviteFriends': 'Convida os teus amigos!',
+    'onboarding.inviteFriendsDesc': 'Partilha o teu código de convite para que os teus amigos se possam juntar à tua biblioteca.',
+    // Step 4
+    'onboarding.step4Title': 'Download para os Teus Dispositivos',
+    'onboarding.downloadsDesc': 'Lê os teus livros em qualquer lugar, a qualquer momento',
+    'onboarding.kindleDownload': 'Kindle Direct',
+    'onboarding.koboUrl': 'Kobo Browser',
+    'onboarding.copyToLibrary': 'Copiar para Biblioteca',
+    'onboarding.copyToLibraryDesc': 'Copia livros para outras bibliotecas',
+    'onboarding.setupComplete': 'Configuração Completa!',
+    'onboarding.setupCompleteDesc': 'A tua biblioteca está pronta. Vamos começar a ler!',
+    'onboarding.finish': 'Ir para a Biblioteca',
+    'onboarding.kindleDirect': 'Download direto EPUB/MOBI',
+    'onboarding.koboBrowser': 'Gera URL curta para browser Kobo',
     
     // JoinInvite
     'joinInvite.invalidTitle': 'Convite Inválido',
@@ -547,7 +589,21 @@ export const translations = {
     'friends.kickTitle': 'Remove member?',
     'friends.kickDesc': 'This action will remove {name} from your library. They will no longer have access to your books and the friendship will be removed.',
     'friends.kick': 'Remove',
-    
+
+    // Review
+    'review.title': 'Rate Book',
+    'review.description': 'How was reading this book?',
+    'review.rating': 'Rating',
+    'review.comment': 'Comment',
+    'review.optional': '(optional)',
+    'review.commentPlaceholder': 'Share your thoughts about this book...',
+    'review.cancel': 'Cancel',
+    'review.submit': 'Save',
+    'review.saving': 'Saving...',
+    'review.showComment': 'Show comment',
+    'review.hideComment': 'Hide',
+    'review.noComment': 'No comment',
+
     // Invites
     'invites.title': 'Invites',
     'invites.subtitle': 'Generate links to invite friends to your library',
@@ -648,15 +704,6 @@ export const translations = {
     'upload.matchingBooksDesc': 'We found similar books in your library. Choose one to add this file as a new version, or create a new book.',
     'upload.addingToExisting': 'Adding to existing book',
 
-    // Duplicate Detection
-    'upload.duplicateDetected': 'Este livro já existe na tua biblioteca',
-    'upload.duplicateDetectedDesc': 'Seleciona o livro existente para adicionar este ficheiro como nova versão',
-    'upload.duplicateSelectBook': 'Selecionar Livro Existente',
-    'upload.noneOfThese': 'Nenhum destes - criar novo',
-    'upload.matchingBooks': 'Livros encontrados',
-    'upload.matchingBooksDesc': 'Encontrámos livros similares na tua biblioteca. Escolhe um para adicionar o ficheiro como nova versão, ou cria um livro novo.',
-    'upload.addingToExisting': 'Adicionando ao livro existente',
-
     // Book Details
     'book.by': 'by',
     'book.download': 'Download',
@@ -735,6 +782,16 @@ export const translations = {
     
     // Onboarding
     'onboarding.welcome': 'Welcome to BookVault!',
+    'onboarding.step1Title': 'Create or Join a Library',
+    'onboarding.howToStart': 'Start by creating your own library or joining an existing one',
+    'onboarding.libraryName': 'Library Name',
+    'onboarding.libraryNamePlaceholder': 'My Book Collection',
+    'onboarding.libraryDesc': 'Description (optional)',
+    'onboarding.libraryDescPlaceholder': 'Describe your library...',
+    'onboarding.creatingLibrary': 'Creating library...',
+    'onboarding.joiningLibrary': 'Joining library...',
+    'onboarding.libraryCreated': 'Library created!',
+    'onboarding.libraryJoined': 'You joined the library!',
     'onboarding.chooseOption': 'How would you like to start?',
     'onboarding.createLibrary': 'Create new library',
     'onboarding.createLibraryDesc': 'Start from scratch with your own book collection',
@@ -759,6 +816,31 @@ export const translations = {
     'onboarding.joinedLibrary': 'Joined the library!',
     'onboarding.joinedLibraryDesc': 'You now have access to shared books.',
     'onboarding.error': 'An error occurred while processing the invite. Please try again.',
+    // Step 2
+    'onboarding.step2Title': 'Add Your First Book',
+    'onboarding.addFirstBook': 'Add books to your library to start organizing your collection',
+    'onboarding.demoBookTitle': 'The Time Machine',
+    'onboarding.demoBookAuthor': 'by H.G. Wells',
+    'onboarding.aiExtraction': 'AI-Powered Metadata Extraction',
+    // Step 3
+    'onboarding.step3Title': 'Friends & Scoreboard',
+    'onboarding.friendsTitle': 'Friends',
+    'onboarding.friendsDesc': 'See what your friends are reading and compete with them',
+    'onboarding.scoreboardTitle': 'Reading Scoreboard',
+    'onboarding.inviteFriends': 'Invite your friends!',
+    'onboarding.inviteFriendsDesc': 'Share your invite code so your friends can join your library.',
+    // Step 4
+    'onboarding.step4Title': 'Download to Your Devices',
+    'onboarding.downloadsDesc': 'Read your books anywhere, anytime',
+    'onboarding.kindleDownload': 'Kindle Direct',
+    'onboarding.koboUrl': 'Kobo Browser',
+    'onboarding.copyToLibrary': 'Copy to Library',
+    'onboarding.copyToLibraryDesc': 'Copy books to other libraries',
+    'onboarding.setupComplete': 'Setup Complete!',
+    'onboarding.setupCompleteDesc': 'Your library is ready. Let\'s start reading!',
+    'onboarding.finish': 'Go to Library',
+    'onboarding.kindleDirect': 'Direct EPUB/MOBI download',
+    'onboarding.koboBrowser': 'Generate short URL for Kobo browser',
     
     // JoinInvite
     'joinInvite.invalidTitle': 'Invalid Invite',

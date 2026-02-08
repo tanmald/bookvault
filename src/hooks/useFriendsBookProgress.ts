@@ -12,6 +12,9 @@ export interface FriendProgress {
   started_at: string | null;
   finished_at: string | null;
   reading_time_days: number | null;
+  review_id: string | null;
+  review_rating: number | null;
+  review_text: string | null;
 }
 
 function calculateReadingDays(startedAt: string | null, finishedAt: string | null): number | null {
@@ -67,6 +70,9 @@ export function useFriendsBookProgress(bookId: string | undefined) {
           row.started_at || null,
           row.finished_at || null,
         ),
+        review_id: row.review_id || null,
+        review_rating: row.review_rating || null,
+        review_text: row.review_text || null,
       }));
 
       // Sort: read (by time), reading (by progress), to_read (by name)

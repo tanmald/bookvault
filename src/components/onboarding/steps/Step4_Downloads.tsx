@@ -9,7 +9,7 @@ interface Step4_DownloadsProps {
 }
 
 export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <div className="space-y-6">
@@ -27,12 +27,12 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
               </div>
               <div>
                 <p className="font-medium">{t('onboarding.kindleDownload')}</p>
-                <p className="text-xs text-muted-foreground">Direct EPUB/MOBI download</p>
+                <p className="text-xs text-muted-foreground">{t('onboarding.kindleDirect')}</p>
               </div>
             </div>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-1" />
-              Demo
+              {language === 'pt' ? 'Demo' : 'Demo'}
             </Button>
           </CardContent>
         </Card>
@@ -45,12 +45,12 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
               </div>
               <div>
                 <p className="font-medium">{t('onboarding.koboUrl')}</p>
-                <p className="text-xs text-muted-foreground">Generate short URL for Kobo browser</p>
+                <p className="text-xs text-muted-foreground">{t('onboarding.koboBrowser')}</p>
               </div>
             </div>
             <Button variant="outline" size="sm">
               <Copy className="h-4 w-4 mr-1" />
-              Copy
+              {t('invites.copy')}
             </Button>
           </CardContent>
         </Card>
@@ -68,7 +68,7 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
             </div>
             <Button variant="outline" size="sm">
               <Copy className="h-4 w-4 mr-1" />
-              Copy
+              {t('invites.copy')}
             </Button>
           </CardContent>
         </Card>

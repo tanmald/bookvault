@@ -1,8 +1,9 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Star, ChevronRight, Check, UserPlus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, ChevronRight, Check, BookOpen, Clock } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
 
 interface Step3_FriendsProps {
@@ -10,17 +11,36 @@ interface Step3_FriendsProps {
   isInviteMode?: boolean;
 }
 
-const mockFriends = [
-  { name: 'Ana', books: 12, reading: 3, avatar: 'A' },
-  { name: 'Miguel', books: 8, reading: 1, avatar: 'M' },
-  { name: 'Sofia', books: 15, reading: 2, avatar: 'S' },
+interface MockFriend {
+  name: string;
+  avatar: string;
+  books: number;
+  reading: number;
+  status: 'read' | 'reading' | 'to_read';
+  progress?: number;
+  finishedDays?: number;
+}
+
+const mockFriends: MockFriend[] = [
+  { name: 'Ana', avatar: 'A', books: 12, reading: 3, status: 'read', finishedDays: 2 },
+  { name: 'Miguel', avatar: 'M', books: 8, reading: 1, status: 'reading', progress: 45 },
+  { name: 'Sofia', avatar: 'S', books: 15, reading: 2, status: 'read', finishedDays: 5 },
 ];
 
+function getInitials(name: string): string {
+  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function formatReadingTime(days: number): string {
+  if (days === 0) return '<1 day';
+  if (days === 1) return '1 day';
+  return `${days} days`;
+}
+
 export function Step3_Friends({ onContinue, isInviteMode = false }: Step3_FriendsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { inviterName } = useOnboarding();
 
-  // In invite mode, show simplified UI
   if (isInviteMode && inviterName) {
     return (
       <div className="space-y-6">
@@ -65,48 +85,79 @@ export function Step3_Friends({ onContinue, isInviteMode = false }: Step3_Friend
       </div>
 
       <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            <h3 className="font-semibold">{t('onboarding.scoreboardTitle')}</h3>
-          </div>
+        <CardHeader className="flex flex-row items-center gap-2 pb-2">
+          <Trophy className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">{t('onboarding.scoreboardTitle')}</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="divide-y">
+            {mockFriends.map((friend, index) => {
+              const isRead = friend.status === 'read';
+              const isReading = friend.status === 'reading';
+              const isTopThree = isRead && index < 3;
 
-          <div className="space-y-3">
-            {mockFriends.map((friend, index) => (
-              <div
-                key={friend.name}
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-xs font-medium">
-                    {index + 1}
+              return (
+                <div key={friend.name} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="w-8 flex-shrink-0 text-center">
+                    {isRead && (
+                      <>
+                        {index === 0 && <Trophy className="h-5 w-5 text-primary mx-auto" />}
+                        {index === 1 && <Trophy className="h-5 w-5 text-muted-foreground mx-auto" />}
+                        {index === 2 && <Trophy className="h-5 w-5 text-accent-foreground mx-auto" />}
+                        {index > 2 && <span className="text-sm text-muted-foreground">{index + 1}º</span>}
+                      </>
+                    )}
                   </div>
-                  <Avatar className="h-8 w-8">
+
+                  <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs">
                       {friend.avatar}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">{friend.name}</span>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{friend.name}</p>
+                    </div>
+                    {isReading && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {friend.progress}% {t('status.reading').toLowerCase()}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex-shrink-0">
+                    {isRead && friend.finishedDays !== undefined && (
+                      <Badge variant={isTopThree ? 'default' : 'secondary'} className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatReadingTime(friend.finishedDays)}
+                      </Badge>
+                    )}
+                    {isReading && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        {t('status.reading')}
+                      </Badge>
+                    )}
+                    {friend.status === 'to_read' && (
+                      <Badge variant="secondary" className="text-muted-foreground">
+                        {t('status.toRead')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>{friend.books} books</span>
-                  <span className="flex items-center gap-1">
-                    <Star className="h-3 w-3" />
-                    {friend.reading} reading
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-3">
+      <div className="p-4 bg-primary/5 rounded-lg">
         <div className="flex items-start gap-3">
           <Trophy className="h-5 w-5 text-primary mt-0.5" />
           <div>
             <p className="font-medium">{t('onboarding.inviteFriends')}</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               {t('onboarding.inviteFriendsDesc')}
             </p>
           </div>

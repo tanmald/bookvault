@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
+  pointerWithin,
+  PointerSensor,
   MouseSensor,
   TouchSensor,
   KeyboardSensor,
@@ -11,6 +12,8 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
+  defaultDropAnimationSideEffects,
+  DropAnimation,
 } from '@dnd-kit/core';
 import { BookCard } from './BookCard';
 import { SortableBookCard } from './SortableBookCard';
@@ -22,6 +25,7 @@ import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { BookOpen, Clock, CheckCircle, CircleDashed } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ReviewDialog } from './ReviewDialog';
 
 interface BookKanbanProps {
   books: Book[];
@@ -29,23 +33,29 @@ interface BookKanbanProps {
   showNotPlanned?: boolean;
 }
 
+const dropAnimation: DropAnimation = {
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: '0.5',
+      },
+    },
+  }),
+};
+
 export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKanbanProps) {
   const { t } = useLanguage();
   const { updateProgress } = useReadingProgress();
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [reviewBook, setReviewBook] = useState<Book | null>(null);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
+    useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 150,
-        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor)
@@ -122,6 +132,13 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
   }
 
   function handleDragOver(event: DragOverEvent) {
+    const { over } = event;
+    
+    if (over && typeof over.id === 'string' && ['not_planned', 'to_read', 'reading', 'read'].includes(over.id)) {
+      setOverId(over.id as string);
+      return;
+    }
+    
     setOverId(event.over?.id as string | null);
   }
 
@@ -136,16 +153,35 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
 
     const bookId = active.id as string;
     const newStatus = over.id as ReadingStatus;
+    const book = books.find(b => b.id === bookId);
 
     const currentProgress = progressMap.get(bookId);
     const currentStatus = currentProgress?.status ?? 'to_read';
 
     if (currentStatus !== newStatus) {
-      updateProgress.mutate({ bookId, status: newStatus });
+      if (newStatus === 'read' && book) {
+        setReviewBook(book);
+        setIsReviewDialogOpen(true);
+      } else {
+        updateProgress.mutate({ bookId, status: newStatus });
+      }
     }
 
     setActiveId(null);
     setOverId(null);
+  }
+
+  function handleReviewSubmit() {
+    if (reviewBook) {
+      updateProgress.mutate({ bookId: reviewBook.id, status: 'read' });
+    }
+    setReviewBook(null);
+    setIsReviewDialogOpen(false);
+  }
+
+  function handleReviewCancel() {
+    setReviewBook(null);
+    setIsReviewDialogOpen(false);
   }
 
   function handleDragCancel() {
@@ -167,7 +203,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -189,10 +225,9 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
 
             <DroppableColumn
               id={column.status}
-              items={booksByStatus[column.status].map(b => b.id)}
               isOver={overId === column.status}
             >
-              <div className="flex flex-col gap-3 flex-1 min-h-full">
+              <div className="flex flex-col gap-3 flex-1 min-h-[100px]">
                 {booksByStatus[column.status].length === 0 ? (
                   <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
                     <p className="text-sm text-muted-foreground">{t('kanban.noBooks')}</p>
@@ -204,6 +239,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
                       book={book}
                       progress={progressMap.get(book.id)}
                       isDragging={activeId === book.id}
+                      isOver={overId === column.status}
                     />
                   ))
                 )}
@@ -213,16 +249,26 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
         ))}
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={dropAnimation}>
         {activeBook ? (
-          <BookCard
-            book={activeBook}
-            progress={progressMap.get(activeBook.id)}
-            compact={true}
-            isDragging={true}
-          />
+          <div className="opacity-80 cursor-grabbing">
+            <BookCard
+              book={activeBook}
+              progress={progressMap.get(activeBook.id)}
+              compact={true}
+              isDragging={true}
+            />
+          </div>
         ) : null}
       </DragOverlay>
+
+      <ReviewDialog
+        isOpen={isReviewDialogOpen}
+        onClose={() => setIsReviewDialogOpen(false)}
+        bookId={reviewBook?.id || ''}
+        onSubmit={handleReviewSubmit}
+        onCancel={handleReviewCancel}
+      />
     </DndContext>
   );
 }

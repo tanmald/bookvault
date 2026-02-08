@@ -89,6 +89,38 @@ function extractYear(dateStr: string | null): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
+// Decode HTML entities in text
+function decodeHtmlEntities(text: string | null): string | null {
+  if (!text) return null;
+
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&nbsp;': ' ',
+    '&apos;': "'",
+    '&ndash;': '–',
+    '&mdash;': '—',
+    '&hellip;': '…',
+    '&ldquo;': '"',
+    '&rdquo;': '"',
+    '&lsquo;': "'",
+    '&rsquo;': "'",
+  };
+
+  let decoded = text;
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.replace(new RegExp(entity, 'g'), char);
+  }
+
+  decoded = decoded.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)));
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
+
+  return decoded;
+}
+
 async function detectWithAI(
   title: string | null,
   author: string | null,
@@ -281,15 +313,18 @@ async function extractEpubMetadata(
 
     const opfContent = await opfFile.async("string");
 
-    result.title =
+    result.title = decodeHtmlEntities(
       getTagContent(opfContent, "dc:title") ||
-      getTagContent(opfContent, "title");
-    result.author =
+      getTagContent(opfContent, "title")
+    );
+    result.author = decodeHtmlEntities(
       getTagContent(opfContent, "dc:creator") ||
-      getTagContent(opfContent, "creator");
-    result.description =
+      getTagContent(opfContent, "creator")
+    );
+    result.description = decodeHtmlEntities(
       getTagContent(opfContent, "dc:description") ||
-      getTagContent(opfContent, "description");
+      getTagContent(opfContent, "description")
+    );
 
     const dateStr =
       getTagContent(opfContent, "dc:date") || getTagContent(opfContent, "date");

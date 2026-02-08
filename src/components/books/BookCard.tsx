@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ interface BookCardProps {
   compact?: boolean;
   isDragging?: boolean;
   disableLink?: boolean;
+  onBookClick?: () => void;
 }
 
 const statusColors = {
@@ -22,7 +24,8 @@ const statusColors = {
   read: 'bg-primary text-primary-foreground',
 };
 
-export function BookCard({ book, progress, compact = false, isDragging = false, disableLink = false }: BookCardProps) {
+export function BookCard({ book, progress, compact = false, isDragging = false, disableLink = false, onBookClick }: BookCardProps) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const status = progress?.status ?? 'to_read';
   
@@ -34,9 +37,17 @@ export function BookCard({ book, progress, compact = false, isDragging = false, 
   
   const languageCount = book.book_files?.length ?? (book.file_url ? 1 : 0);
 
+  const handleClick = () => {
+    if (!disableLink) {
+      navigate(`/book/${book.id}`);
+    } else if (onBookClick) {
+      onBookClick();
+    }
+  };
+
   const card = (
     <Card className={cn(
-      "group overflow-hidden transition-all hover:shadow-lg",
+      "group overflow-hidden transition-all hover:shadow-lg cursor-pointer",
       compact && "hover:shadow-md",
       isDragging && "ring-2 ring-accent shadow-lg rotate-1"
     )}>
@@ -62,7 +73,7 @@ export function BookCard({ book, progress, compact = false, isDragging = false, 
         <Badge
           className={cn(
             'absolute top-2 right-2 text-xs',
-            statusColors[status]
+            statusColors[status as keyof typeof statusColors]
           )}
         >
           {statusLabels[status]}
@@ -110,5 +121,9 @@ export function BookCard({ book, progress, compact = false, isDragging = false, 
     </Card>
   );
 
-  return disableLink ? <div>{card}</div> : <Link to={`/book/${book.id}`}>{card}</Link>;
+  if (disableLink) {
+    return <div onClick={handleClick}>{card}</div>;
+  }
+
+  return <Link to={`/book/${book.id}`}>{card}</Link>;
 }
