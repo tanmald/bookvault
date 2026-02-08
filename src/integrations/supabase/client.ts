@@ -16,10 +16,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     detectSessionInUrl: true,
   },
+  // WARNING: Do NOT add Content-Type or other headers to global.headers.
+  // Global headers override auto-detected Content-Type for ALL requests,
+  // breaking FormData uploads to edge functions (e.g. extract-metadata).
+  // The Supabase client sets Content-Type correctly per request type.
   global: {
-    headers: {
-      'Content-Type': 'application/json',
-    },
     fetch: (url, options = {}) => {
       return fetch(url, {
         ...options,

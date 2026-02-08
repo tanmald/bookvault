@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
@@ -526,53 +525,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // NOTE: No auth required. This is a utility function (parses files, calls OpenAI).
+  // It does NOT access the database or user data. Do NOT add auth — it has caused
+  // recurring breakage. Deploy with: npx supabase functions deploy extract-metadata --no-verify-jwt
   try {
-    // Validate authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Create Supabase client (simple config, no global headers)
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
-    // Extract JWT from "Bearer <token>" format
-    const jwt = authHeader.replace(/^Bearer\s+/i, '');
-
-    // CRITICAL FIX: Pass JWT directly to getUser(jwt)
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
-    if (authError) {
-      console.error("JWT verification failed:", authError);
-      return new Response(JSON.stringify({
-        error: "Invalid JWT",
-        details: authError.message
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!user) {
-      console.error("No user returned from JWT");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 

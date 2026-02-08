@@ -98,6 +98,18 @@ The `extract-metadata` edge function uses OpenAI (gpt-4o-mini) for AI-powered bo
 - Left column: Library members of the currently selected library (from `useLibraryMembers`).
 - Right column: Recent activity from direct friendships (from `useActivityFeed` → `friendships` table).
 
+## Edge Functions & Supabase Client
+
+### Supabase Client (`src/integrations/supabase/client.ts`)
+- **MUST NOT** add `Content-Type` or other headers to `global.headers` — global headers override auto-detected Content-Type for ALL requests, breaking FormData uploads to edge functions.
+- The Supabase JS client already sets Content-Type correctly per request type.
+
+### Edge Function Deployment
+- **Utility functions** (no DB/user data access): deploy with `--no-verify-jwt` and do NOT add auth code. Examples: `extract-metadata`, `fetch-cover`.
+- When calling edge functions with FormData, do NOT set manual `Authorization` headers — let the Supabase client handle auth automatically.
+
+---
+
 ## Kanban Drag-and-Drop
 
 The Kanban board uses **@dnd-kit** for drag-and-drop functionality:
