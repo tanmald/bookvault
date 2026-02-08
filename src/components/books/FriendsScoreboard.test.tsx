@@ -285,7 +285,8 @@ describe("FriendsScoreboard", () => {
 
       const { container } = render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
-      const skeletons = container.querySelectorAll("[class*='skeleton']");
+      // Skeleton components use "animate-pulse" class
+      const skeletons = container.querySelectorAll(".animate-pulse");
       expect(skeletons.length).toBeGreaterThan(0);
     });
   });
