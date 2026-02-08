@@ -12,8 +12,8 @@ vi.mock("@/contexts/LanguageContext", () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         "scoreboard.title": "Reading Race",
-        "scoreboard.noFriends": "No readers yet",
-        "scoreboard.inviteFriends": "Invite friends to track reading progress",
+        "scoreboard.noFriends": "None of your friends in this library have read this book or are planning to read it!",
+        "scoreboard.inviteFriends": "When your friends in this library start reading this book, you'll see their progress here.",
         "scoreboard.lessThanDay": "<1 day",
         "scoreboard.oneDay": "1 day",
         "scoreboard.days": "days",
@@ -271,8 +271,8 @@ describe("FriendsScoreboard", () => {
 
       render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
-      expect(screen.getByText("No readers yet")).toBeInTheDocument();
-      expect(screen.getByText("Invite friends to track reading progress")).toBeInTheDocument();
+      expect(screen.getByText("None of your friends in this library have read this book or are planning to read it!")).toBeInTheDocument();
+      expect(screen.getByText("When your friends in this library start reading this book, you'll see their progress here.")).toBeInTheDocument();
     });
   });
 
@@ -285,7 +285,8 @@ describe("FriendsScoreboard", () => {
 
       const { container } = render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
-      const skeletons = container.querySelectorAll("[class*='skeleton']");
+      // Skeleton components use "animate-pulse" class
+      const skeletons = container.querySelectorAll(".animate-pulse");
       expect(skeletons.length).toBeGreaterThan(0);
     });
   });

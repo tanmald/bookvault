@@ -1,88 +1,231 @@
 # BookVault 📚
 
-**Your digital library, beautifully organized and ready to share.**
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase)](https://supabase.com)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-FF6F61)](https://openai.com)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen)](https://github.com/tanmald/bookvault)
 
-BookVault helps book lovers organize their digital book collections, discover what friends are reading, and never lose track of a book again. Upload your books once, and let BookVault handle the rest—from organizing your library to tracking your reading journey.
+**Your personal digital library. Share your reading journey with friends.**
 
----
+Tired of losing track of your digital books? BookVault is your new home for beautifully organized reading. Upload your EPUB and PDF files once, and watch AI extract book details automatically—no more manual data entry. Invite friends, track your progress, compare reading achievements, and never lose a book again.
 
-## What You Can Do
+<div align="center">
 
-### Keep Your Books Organized
-- **Effortless Organization**: Upload your EPUB and PDF books and see them instantly organized in a beautiful library
-- **Smart Book Details**: Book information is automatically extracted—no more manual data entry
-- **Multiple Collections**: Create separate libraries for different purposes (personal reading, work, book clubs, etc.)
-- **Flexible Views**: See your books in grid, list, or kanban views—whatever works best for you
+[🚀 **Try BookVault Live**](https://bookvault-kappa.vercel.app) · [📖 Documentation](#getting-started) · [💡 Features](#features) · [🔄 Latest Release](https://github.com/tanmald/bookvault/releases)
 
-### Track Your Reading
-- **Never Forget a Book**: Mark books as "Want to Read," "Reading," or "Completed"
-- **Monitor Your Progress**: Track how far you've read with visual progress indicators
-- **Reading History**: See everything you've read at a glance
-
-### Share & Connect
-- **Share Your Library**: Invite friends to see your collection with secure, private links
-- **Discover Together**: See what your friends are reading and get inspired
-- **Privacy First**: You control who sees your books—everything is private by default
-
-### Enjoy Anywhere
-- **Light or Dark**: Choose the theme that's comfortable for your eyes
-- **Works Everywhere**: Access your library from any device—phone, tablet, or computer
-- **Your Language**: Available in English and Portuguese
+</div>
 
 ---
 
-## Who This Is For
+## Table of Contents
+
+- [Why BookVault?](#why-bookvault)
+- [✨ Features](#features)
+- [🚀 Quick Start](#quick-start)
+- [📱 Mobile-First Design](#mobile-first-design)
+- [🛠️ Tech Stack](#tech-stack)
+- [🎯 Target Users](#target-users)
+- [🤝 Contributing](#contributing)
+- [📄 License](#license)
+
+---
+
+## Why BookVault?
+
+Your books deserve better than scattered folders and manual spreadsheets.
+
+**The Problem:** Digital book collections are messy. You download EPUBs and PDFs, they end up in random folders, and you can't remember what you've read or where you saved it.
+
+**The Solution:** BookVault uses AI to automatically organize your library. Upload your books, and we handle the rest—extracting titles, authors, genres, and cover images. Share collections with friends, track your reading progress, and access everything from any device.
+
+**What makes it different:**
+- 🤖 **AI-powered metadata extraction** — No manual data entry. Just upload and go
+- 👥 **Social reading features** — See what friends are reading, compare progress, celebrate milestones
+- 📱 **Beautiful on every device** — Fully responsive with zero horizontal scroll
+- 🔒 **Privacy-first** — You control who sees your books and reading progress
+- 🌍 **Multi-language** — Available in English and Portuguese
+- 🎨 **Flexible layouts** — Grid, list, or Kanban view—pick your favorite way to browse
+
+---
+
+## ✨ Features
+
+### 🤖 AI-Powered Organization
+Watch your library organize itself automatically:
+- **Smart Metadata Extraction** — AI extracts titles, authors, genres, and cover images from your EPUB/PDF files
+- **Drag-and-Drop Upload** — Simply drag files in, and your library comes to life
+- **Multiple Libraries** — Create separate collections for different purposes (personal, work, book clubs, research)
+
+### 📖 Track Your Reading Journey
+Never lose track again:
+- **Reading Status** — Mark books as "Not Planned," "Want to Read," "Reading," or "Completed"
+- **Progress Tracking** — Track your reading percentage (0-100%) as you read
+- **Finish Dates** — Record and edit when you finished each book
+- **Reading Stats** — See your reading history and completion dates at a glance
+
+### 👥 Compare & Share
+Your reading journey, with friends:
+- **Friends Scoreboard** — See yourself ranked with friends who finished the same books (sorted by who finished first)
+- **Book Reviews** — Rate books with 1-5 stars and leave reviews
+- **Social Sharing** — Invite friends with secure, private links
+- **Activity Feed** — Follow what friends are reading, finishing, and reviewing
+- **Perfect for Book Clubs** — Share reading lists and track group progress
+
+### 🎨 Beautiful & Responsive
+Built for readers, by readers:
+- **Three View Options** — Grid, list, or Kanban layouts—choose what works for you
+- **Fully Mobile-Optimized** — Zero horizontal scroll on phones, tablets, or desktop
+- **Light & Dark Themes** — Choose what's comfortable for your eyes
+- **Collapsible Filters** — Smart filter UI that adapts to your screen size
+- **Dark Mode Support** — System-aware theme detection
+
+### 🔗 Kobo Integration
+Connect your reading with your e-reader:
+- **Send to Kobo** — Transfer books directly to your Kobo device with one click
+- **URL Shortening** — Easy-to-type shortened links for transferring
+- **Seamless Transfer** — Download starts automatically on your Kobo
+
+---
+
+## 🚀 Quick Start
+
+Get your library organized in 3 minutes:
+
+### 1️⃣ Create Your Account
+Sign up with just your email—no credit card needed.
+
+```
+Visit https://bookvault-kappa.vercel.app → Sign up → Done ✅
+```
+
+### 2️⃣ Upload Your Books
+Drag and drop your EPUB or PDF files. BookVault's AI will extract all details automatically.
+
+```
+Click "Add Book" → Drag files or select from device → AI extracts metadata → Library appears 📚
+```
+
+### 3️⃣ Invite Friends
+Share your collection and start tracking reading progress together.
+
+```
+Go to Invites → Create invite link → Share with friends → See their progress in real-time 👥
+```
+
+---
+
+## 📱 Mobile-First Design
+
+BookVault is built mobile-first:
+- ✅ **Zero horizontal scroll** — Optimized layout fits any screen size perfectly
+- ✅ **Touch-optimized UI** — Drag-and-drop, long-press drag, swipe navigation
+- ✅ **Smart filtering** — Filters collapse on small screens to maximize content
+- ✅ **Offline support** — (Coming soon) Read your books offline
+- ✅ **Fast load times** — Vite + lazy loading ensures snappy performance
+
+---
+
+## 🛠️ Tech Stack
+
+**Frontend:**
+- **[React 18](https://react.dev)** — Modern, declarative UI library
+- **[TypeScript](https://www.typescriptlang.org)** — Type-safe development
+- **[Vite](https://vitejs.dev)** — Lightning-fast build tool
+- **[TanStack Query](https://tanstack.com/query)** — Server state management & caching
+- **[Tailwind CSS](https://tailwindcss.com)** — Utility-first styling
+- **[shadcn/ui](https://ui.shadcn.com)** — Accessible React components
+- **[@dnd-kit](https://docs.dndkit.com/)** — Drag-and-drop library for Kanban board
+
+**Backend & Services:**
+- **[Supabase](https://supabase.com)** — Backend as a Service (Auth, PostgreSQL, Real-time, Storage)
+- **[OpenAI GPT-4](https://openai.com)** — AI for metadata extraction and genre detection
+- **[Vercel](https://vercel.com)** — Deployment & hosting
+
+**Architecture:**
+- **PostgreSQL** — Relational database for books, users, reading progress, reviews
+- **Real-time Subscriptions** — Live updates when friends add books or finish reading
+- **Edge Functions** — Serverless functions for AI metadata extraction
+- **Role-Based Access** — Library owners, admins, and members with different permissions
+
+---
+
+## 🎯 Target Users
 
 BookVault is perfect for:
 
-- **Avid Readers** with large digital collections who need better organization
-- **Book Clubs** wanting to share reading lists and track group progress
-- **Digital Nomads** who want to access their book collection from anywhere
-- **Anyone** who has ever lost track of what they've read or where they saved a book
+- **📚 Avid Readers** — Manage large digital collections with beautiful organization
+- **👥 Book Clubs** — Share reading lists and track group progress in real-time
+- **🌍 Digital Nomads** — Access your entire library from anywhere
+- **🎓 Students & Researchers** — Organize academic PDFs and textbooks
+- **💫 Social Readers** — Compare progress with friends and celebrate reading milestones
+- **❓ Anyone** who has ever lost a book, forgotten where they saved it, or wanted to share reading recommendations
 
 ---
 
-## How It Works
+## 🐛 Found a Bug?
 
-Getting started with BookVault is simple:
-
-1. **Create Your Account**: Sign up in seconds with just your email
-2. **Upload Your Books**: Drag and drop your EPUB or PDF files
-3. **Organize Automatically**: BookVault extracts book details and organizes everything for you
-4. **Share & Track**: Invite friends, track your reading progress, and enjoy your organized library
-
----
-
-## Built With
-
-BookVault is built with modern web technologies including React, TypeScript, and powered by AI for smart book organization. It uses a real-time backend to keep your library synced across all your devices.
+Please [open an issue on GitHub](https://github.com/tanmald/bookvault/issues) with:
+- A clear description of the bug
+- Steps to reproduce it
+- Expected vs actual behavior
+- Screenshots (if relevant)
+- Your browser/device info
 
 ---
 
-## Community
+## 💡 Feature Requests
 
-### Join Us
+Have an idea? We'd love to hear it!
 
-We're building a community of book lovers and developers who believe digital libraries should be beautiful and easy to use.
-
-- **Found a bug?** [Open an issue](https://github.com/tanmald/bookvault/issues)
-- **Have an idea?** We'd love to hear it—join the discussion
-- **Want to contribute?** Contributions are welcome! Check out open issues to get started
-
-### Contributing
-
-Whether you're fixing bugs, adding features, or improving documentation, we appreciate your help. Pull requests are welcome!
+[Start a discussion](https://github.com/tanmald/bookvault/discussions) to share your thoughts and get feedback from the community.
 
 ---
 
-## License
+## 📄 License
 
 BookVault is open source and available under the [MIT License](LICENSE).
 
-This means you're free to use, modify, and share BookVault for any purpose—personal or commercial. See the [LICENSE](LICENSE) file for details.
+This means you're free to use, modify, and share BookVault for any purpose—personal or commercial.
 
 ---
 
+## 🎉 Recent Updates
+
+### v1.1.0 — Mobile Experience & Social Reading (Feb 7, 2026)
+- ✅ **Zero horizontal scroll** — Fully responsive mobile design
+- ✅ **See yourself in the scoreboard** — Compare your reading progress with friends
+- ✅ **Edit finish dates** — Update when you finished a book
+- ✅ **Better mobile filters** — Smart, collapsible filter UI
+- ✅ **Library selector on mobile** — Switch libraries without scrolling
+
+[View all releases](https://github.com/tanmald/bookvault/releases)
+
+---
+
+## 🙏 Credits
+
+BookVault is built with ❤️ by book lovers, for book lovers.
+
+Special thanks to:
+- Our contributors and community members
+- [Supabase](https://supabase.com) for the amazing backend
+- [OpenAI](https://openai.com) for intelligent metadata extraction
+- Everyone who reported bugs and requested features
+
+---
+
+<div align="center">
+
+⭐ **If you like BookVault, please star this repository!** ⭐
+
+It helps us reach more readers and shows your support for the project.
+
+---
+
+[🚀 Try BookVault](https://bookvault-kappa.vercel.app) · [📖 Docs](#documentation) · [🐛 Report Issue](https://github.com/tanmald/bookvault/issues) · [💡 Feature Request](https://github.com/tanmald/bookvault/discussions)
+
 **Made with ❤️ for book lovers everywhere**
 
-⭐ Star this project if you find it useful!
+</div>

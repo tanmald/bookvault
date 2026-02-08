@@ -63,6 +63,8 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     return { ...friend, rank: 0 };
   });
 
+  const showRank = readCount > 0;
+
   const FriendProgressItem = ({
     friend,
     rank,
@@ -77,18 +79,20 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     return (
       <div className="flex items-center gap-3 py-2">
         {/* Rank for completed readers */}
-        <div className="w-8 flex-shrink-0 text-center">
-        {isRead && (
-            <>
-              {rank === 1 && <Trophy className="h-5 w-5 text-primary mx-auto" />}
-              {rank === 2 && <Trophy className="h-5 w-5 text-muted-foreground mx-auto" />}
-              {rank === 3 && <Trophy className="h-5 w-5 text-accent-foreground mx-auto" />}
-              {rank > 3 && (
-                <span className="text-sm text-muted-foreground">{rank}º</span>
-              )}
-            </>
-          )}
-        </div>
+        {showRank && (
+          <div className="w-8 flex-shrink-0 text-center">
+            {isRead && (
+              <>
+                {rank === 1 && <Trophy className="h-5 w-5 text-primary mx-auto" />}
+                {rank === 2 && <Trophy className="h-5 w-5 text-muted-foreground mx-auto" />}
+                {rank === 3 && <Trophy className="h-5 w-5 text-accent-foreground mx-auto" />}
+                {rank > 3 && (
+                  <span className="text-sm text-muted-foreground">{rank}º</span>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Avatar */}
         <Avatar className="h-9 w-9">

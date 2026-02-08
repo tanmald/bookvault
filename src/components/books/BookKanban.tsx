@@ -81,7 +81,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
   const columns = showNotPlanned ? allColumns : allColumns.filter(c => c.status !== 'not_planned');
 
   const booksByStatus = useMemo(() => {
-    const grouped: Record<string, Book[]> = {
+    const grouped: Record<string, { book: Book; finishedAt: string | null }[]> = {
       not_planned: [],
       to_read: [],
       reading: [],
@@ -91,10 +91,28 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
     books.forEach((book) => {
       const progress = progressMap.get(book.id);
       const status = (progress?.status ?? 'to_read') as string;
-      grouped[status]?.push(book);
+      grouped[status]?.push({ book, finishedAt: progress?.finished_at ?? null });
     });
 
-    return grouped;
+    const sortByTitle = (a: { book: Book }, b: { book: Book }) =>
+      a.book.title.toLowerCase().localeCompare(b.book.title.toLowerCase());
+
+    grouped.not_planned.sort(sortByTitle);
+    grouped.to_read.sort(sortByTitle);
+    grouped.reading.sort(sortByTitle);
+    grouped.read.sort((a, b) => {
+      if (!a.finishedAt && !b.finishedAt) return sortByTitle(a, b);
+      if (!a.finishedAt) return 1;
+      if (!b.finishedAt) return -1;
+      return new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime();
+    });
+
+    return {
+      not_planned: grouped.not_planned.map(g => g.book),
+      to_read: grouped.to_read.map(g => g.book),
+      reading: grouped.reading.map(g => g.book),
+      read: grouped.read.map(g => g.book),
+    };
   }, [books, progressMap]);
 
   const activeBook = activeId ? books.find((b) => b.id === activeId) : null;

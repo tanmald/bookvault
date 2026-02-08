@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';
 import { useProfile } from '@/hooks/useProfile';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor } from 'lucide-react';
+import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 import { LibraryManagementCard } from '@/components/library/LibraryManagementCard';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -24,11 +27,15 @@ export default function Profile() {
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
+  const { uploadAvatar, isUploading: isUploadingAvatar } = useAvatarUpload();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     display_name: '',
     bio: '',
   });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -44,6 +51,34 @@ export default function Profile() {
       display_name: formData.display_name.trim() || null,
       bio: formData.bio.trim() || null,
     });
+  };
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+
+    const avatarUrl = await uploadAvatar(file);
+    if (avatarUrl) {
+      await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('user_id', user!.id);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    } else {
+      setAvatarPreview(null);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!profile?.avatar_url) return;
+
+    await supabase.from('profiles').update({ avatar_url: null }).eq('user_id', user!.id);
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+    setAvatarPreview(null);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   // Stats
@@ -75,7 +110,7 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-6">
-              <BookOpen className="h-8 w-8 text-muted-foreground mb-2" />
+              <BookOpen className="h-8 w-8 text-accent mb-2" />
               <span className="text-2xl font-semibold">{totalBooks}</span>
               <span className="text-sm text-muted-foreground">{t('profile.books')}</span>
             </CardContent>
@@ -176,17 +211,22 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile?.avatar_url || ''} />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <Avatar className="h-20 w-20 mx-auto sm:mx-0">
+                <AvatarImage src={avatarPreview || profile?.avatar_url || ''} />
                 <AvatarFallback className="text-xl">
                   {formData.display_name?.substring(0, 2).toUpperCase() ||
                     user?.email?.substring(0, 2).toUpperCase() ||
                     'U'}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="font-medium">{user?.email}</p>
+              {isUploadingAvatar && (
+                <div className="absolute left-1/2 top-10 -translate-x-1/2 sm:static sm:translate-x-0 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                </div>
+              )}
+              <div className="flex-1 text-center sm:text-left">
+                <p className="font-medium break-all">{user?.email}</p>
                 <p className="text-sm text-muted-foreground">
                   {t('profile.memberSince')}{' '}
                   {profile?.created_at
@@ -194,7 +234,45 @@ export default function Profile() {
                     : '...'}
                 </p>
               </div>
+              <div className="flex flex-row sm:flex-col gap-2 items-center sm:items-end justify-center sm:justify-start">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={triggerFileInput}
+                    disabled={isUploadingAvatar}
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    {profile?.avatar_url ? t('profile.changePhoto') : t('profile.addPhoto')}
+                  </Button>
+                  {profile?.avatar_url && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRemoveAvatar}
+                      disabled={isUploadingAvatar}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  JPG, PNG, WebP. Máx 5MB.
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarSelect}
+                className="hidden"
+              />
             </div>
+            <p className="text-xs text-muted-foreground sm:hidden text-center">
+              JPG, PNG, WebP. Máx 5MB.
+            </p>
 
             <div className="space-y-2">
               <Label htmlFor="display_name">{t('profile.name')}</Label>

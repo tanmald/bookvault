@@ -112,12 +112,34 @@ export default function BookDetails() {
 
   const handleStatusChange = (status: ReadingStatus) => {
     if (!id) return;
-    updateProgress.mutate({ bookId: id, status });
+    updateProgress.mutate(
+      { bookId: id, status },
+      {
+        onSuccess: () => {
+          toast({
+            title: t('common.success'),
+            description: t('book.progressSaved'),
+            variant: 'success',
+          });
+        },
+      }
+    );
   };
 
   const handleProgressChange = (value: number[]) => {
     if (!id) return;
-    updateProgress.mutate({ bookId: id, progress: value[0] });
+    updateProgress.mutate(
+      { bookId: id, progress: value[0] },
+      {
+        onSuccess: () => {
+          toast({
+            title: t('common.success'),
+            description: t('book.progressSaved'),
+            variant: 'success',
+          });
+        },
+      }
+    );
   };
 
   const handleDelete = async () => {
@@ -300,6 +322,7 @@ export default function BookDetails() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="not_planned">{t('status.notPlanned')}</SelectItem>
                     <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
                     <SelectItem value="reading">{t('status.reading')}</SelectItem>
                     <SelectItem value="read">{t('status.read')}</SelectItem>
@@ -359,10 +382,21 @@ export default function BookDetails() {
                                 });
                                 return;
                               }
-                              updateFinishedDate.mutate({
-                                bookId: id,
-                                finishedAt: date.toISOString(),
-                              });
+                              updateFinishedDate.mutate(
+                                {
+                                  bookId: id,
+                                  finishedAt: date.toISOString(),
+                                },
+                                {
+                                  onSuccess: () => {
+                                    toast({
+                                      title: t('common.success'),
+                                      description: t('book.progressSaved'),
+                                      variant: 'success',
+                                    });
+                                  },
+                                }
+                              );
                               setIsDatePickerOpen(false);
                             }
                           }}
