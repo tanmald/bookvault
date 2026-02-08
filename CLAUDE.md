@@ -56,3 +56,36 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<supabase-anon-key>
 ## Edge Function
 
 The `extract-metadata` edge function uses OpenAI (gpt-4o-mini) for AI-powered book genre and language detection. The `OPENAI_API_KEY` secret must be set in the Supabase dashboard.
+
+## Business Rules — Social & Scoreboard
+
+### Data Model: `friendships` vs `library_members`
+- **`friendships`**: Global social relationship between invite creator and joiner. Used for the activity feed.
+- **`library_members`**: Per-library access control. Determines who belongs to which library.
+- Both are created atomically when someone accepts an invite link (`use_invite_link` RPC).
+
+### Friends Scoreboard (`/book/:id`)
+- **MUST** show only members of the book's library (from `library_members`, NOT `friendships`).
+- **MUST** include the current user.
+- **MUST** only show members with status `to_read`, `reading`, or `read`.
+- **MUST NOT** show members with `not_planned` status or no reading progress.
+- Uses the `get_library_friends_book_progress` RPC function.
+
+### Friends Page (`/friends`)
+- Left column: Library members of the currently selected library (from `useLibraryMembers`).
+- Right column: Recent activity from direct friendships (from `useActivityFeed` → `friendships` table).
+
+## Kanban Drag-and-Drop
+
+The Kanban board uses **@dnd-kit** for drag-and-drop functionality:
+- Drag books between columns to change their reading status instantly
+- Supports mouse, touch (mobile), and keyboard navigation
+- Integrates seamlessly with React Query optimistic updates
+- Accessible: Keyboard users can use Space to pick up, Arrow keys to move, and Space to drop books
+- Touch devices: Long-press (150ms) activates drag without interfering with scrolling
+
+**Key components**:
+- `BookKanban`: Main component with DndContext, sensors, and drag handlers
+- `SortableBookCard`: Draggable wrapper for BookCard using `useSortable()` hook
+- `DroppableColumn`: Drop zone wrapper for status columns
+- Status changes are handled via `useReadingProgress().updateProgress` mutation with automatic rollback on errors

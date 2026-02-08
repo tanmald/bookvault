@@ -16,12 +16,12 @@ export interface FriendProgress {
 
 function calculateReadingDays(startedAt: string | null, finishedAt: string | null): number | null {
   if (!startedAt || !finishedAt) return null;
-  
+
   const start = new Date(startedAt);
   const end = new Date(finishedAt);
   const diffMs = end.getTime() - start.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  
+
   return Math.max(diffDays, 0);
 }
 
@@ -33,80 +33,51 @@ export function useFriendsBookProgress(bookId: string | undefined) {
     queryFn: async () => {
       if (!bookId || !user) return [];
 
-      // Step 1: Get all friends
-      const { data: friendships, error: friendshipsError } = await supabase
-        .from('friendships')
-        .select('user_id, friend_id')
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
-
-      if (friendshipsError) throw friendshipsError;
-      if (!friendships || friendships.length === 0) return [];
-
-      // Extract friend IDs
-      const friendIds = friendships.map((f) =>
-        f.user_id === user.id ? f.friend_id : f.user_id
+      // Single RPC call — returns library members with status to_read/reading/read
+      const { data, error } = await supabase.rpc(
+        'get_library_friends_book_progress',
+        {
+          p_user_id: user.id,
+          p_book_id: bookId,
+        }
       );
 
-      // Step 2: Get profiles for all friends
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url')
-        .in('user_id', friendIds);
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
 
-      if (profilesError) throw profilesError;
+      // Map RPC result to FriendProgress interface
+      const friendsProgress: FriendProgress[] = data.map((row) => ({
+        user_id: row.friend_id,
+        display_name: row.display_name || null,
+        avatar_url: row.avatar_url || null,
+        status: (row.status as ReadingStatus) || null,
+        progress: row.progress || 0,
+        started_at: row.started_at || null,
+        finished_at: row.finished_at || null,
+        reading_time_days: calculateReadingDays(
+          row.started_at || null,
+          row.finished_at || null,
+        ),
+      }));
 
-      // Step 3: Get reading progress for this book from friends
-      const { data: progressData, error: progressError } = await supabase
-        .from('reading_progress')
-        .select('user_id, status, progress, started_at, finished_at')
-        .eq('book_id', bookId)
-        .in('user_id', friendIds);
-
-      if (progressError) throw progressError;
-
-      // Step 4: Combine data - include all friends, even those without progress
-      const friendsProgress: FriendProgress[] = friendIds.map((friendId) => {
-        const profile = profiles?.find((p) => p.user_id === friendId);
-        const progress = progressData?.find((p) => p.user_id === friendId);
-
-        return {
-          user_id: friendId,
-          display_name: profile?.display_name || null,
-          avatar_url: profile?.avatar_url || null,
-          status: progress?.status || null,
-          progress: progress?.progress || 0,
-          started_at: progress?.started_at || null,
-          finished_at: progress?.finished_at || null,
-          reading_time_days: calculateReadingDays(
-            progress?.started_at || null,
-            progress?.finished_at || null
-          ),
-        };
-      });
-
-      // Step 5: Sort - read (by time), reading (by progress), to_read, then null
+      // Sort: read (by time), reading (by progress), to_read (by name)
       return friendsProgress.sort((a, b) => {
-        // Priority order: read > reading > to_read > null
-        const statusOrder = { read: 0, reading: 1, to_read: 2 };
-        const aOrder = a.status ? statusOrder[a.status] : 3;
-        const bOrder = b.status ? statusOrder[b.status] : 3;
+        const statusOrder: Record<string, number> = { read: 0, reading: 1, to_read: 2 };
+        const aOrder = a.status ? (statusOrder[a.status] ?? 3) : 3;
+        const bOrder = b.status ? (statusOrder[b.status] ?? 3) : 3;
 
         if (aOrder !== bOrder) return aOrder - bOrder;
 
-        // Within same status, sort by specific criteria
         if (a.status === 'read' && b.status === 'read') {
-          // Sort by reading time (faster first)
           const aTime = a.reading_time_days ?? Infinity;
           const bTime = b.reading_time_days ?? Infinity;
           return aTime - bTime;
         }
 
         if (a.status === 'reading' && b.status === 'reading') {
-          // Sort by progress (higher first)
           return b.progress - a.progress;
         }
 
-        // For others, sort by name
         const aName = a.display_name || '';
         const bName = b.display_name || '';
         return aName.localeCompare(bName);

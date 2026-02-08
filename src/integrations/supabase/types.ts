@@ -491,6 +491,21 @@ export type Database = {
           friendship_id: string
         }[]
       }
+      get_library_friends_book_progress: {
+        Args: { p_user_id: string; p_book_id: string }
+        Returns: {
+          friend_id: string
+          display_name: string
+          avatar_url: string
+          status: Database["public"]["Enums"]["reading_status"]
+          progress: number
+          started_at: string
+          finished_at: string
+          review_id: string
+          review_rating: number
+          review_text: string
+        }[]
+      }
       get_library_members_with_profiles: {
         Args: { p_library_id: string }
         Returns: {
@@ -539,7 +554,7 @@ export type Database = {
     }
     Enums: {
       library_role: "admin" | "member"
-      reading_status: "to_read" | "reading" | "read"
+      reading_status: "to_read" | "reading" | "read" | "not_planned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -668,7 +683,7 @@ export const Constants = {
   public: {
     Enums: {
       library_role: ["admin", "member"],
-      reading_status: ["to_read", "reading", "read"],
+      reading_status: ["to_read", "reading", "read", "not_planned"],
     },
   },
 } as const
