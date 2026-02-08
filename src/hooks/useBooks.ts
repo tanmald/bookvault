@@ -322,5 +322,137 @@ export function useBooks(libraryId?: string) {
     updateBook,
     deleteBook,
     refetch: booksQuery.refetch,
+    checkDuplicateByIsbn,
+    checkDuplicateByTitleAuthor,
   };
+}
+
+// Duplicate detection functions
+
+export interface DuplicateMatch {
+  book: Book;
+  similarity: number;
+  matchType: 'title' | 'author' | 'both';
+}
+
+function normalizeText(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function calculateSimilarity(str1: string, str2: string): number {
+  if (!str1 && !str2) return 1;
+  if (!str1 || !str2) return 0;
+  
+  const s1 = normalizeText(str1);
+  const s2 = normalizeText(str2);
+  
+  if (s1 === s2) return 1;
+  if (s1.length < 2 || s2.length < 2) return 0;
+  
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1;
+  
+  const costs: number[] = [];
+  for (let i = 0; i <= shorter.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= longer.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (shorter[i - 1] !== longer[j - 1]) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[longer.length] = lastValue;
+  }
+  
+  return (longer.length - costs[longer.length]) / longer.length;
+}
+
+export async function checkDuplicateByIsbn(
+  isbn: string | null | undefined,
+  libraryId: string
+): Promise<Book | null> {
+  if (!isbn) return null;
+  
+  const normalizedIsbn = isbn.replace(/[-\s]/g, '');
+  
+  const { data, error } = await supabase
+    .from('books')
+    .select('*, genre:genres(id, name, slug), book_files(id, book_id, language, file_url, file_type, file_size, created_at)')
+    .eq('library_id', libraryId)
+    .not('isbn', 'is', null)
+    .or(`isbn.eq.${normalizedIsbn},isbn.eq.${isbn}`)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking ISBN duplicate:', error);
+    return null;
+  }
+  
+  return data as Book | null;
+}
+
+export async function checkDuplicateByTitleAuthor(
+  title: string,
+  author: string | null | undefined,
+  libraryId: string,
+  threshold: number = 0.85
+): Promise<DuplicateMatch[]> {
+  if (!title) return [];
+  
+  const normalizedTitle = normalizeText(title);
+  const normalizedAuthor = author ? normalizeText(author) : '';
+  
+  const { data: allBooks, error } = await supabase
+    .from('books')
+    .select('*, genre:genres(id, name, slug), book_files(id, book_id, language, file_url, file_type, file_size, created_at)')
+    .eq('library_id', libraryId);
+  
+  if (error) {
+    console.error('Error checking title/author duplicate:', error);
+    return [];
+  }
+  
+  const matches: DuplicateMatch[] = [];
+  
+  for (const book of allBooks || []) {
+    const bookTitleSimilarity = calculateSimilarity(normalizedTitle, normalizeText(book.title || ''));
+    
+    if (bookTitleSimilarity >= threshold) {
+      let authorSimilarity = 0;
+      if (book.author && author) {
+        authorSimilarity = calculateSimilarity(normalizedAuthor, normalizeText(book.author));
+      } else if (!book.author && !author) {
+        authorSimilarity = 1;
+      }
+      
+      const matchType: 'title' | 'author' | 'both' = 
+        bookTitleSimilarity >= threshold && authorSimilarity >= threshold ? 'both' :
+        bookTitleSimilarity >= threshold ? 'title' : 'author';
+      
+      const overallSimilarity = (bookTitleSimilarity * 0.7) + (authorSimilarity * 0.3);
+      
+      matches.push({
+        book: book as Book,
+        similarity: overallSimilarity,
+        matchType,
+      });
+    }
+  }
+  
+  return matches.sort((a, b) => b.similarity - a.similarity);
 }

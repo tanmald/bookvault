@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FileUpload } from '@/components/upload/FileUpload';
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBooks } from '@/hooks/useBooks';
+import { useBooks, checkDuplicateByIsbn, checkDuplicateByTitleAuthor, type DuplicateMatch } from '@/hooks/useBooks';
 import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { DuplicateBookSelector } from '@/components/upload/DuplicateBookSelector';
+import type { Book } from '@/hooks/useBooks';
 
 interface ExtractedMetadata {
   title: string | null;
@@ -59,6 +61,12 @@ export default function UploadBook() {
   const [isUploading, setIsUploading] = useState(false);
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
   const [isFetchingCover, setIsFetchingCover] = useState(false);
+
+  // Duplicate detection state
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [forcedExistingMode, setForcedExistingMode] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   // Mode: 'new' for new book, 'existing' for adding to existing book
   const [mode, setMode] = useState<'new' | 'existing'>(bookIdFromUrl ? 'existing' : 'new');
@@ -187,6 +195,56 @@ export default function UploadBook() {
     }
   }, [genres, toast, mode, t]);
 
+  // Check for duplicates when metadata is extracted
+  useEffect(() => {
+    const checkDuplicates = async () => {
+      if (!formData.title || !currentLibrary?.id || mode === 'existing' || isExtractingMetadata) {
+        return;
+      }
+
+      setIsCheckingDuplicates(true);
+
+      try {
+        let foundBook: Book | null = null;
+        let matches: DuplicateMatch[] = [];
+
+        if (extractedIsbn) {
+          foundBook = await checkDuplicateByIsbn(extractedIsbn, currentLibrary.id);
+        }
+
+        if (!foundBook && formData.title) {
+          matches = await checkDuplicateByTitleAuthor(formData.title, formData.author, currentLibrary.id, 0.85);
+        }
+
+        if (foundBook) {
+          setDuplicateMatches([{ book: foundBook, similarity: 1, matchType: 'title' }]);
+          setSelectedBookId(foundBook.id);
+          setMode('existing');
+          setForcedExistingMode(true);
+          setShowDuplicateModal(true);
+        } else if (matches.length > 0) {
+          setDuplicateMatches(matches);
+          setMode('existing');
+          setForcedExistingMode(true);
+          setShowDuplicateModal(true);
+        } else {
+          setDuplicateMatches([]);
+          setForcedExistingMode(false);
+          if (!bookIdFromUrl) {
+            setMode('new');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for duplicates:', error);
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    };
+
+    const timeoutId = setTimeout(checkDuplicates, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.title, formData.author, extractedIsbn, currentLibrary, mode, bookIdFromUrl, isExtractingMetadata, toast, t]);
+
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
     extractMetadata(selectedFile);
@@ -207,14 +265,34 @@ export default function UploadBook() {
   };
 
   const handleModeChange = (isExisting: boolean) => {
+    if (forcedExistingMode && !isExisting) {
+      return;
+    }
     setMode(isExisting ? 'existing' : 'new');
     if (isExisting) {
-      // Clear form data when switching to existing book mode
       setFormData({ title: '', author: '', description: '', genre_id: '', year: '' });
       setCoverFile(null);
       setCoverPreview(null);
       setExtractedCoverBase64(null);
     }
+  };
+
+  const handleSelectDuplicateBook = (book: Book) => {
+    setSelectedBookId(book.id);
+    setMode('existing');
+    setShowDuplicateModal(false);
+  };
+
+  const handleCreateNewDespiteDuplicates = () => {
+    setDuplicateMatches([]);
+    setForcedExistingMode(false);
+    setMode('new');
+    setSelectedBookId('');
+    setShowDuplicateModal(false);
+  };
+
+  const handleCloseDuplicateModal = () => {
+    setShowDuplicateModal(false);
   };
 
   const fetchCoverAutomatically = async (
@@ -640,18 +718,50 @@ export default function UploadBook() {
             <CardHeader>
               <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
               <CardDescription>
-                {t('upload.uploadTypeDesc')}
+                {forcedExistingMode ? t('upload.addingToExisting') : t('upload.uploadTypeDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Show selected book info when forced by duplicate detection */}
+              {forcedExistingMode && duplicateMatches.length === 1 && duplicateMatches[0] && (
+                <div className="mb-4 p-3 rounded-lg bg-muted/50 border">
+                  <div className="flex items-center gap-3">
+                    {duplicateMatches[0].book.cover_url ? (
+                      <img
+                        src={duplicateMatches[0].book.cover_url}
+                        alt=""
+                        className="w-12 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-12 h-16 bg-muted rounded flex items-center justify-center">
+                        <BookCopy className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{duplicateMatches[0].book.title}</p>
+                      {duplicateMatches[0].book.author && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {duplicateMatches[0].book.author}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Normal mode switch */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="mode"
                     checked={mode === 'existing'}
                     onCheckedChange={handleModeChange}
+                    disabled={forcedExistingMode}
                   />
-                  <Label htmlFor="mode" className="cursor-pointer">
+                  <Label 
+                    htmlFor="mode" 
+                    className={forcedExistingMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                  >
                     {t('upload.addToExisting')}
                   </Label>
                 </div>
@@ -687,6 +797,17 @@ export default function UploadBook() {
               )}
             </CardContent>
           </Card>
+
+          {/* Duplicate Book Modal */}
+          <DuplicateBookSelector
+            matches={duplicateMatches}
+            onSelect={handleSelectDuplicateBook}
+            onCreateNew={handleCreateNewDespiteDuplicates}
+            isLoading={isCheckingDuplicates}
+            open={showDuplicateModal}
+            onOpenChange={setShowDuplicateModal}
+          />
+
           <div className="flex gap-3">
             <Button
               type="button"

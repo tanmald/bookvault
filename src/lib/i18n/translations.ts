@@ -209,6 +209,13 @@ export const translations = {
     'book.removeVersion': 'Remover esta versão?',
     'book.removeVersionDesc': 'Esta ação irá remover a versão em {language} ({type}). Esta ação não pode ser desfeita.',
     'book.remove': 'Remover',
+    'upload.duplicateDetected': 'Este livro já existe na tua biblioteca',
+    'upload.duplicateDetectedDesc': 'Seleciona o livro existente para adicionar este ficheiro como nova versão',
+    'upload.duplicateSelectBook': 'Selecionar Livro Existente',
+    'upload.noneOfThese': 'Nenhum destes - criar novo',
+    'upload.matchingBooks': 'Livros encontrados',
+    'upload.matchingBooksDesc': 'Encontrámos livros similares na tua biblioteca. Escolhe um para adicionar o ficheiro como nova versão, ou cria um livro novo.',
+    'upload.addingToExisting': 'Adicionando ao livro existente',
     
     // Copy Book
     'copyBook.title': 'Copiar para Biblioteca',
@@ -580,6 +587,15 @@ export const translations = {
     'upload.fetchingCover': 'Searching for cover online...',
     'upload.coverFetched': 'Cover found automatically',
     'upload.coverNotFound': 'Cover not found online',
+
+    // Duplicate Detection
+    'upload.duplicateDetected': 'Este livro já existe na tua biblioteca',
+    'upload.duplicateDetectedDesc': 'Seleciona o livro existente para adicionar este ficheiro como nova versão',
+    'upload.duplicateSelectBook': 'Selecionar Livro Existente',
+    'upload.noneOfThese': 'Nenhum destes - criar novo',
+    'upload.matchingBooks': 'Livros encontrados',
+    'upload.matchingBooksDesc': 'Encontrámos livros similares na tua biblioteca. Escolhe um para adicionar o ficheiro como nova versão, ou cria um livro novo.',
+    'upload.addingToExisting': 'Adicionando ao livro existente',
 
     // Book Details
     'book.by': 'by',
