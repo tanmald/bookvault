@@ -221,6 +221,24 @@ export const translations = {
     'copyBook.noLibraries': 'Não estás em nenhuma outra biblioteca',
     'copyBook.copyProgress': 'Copiar progresso atual de leitura',
     
+    // Send to Kobo
+    'kobo.title': 'Enviar para Kobo',
+    'kobo.description': 'Gera uma URL curta para "{title}" e transfere para o teu dispositivo Kobo.',
+    'kobo.generating': 'A gerar URL...',
+    'kobo.shortening': 'A encurtar URL...',
+    'kobo.directUrl': 'URL direta',
+    'kobo.copy': 'Copiar URL',
+    'kobo.shortened': 'URL encurtada com sucesso!',
+    'kobo.shortenError': 'Erro ao encurtar URL. Podes usar a URL direta.',
+    'kobo.retry': 'Tentar novamente',
+    'kobo.instructionsTitle': 'Instruções para Kobo',
+    'kobo.step1': 'Clica na URL para a copiar',
+    'kobo.step2': 'No teu Kobo, vai a: Menu > Explorar > Navegador Web',
+    'kobo.step3': 'cola a URL e descarrega o livro',
+    'kobo.expiryNotice': 'Esta URL expira em 7 dias. Descarrega o livro antes de expirar.',
+    'kobo.send': 'Enviar para Kobo',
+    'kobo.copied': 'URL copiada para a área de transferência!',
+    
     // Scoreboard
     'scoreboard.title': 'Scoreboard dos Amigos',
     'scoreboard.noFriends': 'Ainda não tens amigos!',
@@ -625,6 +643,24 @@ export const translations = {
     'copyBook.copyButton': 'Copy Book',
     'copyBook.noLibraries': "You're not in any other libraries",
     'copyBook.copyProgress': 'Copy current reading progress',
+    
+    // Send to Kobo
+    'kobo.title': 'Send to Kobo',
+    'kobo.description': 'Generate a short URL for "{title}" and transfer to your Kobo device.',
+    'kobo.generating': 'Generating URL...',
+    'kobo.shortening': 'Shortening URL...',
+    'kobo.directUrl': 'Direct URL',
+    'kobo.copy': 'Copy URL',
+    'kobo.shortened': 'URL shortened successfully!',
+    'kobo.shortenError': 'Error shortening URL. You can use the direct URL.',
+    'kobo.retry': 'Retry',
+    'kobo.instructionsTitle': 'Kobo Instructions',
+    'kobo.step1': 'Click the URL to copy it',
+    'kobo.step2': 'On your Kobo, go to: Menu > Explore > Web Browser',
+    'kobo.step3': 'paste the URL and download the book',
+    'kobo.expiryNotice': 'This URL expires in 7 days. Download the book before it expires.',
+    'kobo.send': 'Send to Kobo',
+    'kobo.copied': 'URL copied to clipboard!',
     
     // Scoreboard
     'scoreboard.title': 'Friends Scoreboard',
