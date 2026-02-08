@@ -456,58 +456,6 @@ export default function UploadBook() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Mode Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
-              <CardDescription>
-                {t('upload.uploadTypeDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="mode"
-                    checked={mode === 'existing'}
-                    onCheckedChange={handleModeChange}
-                  />
-                  <Label htmlFor="mode" className="cursor-pointer">
-                    {t('upload.addToExisting')}
-                  </Label>
-                </div>
-              </div>
-
-              {mode === 'existing' && (
-                <div className="mt-4 space-y-2">
-                  <Label>{t('upload.selectBook')}</Label>
-                  <Select value={selectedBookId} onValueChange={setSelectedBookId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('upload.chooseBook')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userBooks.map((book) => (
-                        <SelectItem key={book.id} value={book.id}>
-                          <div className="flex items-center gap-2">
-                            <BookCopy className="h-4 w-4 text-muted-foreground" />
-                            <span>{book.title}</span>
-                            {book.author && (
-                              <span className="text-muted-foreground">— {book.author}</span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {userBooks.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {t('upload.noBooks')}
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
@@ -687,6 +635,58 @@ export default function UploadBook() {
             </div>
           )}
 
+          {/* Mode Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
+              <CardDescription>
+                {t('upload.uploadTypeDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="mode"
+                    checked={mode === 'existing'}
+                    onCheckedChange={handleModeChange}
+                  />
+                  <Label htmlFor="mode" className="cursor-pointer">
+                    {t('upload.addToExisting')}
+                  </Label>
+                </div>
+              </div>
+
+              {mode === 'existing' && (
+                <div className="mt-4 space-y-2">
+                  <Label>{t('upload.selectBook')}</Label>
+                  <Select value={selectedBookId} onValueChange={setSelectedBookId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('upload.chooseBook')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userBooks.map((book) => (
+                        <SelectItem key={book.id} value={book.id}>
+                          <div className="flex items-center gap-2">
+                            <BookCopy className="h-4 w-4 text-muted-foreground" />
+                            <span>{book.title}</span>
+                            {book.author && (
+                              <span className="text-muted-foreground">— {book.author}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {userBooks.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('upload.noBooks')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           <div className="flex gap-3">
             <Button
               type="button"
