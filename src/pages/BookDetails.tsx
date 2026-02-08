@@ -119,6 +119,7 @@ export default function BookDetails() {
           toast({
             title: t('common.success'),
             description: t('book.progressSaved'),
+            variant: 'success',
           });
         },
       }
@@ -134,6 +135,7 @@ export default function BookDetails() {
           toast({
             title: t('common.success'),
             description: t('book.progressSaved'),
+            variant: 'success',
           });
         },
       }
