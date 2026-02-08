@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FileUpload } from '@/components/upload/FileUpload';
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBooks } from '@/hooks/useBooks';
+import { useBooks, checkDuplicateByIsbn, checkDuplicateByTitleAuthor, type DuplicateMatch } from '@/hooks/useBooks';
 import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useAlternativeCovers } from '@/hooks/useAlternativeCovers';
+import { DuplicateBookSelector } from '@/components/upload/DuplicateBookSelector';
+import type { Book } from '@/hooks/useBooks';
 
 interface ExtractedMetadata {
   title: string | null;
@@ -60,6 +62,10 @@ export default function UploadBook() {
   const [isUploading, setIsUploading] = useState(false);
   const [isExtractingMetadata, setIsExtractingMetadata] = useState(false);
 
+  // Duplicate detection state
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[]>([]);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [forcedExistingMode, setForcedExistingMode] = useState(false);
 
   // Mode: 'new' for new book, 'existing' for adding to existing book
   const [mode, setMode] = useState<'new' | 'existing'>(bookIdFromUrl ? 'existing' : 'new');
@@ -80,6 +86,71 @@ export default function UploadBook() {
     author: formData.author,
     isbn: extractedIsbn || undefined,
   });
+
+  // Check for duplicates when metadata is extracted
+  useEffect(() => {
+    const checkDuplicates = async () => {
+      // Only check if we have extracted metadata and are in new mode
+      if (!formData.title || !currentLibrary?.id || mode === 'existing' || isExtractingMetadata) {
+        return;
+      }
+
+      setIsCheckingDuplicates(true);
+
+      try {
+        let foundBook: Book | null = null;
+        let matches: DuplicateMatch[] = [];
+
+        // First, check by ISBN (exact match)
+        if (extractedIsbn) {
+          foundBook = await checkDuplicateByIsbn(extractedIsbn, currentLibrary.id);
+        }
+
+        // If no ISBN match, check by title and author (fuzzy match)
+        if (!foundBook && formData.title) {
+          matches = await checkDuplicateByTitleAuthor(formData.title, formData.author, currentLibrary.id, 0.85);
+        }
+
+        if (foundBook) {
+          // Exact ISBN match found - force existing mode
+          setDuplicateMatches([{ book: foundBook, similarity: 1, matchType: 'title' }]);
+          setSelectedBookId(foundBook.id);
+          setMode('existing');
+          setForcedExistingMode(true);
+          toast({
+            title: t('upload.duplicateDetected'),
+            description: t('upload.duplicateDetectedDesc'),
+            variant: 'success',
+          });
+        } else if (matches.length > 0) {
+          // Similar books found - show selector
+          setDuplicateMatches(matches);
+          setMode('existing');
+          setForcedExistingMode(true);
+          toast({
+            title: t('upload.matchingBooks'),
+            description: t('upload.matchingBooksDesc'),
+            variant: 'success',
+          });
+        } else {
+          // No duplicates found - reset to new mode if not forced by URL
+          setDuplicateMatches([]);
+          setForcedExistingMode(false);
+          if (!bookIdFromUrl) {
+            setMode('new');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for duplicates:', error);
+      } finally {
+        setIsCheckingDuplicates(false);
+      }
+    };
+
+    // Debounce the check to avoid too many API calls
+    const timeoutId = setTimeout(checkDuplicates, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.title, formData.author, extractedIsbn, currentLibrary, mode, bookIdFromUrl, isExtractingMetadata, toast, t]);
 
   const extractMetadata = useCallback(async (selectedFile: File) => {
     const fileName = selectedFile.name.toLowerCase();
@@ -195,6 +266,62 @@ export default function UploadBook() {
     }
   }, [genres, toast, mode, t]);
 
+  // Check for duplicate books after metadata extraction
+  const checkForDuplicates = useCallback(async (title: string, author: string | null, isbn: string | null) => {
+    if (!currentLibrary?.id) return;
+
+    setIsCheckingDuplicates(true);
+
+    try {
+      let foundBook: Book | null = null;
+      let matches: DuplicateMatch[] = [];
+
+      // First, check by ISBN (exact match)
+      if (isbn) {
+        foundBook = await checkDuplicateByIsbn(isbn, currentLibrary.id);
+      }
+
+      // If no ISBN match, check by title and author (fuzzy match)
+      if (!foundBook && title) {
+        matches = await checkDuplicateByTitleAuthor(title, author, currentLibrary.id, 0.85);
+      }
+
+      if (foundBook) {
+        // Exact ISBN match found - force existing mode
+        setDuplicateMatches([{ book: foundBook, similarity: 1, matchType: 'title' }]);
+        setSelectedBookId(foundBook.id);
+        setMode('existing');
+        setForcedExistingMode(true);
+        toast({
+          title: t('upload.duplicateDetected'),
+          description: t('upload.duplicateDetectedDesc'),
+          variant: 'success',
+        });
+      } else if (matches.length > 0) {
+        // Similar books found - show selector
+        setDuplicateMatches(matches);
+        setMode('existing');
+        setForcedExistingMode(true);
+        toast({
+          title: t('upload.matchingBooks'),
+          description: t('upload.matchingBooksDesc'),
+          variant: 'success',
+        });
+      } else {
+        // No duplicates found - reset to new mode
+        setDuplicateMatches([]);
+        setForcedExistingMode(false);
+        if (!bookIdFromUrl) {
+          setMode('new');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  }, [currentLibrary, toast, t, bookIdFromUrl]);
+
   const handleFileSelect = useCallback((selectedFile: File) => {
     setFile(selectedFile);
     extractMetadata(selectedFile);
@@ -275,14 +402,29 @@ export default function UploadBook() {
   };
 
   const handleModeChange = (isExisting: boolean) => {
+    // Don't allow changing mode if forced by duplicate detection
+    if (forcedExistingMode && !isExisting) {
+      return;
+    }
     setMode(isExisting ? 'existing' : 'new');
     if (isExisting) {
-      // Clear form data when switching to existing book mode
       setFormData({ title: '', author: '', description: '', genre_id: '', year: '' });
       setCoverFile(null);
       setCoverPreview(null);
       setExtractedCoverBase64(null);
     }
+  };
+
+  const handleSelectDuplicateBook = (book: Book) => {
+    setSelectedBookId(book.id);
+    setMode('existing');
+  };
+
+  const handleCreateNewDespiteDuplicates = () => {
+    setDuplicateMatches([]);
+    setForcedExistingMode(false);
+    setMode('new');
+    setSelectedBookId('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -697,50 +839,68 @@ export default function UploadBook() {
             <CardHeader>
               <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
               <CardDescription>
-                {t('upload.uploadTypeDesc')}
+                {forcedExistingMode ? t('upload.addingToExisting') : t('upload.uploadTypeDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="mode"
-                    checked={mode === 'existing'}
-                    onCheckedChange={handleModeChange}
-                  />
-                  <Label htmlFor="mode" className="cursor-pointer">
-                    {t('upload.addToExisting')}
-                  </Label>
-                </div>
-              </div>
+              {/* Show duplicate book selector when duplicates are found */}
+              {duplicateMatches.length > 0 ? (
+                <DuplicateBookSelector
+                  matches={duplicateMatches}
+                  onSelect={handleSelectDuplicateBook}
+                  onCreateNew={handleCreateNewDespiteDuplicates}
+                  isLoading={isCheckingDuplicates}
+                />
+              ) : (
+                <>
+                  {/* Normal mode switch */}
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="mode"
+                        checked={mode === 'existing'}
+                        onCheckedChange={handleModeChange}
+                        disabled={forcedExistingMode}
+                      />
+                      <Label 
+                        htmlFor="mode" 
+                        className={forcedExistingMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                      >
+                        {t('upload.addToExisting')}
+                      </Label>
+                    </div>
+                  </div>
 
-              {mode === 'existing' && (
-                <div className="mt-4 space-y-2">
-                  <Label>{t('upload.selectBook')}</Label>
-                  <Select value={selectedBookId} onValueChange={setSelectedBookId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('upload.chooseBook')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userBooks.map((book) => (
-                        <SelectItem key={book.id} value={book.id}>
-                          <div className="flex items-center gap-2">
-                            <BookCopy className="h-4 w-4 text-muted-foreground" />
-                            <span>{book.title}</span>
-                            {book.author && (
-                              <span className="text-muted-foreground">— {book.author}</span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {userBooks.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {t('upload.noBooks')}
-                    </p>
+                  {/* Book selection dropdown */}
+                  {mode === 'existing' && (
+                    <div className="mt-4 space-y-2">
+                      <Label>{t('upload.duplicateSelectBook')}</Label>
+                      <Select value={selectedBookId} onValueChange={setSelectedBookId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('upload.chooseBook')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {userBooks.map((book) => (
+                            <SelectItem key={book.id} value={book.id}>
+                              <div className="flex items-center gap-2">
+                                <BookCopy className="h-4 w-4 text-muted-foreground" />
+                                <span>{book.title}</span>
+                                {book.author && (
+                                  <span className="text-muted-foreground">— {book.author}</span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {userBooks.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {t('upload.noBooks')}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </CardContent>
           </Card>

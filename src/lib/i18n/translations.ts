@@ -188,6 +188,13 @@ export const translations = {
     'upload.currentCover': 'Capa atual',
     'upload.fileAddedSuccess': 'Versão adicionada com sucesso!',
     'upload.bookCreatedSuccess': 'Livro criado com sucesso!',
+    'upload.duplicateDetected': 'Este livro já existe na tua biblioteca',
+    'upload.duplicateDetectedDesc': 'Seleciona o livro existente para adicionar este ficheiro como nova versão',
+    'upload.duplicateSelectBook': 'Selecionar Livro Existente',
+    'upload.noneOfThese': 'Nenhum destes - criar novo',
+    'upload.matchingBooks': 'Livros encontrados',
+    'upload.matchingBooksDesc': 'Encontrámos livros similares na tua biblioteca. Escolhe um para adicionar o ficheiro como nova versão, ou cria um livro novo.',
+    'upload.addingToExisting': 'Adicionando ao livro existente',
     
     // Book Details
     'book.by': 'por',
@@ -626,6 +633,13 @@ export const translations = {
     'upload.currentCover': 'Current cover',
     'upload.fileAddedSuccess': 'Version added successfully!',
     'upload.bookCreatedSuccess': 'Book created successfully!',
+    'upload.duplicateDetected': 'This book already exists in your library',
+    'upload.duplicateDetectedDesc': 'Select an existing book to add this file as a new version',
+    'upload.duplicateSelectBook': 'Select Existing Book',
+    'upload.noneOfThese': 'None of these - create new',
+    'upload.matchingBooks': 'Matching books found',
+    'upload.matchingBooksDesc': 'We found similar books in your library. Choose one to add this file as a new version, or create a new book.',
+    'upload.addingToExisting': 'Adding to existing book',
 
     // Book Details
     'book.by': 'by',
