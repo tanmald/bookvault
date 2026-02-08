@@ -39,6 +39,7 @@ export function SortableBookCard({ book, progress, isDragging }: SortableBookCar
         progress={progress}
         compact={true}
         isDragging={isDragging || isSortableDragging}
+        disableLink={true}
       />
     </div>
   );
