@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,35 +30,27 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
-import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
-import { useLibrary } from '@/contexts/LibraryContext';
+import { CopyBookDialog } from '@/components/books/CopyBookDialog';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
   ArrowRight,
   Trash2,
   BookOpen,
-  Calendar,
   User,
   Tag,
   Loader2,
   Plus,
   Globe,
-  ImageIcon,
-  ChevronLeft,
-  ChevronRight,
   Pencil,
+  Calendar,
 } from 'lucide-react';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { useAlternativeCovers } from '@/hooks/useAlternativeCovers';
-import { useToast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export default function BookDetails() {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +59,9 @@ export default function BookDetails() {
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
   const book = books.find((b) => b.id === id);
@@ -75,22 +70,6 @@ export default function BookDetails() {
   const currentProgress = bookProgress?.progress ?? 0;
 
   const isOwner = book?.owner_id === user?.id;
-
-  // Alternative covers functionality for admins/owners
-  const alternativeCovers = useAlternativeCovers({
-    title: book?.title,
-    author: book?.author || undefined,
-    isbn: book?.isbn || undefined,
-  });
-  const [previewCoverUrl, setPreviewCoverUrl] = useState<string | null>(null);
-  const [isUpdatingCover, setIsUpdatingCover] = useState(false);
-
-  // Copy book dialog state
-  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
-  const { currentLibrary } = useLibrary();
-
-  // Date picker state for finished date
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Check if current user is admin of the book owner's library
   const { data: isAdmin } = useQuery({
@@ -151,114 +130,6 @@ export default function BookDetails() {
     await deleteBookFile.mutateAsync(fileId);
   };
 
-  const handleFetchAlternativeCovers = async () => {
-    if (!book?.title && !book?.isbn) {
-      toast({
-        variant: 'destructive',
-        title: t('upload.missingInfo'),
-        description: t('upload.needTitleOrIsbn'),
-      });
-      return;
-    }
-
-    const newCovers = await alternativeCovers.fetchCovers(0);
-    if (newCovers && newCovers.length > 0) {
-      setPreviewCoverUrl(newCovers[0].coverUrl);
-      toast({
-        title: t('upload.coversFound'),
-        description: t('upload.coversFoundDesc').replace('{count}', String(newCovers.length)),
-      });
-    } else {
-      toast({
-        variant: 'default',
-        title: t('upload.noCoversFound'),
-        description: t('upload.noCoversFoundDesc'),
-      });
-    }
-  };
-
-  const handleNextCover = async () => {
-    if (alternativeCovers.canGoNext) {
-      // Navigate to next existing cover
-      const nextCover = alternativeCovers.goToNext();
-      if (nextCover) {
-        setPreviewCoverUrl(nextCover.coverUrl);
-      }
-    } else if (alternativeCovers.canFetchMore) {
-      // Need to fetch more covers explicitly
-      const newCover = await alternativeCovers.fetchMore();
-      if (newCover) {
-        setPreviewCoverUrl(newCover.coverUrl);
-      }
-    }
-  };
-
-  const handlePreviousCover = () => {
-    const prevCover = alternativeCovers.goToPrevious();
-    if (prevCover) {
-      setPreviewCoverUrl(prevCover.coverUrl);
-    }
-  };
-
-  const handleUpdateCover = async () => {
-    if (!previewCoverUrl || !book || !user) return;
-
-    setIsUpdatingCover(true);
-    try {
-      // Download the cover image
-      const coverResponse = await fetch(previewCoverUrl);
-      const coverBlob = await coverResponse.blob();
-
-      const ext = previewCoverUrl.includes('.jpg') || previewCoverUrl.includes('.jpeg') ? 'jpg' : 'png';
-      const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('covers')
-        .upload(coverName, coverBlob);
-
-      if (uploadError) throw uploadError;
-
-      const { data: coverData } = supabase.storage
-        .from('covers')
-        .getPublicUrl(coverName);
-
-      // Update book with new cover
-      const { error: updateError } = await supabase
-        .from('books')
-        .update({ cover_url: coverData.publicUrl })
-        .eq('id', book.id);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: t('book.coverUpdated'),
-        description: t('book.coverUpdatedDesc'),
-      });
-
-      // Reset preview
-      setPreviewCoverUrl(null);
-      alternativeCovers.reset();
-
-      // Invalidate books query to refresh
-      // The useBooks hook should automatically refetch
-    } catch (error) {
-      console.error('Error updating cover:', error);
-      toast({
-        variant: 'destructive',
-        title: t('book.coverUpdateError'),
-        description: t('book.coverUpdateErrorDesc'),
-      });
-    } finally {
-      setIsUpdatingCover(false);
-    }
-  };
-
-  const handleCancelCoverUpdate = () => {
-    setPreviewCoverUrl(null);
-    alternativeCovers.reset();
-  };
-
   // Get files from book_files relation, fallback to legacy file fields
   const bookFiles = book?.book_files && book.book_files.length > 0 
     ? book.book_files 
@@ -308,14 +179,8 @@ export default function BookDetails() {
       <div className="grid md:grid-cols-[300px_1fr] gap-8">
         {/* Cover */}
         <div className="space-y-4">
-          <div className="aspect-[2/3] overflow-hidden rounded-lg bg-muted relative">
-            {previewCoverUrl ? (
-              <img
-                src={previewCoverUrl}
-                alt={book.title}
-                className="h-full w-full object-cover"
-              />
-            ) : book.cover_url ? (
+          <div className="aspect-[2/3] overflow-hidden rounded-lg bg-muted">
+            {book.cover_url ? (
               <img
                 src={book.cover_url}
                 alt={book.title}
@@ -330,91 +195,6 @@ export default function BookDetails() {
               </div>
             )}
           </div>
-
-          {/* Alternative Cover Controls for Admins */}
-          {isAdmin && (
-            <Card>
-              <CardContent className="pt-4 space-y-3">
-                {!previewCoverUrl ? (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleFetchAlternativeCovers}
-                    disabled={alternativeCovers.isLoading || (!book.title && !book.isbn)}
-                  >
-                    {alternativeCovers.isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ImageIcon className="mr-2 h-4 w-4" />
-                    )}
-                    {t('book.changeCover')}
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Cover Navigation */}
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handlePreviousCover}
-                        disabled={!alternativeCovers.canGoPrevious || alternativeCovers.isLoading}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm text-muted-foreground min-w-[60px] text-center">
-                        {t('upload.coverCounter')
-                          .replace('{current}', String(alternativeCovers.currentIndex + 1))
-                          .replace('{total}', String(alternativeCovers.totalCovers))}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleNextCover}
-                        disabled={alternativeCovers.isLoading}
-                        title={alternativeCovers.canFetchMore ? 'Fetch more covers' : 'Next cover'}
-                      >
-                        {alternativeCovers.isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : alternativeCovers.canFetchMore ? (
-                          <ImageIcon className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-
-                    {alternativeCovers.currentCover && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        {alternativeCovers.currentCover.source}
-                      </p>
-                    )}
-
-                    {/* Save/Cancel Buttons */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={handleCancelCoverUpdate}
-                        disabled={isUpdatingCover}
-                      >
-                        {t('book.cancelCover')}
-                      </Button>
-                      <Button
-                        className="flex-1"
-                        onClick={handleUpdateCover}
-                        disabled={isUpdatingCover}
-                      >
-                        {isUpdatingCover ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        {t('book.saveCover')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Book Versions Card */}
           <Card>
@@ -435,19 +215,17 @@ export default function BookDetails() {
                 isOwner={isOwner}
                 onDeleteFile={handleDeleteFile}
                 isDeleting={deleteBookFile.isPending}
-                bookTitle={book.title}
               />
             </CardContent>
           </Card>
 
-          {/* Copy Book Button */}
           <Button
             variant="outline"
             className="w-full"
             onClick={() => setIsCopyDialogOpen(true)}
           >
             <ArrowRight className="mr-2 h-4 w-4" />
-            Copiar para outra biblioteca
+            {t('copyBook.title')}
           </Button>
 
           {isAdmin && (
@@ -522,7 +300,6 @@ export default function BookDetails() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="not_planned">{t('status.notPlanned')}</SelectItem>
                     <SelectItem value="to_read">{t('status.toRead')}</SelectItem>
                     <SelectItem value="reading">{t('status.reading')}</SelectItem>
                     <SelectItem value="read">{t('status.read')}</SelectItem>
@@ -566,37 +343,37 @@ export default function BookDetails() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={bookProgress?.finished_at ? new Date(bookProgress.finished_at) : undefined}
-                        onSelect={(date) => {
-                          if (date && id) {
-                            // Validate date is not in the future
+                      {isDatePickerOpen && (
+                        <CalendarComponent
+                          mode="single"
+                          selected={bookProgress?.finished_at ? new Date(bookProgress.finished_at) : undefined}
+                          onSelect={(date) => {
+                            if (date && id) {
+                              const now = new Date();
+                              now.setHours(0, 0, 0, 0);
+                              if (date > now) {
+                                toast({
+                                  variant: 'destructive',
+                                  title: t('common.error'),
+                                  description: t('book.futureDateError'),
+                                });
+                                return;
+                              }
+                              updateFinishedDate.mutate({
+                                bookId: id,
+                                finishedAt: date.toISOString(),
+                              });
+                              setIsDatePickerOpen(false);
+                            }
+                          }}
+                          disabled={(date) => {
                             const now = new Date();
                             now.setHours(0, 0, 0, 0);
-                            if (date > now) {
-                              toast({
-                                variant: 'destructive',
-                                title: t('common.error'),
-                                description: t('book.futureDateError'),
-                              });
-                              return;
-                            }
-                            updateFinishedDate.mutate({
-                              bookId: id,
-                              finishedAt: date.toISOString(),
-                            });
-                            setIsDatePickerOpen(false);
-                          }
-                        }}
-                        disabled={(date) => {
-                          // Disable future dates
-                          const now = new Date();
-                          now.setHours(0, 0, 0, 0);
-                          return date > now;
-                        }}
-                        initialFocus
-                      />
+                            return date > now;
+                          }}
+                          initialFocus
+                        />
+                      )}
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -648,7 +425,6 @@ export default function BookDetails() {
         </div>
       </div>
 
-      {/* Copy Book Dialog */}
       <CopyBookDialog
         isOpen={isCopyDialogOpen}
         onClose={() => setIsCopyDialogOpen(false)}
@@ -656,7 +432,6 @@ export default function BookDetails() {
         bookTitle={book?.title || ''}
         currentLibraryId={currentLibrary?.id || ''}
         onSuccess={() => {
-          // Navigate to the selected library after successful copy
           if (currentLibrary) {
             navigate(`/?library=${currentLibrary.id}`);
           }

@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useFriends } from '@/hooks/useFriends';
 import { useLibraryMembers } from '@/hooks/useLibraryMembers';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -31,7 +30,6 @@ import { MoreVertical } from 'lucide-react';
 
 export default function Friends() {
   const { currentLibrary, isLoading: libraryLoading } = useLibrary();
-  const { friends, isLoading } = useFriends();
   const { members, isLoading: membersLoading, isAdmin, promoteMember, demoteMember, removeMember } = useLibraryMembers(currentLibrary?.id);
   const { activities, isLoading: activitiesLoading } = useActivityFeed();
   const { t, language } = useLanguage();
@@ -55,18 +53,23 @@ export default function Friends() {
       </div>
 
       <div className="grid md:grid-cols-[2fr_1fr] lg:grid-cols-[1fr_400px] gap-6 md:gap-8">
+        {/* 🚨 CRITICAL: Left=library_members, Right=friendships activity
+         * LEFT COLUMN: Shows library members from useLibraryMembers (access control)
+         * RIGHT COLUMN: Shows activity from useActivityFeed (friendships/social)
+         * NEVER mix these two data sources!
+         */}
         {/* Library Members / Friends List */}
         <div>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Users className="h-5 w-5" />
-            {t('friends.myLibrary')} ({members.length > 0 ? members.length : friends.length})
+            {t('friends.myLibrary')} ({members.length})
           </h2>
 
-          {libraryLoading || isLoading || membersLoading ? (
+          {libraryLoading || membersLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : members.length === 0 && friends.length === 0 ? (
+          ) : members.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />

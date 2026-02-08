@@ -16,7 +16,6 @@ interface BookCardProps {
 }
 
 const statusColors = {
-  not_planned: 'bg-muted-foreground/20 text-muted-foreground',
   to_read: 'bg-muted text-muted-foreground',
   reading: 'bg-accent text-accent-foreground',
   read: 'bg-primary text-primary-foreground',
@@ -24,24 +23,24 @@ const statusColors = {
 
 export function BookCard({ book, progress, compact = false, isDragging = false }: BookCardProps) {
   const { t } = useLanguage();
-  const status = progress?.status ?? 'not_planned';
-
+  const status = progress?.status ?? 'to_read';
+  
   const statusLabels = {
-    not_planned: t('status.notPlanned'),
     to_read: t('status.toRead'),
     reading: t('status.reading'),
     read: t('status.read'),
   };
-
+  
   // Count available language versions
   const languageCount = book.book_files?.length ?? (book.file_url ? 1 : 0);
 
-  const cardContent = (
-    <Card className={cn(
-      "group overflow-hidden transition-all hover:shadow-lg",
-      compact && "hover:shadow-md",
-      isDragging && "cursor-grabbing"
-    )}>
+  return (
+    <Link to={`/book/${book.id}`}>
+      <Card className={cn(
+        "group overflow-hidden transition-all hover:shadow-lg",
+        compact && "hover:shadow-md",
+        isDragging && "ring-2 ring-accent shadow-lg rotate-1"
+      )}>
         <div className={cn(
           "relative overflow-hidden bg-muted",
           compact ? "aspect-[3/4]" : "aspect-[2/3]"
@@ -112,17 +111,7 @@ export function BookCard({ book, progress, compact = false, isDragging = false }
             )}
           </div>
         </CardContent>
-    </Card>
-  );
-
-  // Disable navigation during drag
-  if (isDragging) {
-    return cardContent;
-  }
-
-  return (
-    <Link to={`/book/${book.id}`}>
-      {cardContent}
+      </Card>
     </Link>
   );
 }

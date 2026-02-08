@@ -56,7 +56,6 @@ export function BookFilters({
 
   const hasActiveFilters = search || (!hideStatusFilter && statusFilter !== 'all') || genreFilter !== 'all' || authorFilter !== 'all';
   
-  // Count active filters (excluding search)
   const activeFilterCount = [
     !hideStatusFilter && statusFilter !== 'all',
     genreFilter !== 'all',
@@ -64,7 +63,6 @@ export function BookFilters({
     showNotPlanned
   ].filter(Boolean).length;
 
-  // Mobile collapsed view
   if (isMobile && !isExpanded) {
     return (
       <div className="mb-4">
@@ -85,7 +83,6 @@ export function BookFilters({
     );
   }
 
-  // Mobile expanded view
   if (isMobile && isExpanded) {
     return (
       <div className="space-y-3 mb-4">
@@ -154,8 +151,8 @@ export function BookFilters({
             </Select>
           )}
 
-          <div className="flex items-center justify-between px-3 py-2 border rounded-md bg-background">
-            <Label htmlFor="show-not-planned-mobile" className="text-sm cursor-pointer">
+          <div className="flex items-center justify-between py-2">
+            <Label htmlFor="show-not-planned-mobile" className="cursor-pointer">
               {t('filters.showNotPlanned')}
             </Label>
             <Switch
@@ -165,18 +162,15 @@ export function BookFilters({
             />
           </div>
 
-          {hasActiveFilters && (
-            <Button variant="outline" className="w-full" onClick={onClearFilters}>
-              <X className="h-4 w-4 mr-2" />
-              {t('filters.clear')}
-            </Button>
-          )}
+          <Button variant="outline" className="w-full" onClick={onClearFilters}>
+            <X className="h-4 w-4 mr-2" />
+            {t('filters.clear')}
+          </Button>
         </div>
       </div>
     );
   }
 
-  // Desktop view (unchanged)
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-6">
       <div className="relative flex-1">

@@ -20,7 +20,6 @@ export function useCopyBookToLibrary() {
     mutationFn: async ({ sourceBookId, targetLibraryId, copyProgress }: CopyBookInput) => {
       if (!user) throw new Error('Not authenticated');
 
-      // 1. Fetch the source book with all details
       const { data: sourceBook, error: bookError } = await supabase
         .from('books')
         .select(`
@@ -34,7 +33,6 @@ export function useCopyBookToLibrary() {
       if (bookError) throw bookError;
       if (!sourceBook) throw new Error('Book not found');
 
-      // 2. Verify user is member of target library
       const { data: membership, error: membershipError } = await supabase
         .from('library_members')
         .select('id')
@@ -44,7 +42,6 @@ export function useCopyBookToLibrary() {
 
       if (membershipError) throw membershipError;
       
-      // Also check if user is the owner of the library
       const { data: library, error: libraryError } = await supabase
         .from('libraries')
         .select('created_by')
@@ -58,7 +55,6 @@ export function useCopyBookToLibrary() {
         throw new Error('You are not a member of the target library');
       }
 
-      // 3. Create new book record
       const { data: newBook, error: createError } = await supabase
         .from('books')
         .insert({
@@ -71,7 +67,6 @@ export function useCopyBookToLibrary() {
           year: sourceBook.year,
           isbn: sourceBook.isbn,
           cover_url: sourceBook.cover_url,
-          // Keep legacy fields for backward compatibility
           file_url: sourceBook.file_url,
           file_type: sourceBook.file_type,
           file_size: sourceBook.file_size,
@@ -84,13 +79,12 @@ export function useCopyBookToLibrary() {
 
       if (createError) throw createError;
 
-      // 4. Copy book_files (pointing to same storage files)
       const bookFiles = sourceBook.book_files as BookFile[] || [];
       if (bookFiles.length > 0) {
         const filesToCopy = bookFiles.map(file => ({
           book_id: newBook.id,
           language: file.language,
-          file_url: file.file_url, // Same storage file
+          file_url: file.file_url,
           file_type: file.file_type,
           file_size: file.file_size,
         }));
@@ -101,11 +95,9 @@ export function useCopyBookToLibrary() {
 
         if (filesError) {
           console.error('Error copying book files:', filesError);
-          // Don't fail - the book was created successfully
         }
       }
 
-      // 5. Copy reading progress if requested
       if (copyProgress) {
         const { data: progress, error: progressError } = await supabase
           .from('reading_progress')
@@ -117,7 +109,6 @@ export function useCopyBookToLibrary() {
         if (progressError) {
           console.error('Error fetching progress:', progressError);
         } else if (progress) {
-          // Cast status to any to handle potential type mismatch with database enum
           const progressStatus = progress.status as string;
           if (progressStatus !== 'not_planned') {
             const { error: copyProgressError } = await supabase

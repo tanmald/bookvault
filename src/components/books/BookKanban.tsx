@@ -26,69 +26,62 @@ import { cn } from '@/lib/utils';
 interface BookKanbanProps {
   books: Book[];
   progressMap: Map<string, ReadingProgress>;
-  showNotPlanned: boolean;
+  showNotPlanned?: boolean;
 }
 
-export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanProps) {
+export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKanbanProps) {
   const { t } = useLanguage();
   const { updateProgress } = useReadingProgress();
 
-  // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
-  // Configure sensors with activation constraints
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement before drag starts
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150, // 150ms press before drag (prevents scroll conflict)
+        delay: 150,
         tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor)
   );
 
-  // Filter out not_planned column if toggle is off
-  const visibleColumns = useMemo(() => {
-    const columns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
-      {
-        status: 'not_planned',
-        label: t('status.notPlanned'),
-        icon: <CircleDashed className="h-4 w-4" />,
-        color: 'border-muted-foreground/30'
-      },
-      {
-        status: 'to_read',
-        label: t('status.toRead'),
-        icon: <Clock className="h-4 w-4" />,
-        color: 'border-muted-foreground/50'
-      },
-      {
-        status: 'reading',
-        label: t('status.reading'),
-        icon: <BookOpen className="h-4 w-4" />,
-        color: 'border-accent'
-      },
-      {
-        status: 'read',
-        label: t('status.read'),
-        icon: <CheckCircle className="h-4 w-4" />,
-        color: 'border-primary'
-      },
-    ];
+  const allColumns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
+    {
+      status: 'not_planned',
+      label: t('status.notPlanned'),
+      icon: <CircleDashed className="h-4 w-4" />,
+      color: 'border-destructive/30'
+    },
+    {
+      status: 'to_read',
+      label: t('status.toRead'),
+      icon: <Clock className="h-4 w-4" />,
+      color: 'border-muted-foreground/30'
+    },
+    {
+      status: 'reading',
+      label: t('status.reading'),
+      icon: <BookOpen className="h-4 w-4" />,
+      color: 'border-accent'
+    },
+    {
+      status: 'read',
+      label: t('status.read'),
+      icon: <CheckCircle className="h-4 w-4" />,
+      color: 'border-primary'
+    },
+  ];
 
-    return showNotPlanned
-      ? columns
-      : columns.filter(col => col.status !== 'not_planned');
-  }, [showNotPlanned, t]);
+  const columns = showNotPlanned ? allColumns : allColumns.filter(c => c.status !== 'not_planned');
 
   const booksByStatus = useMemo(() => {
-    const grouped: Record<ReadingStatus, Book[]> = {
+    const grouped: Record<string, Book[]> = {
       not_planned: [],
       to_read: [],
       reading: [],
@@ -97,17 +90,15 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
 
     books.forEach((book) => {
       const progress = progressMap.get(book.id);
-      const status = progress?.status ?? 'not_planned';
-      grouped[status].push(book);
+      const status = (progress?.status ?? 'to_read') as string;
+      grouped[status]?.push(book);
     });
 
     return grouped;
   }, [books, progressMap]);
 
-  // Get the actively dragged book
   const activeBook = activeId ? books.find((b) => b.id === activeId) : null;
 
-  // Drag handlers
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
   }
@@ -120,7 +111,6 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
     const { active, over } = event;
 
     if (!over) {
-      // Dropped outside any drop zone - cancel
       setActiveId(null);
       setOverId(null);
       return;
@@ -129,12 +119,10 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
     const bookId = active.id as string;
     const newStatus = over.id as ReadingStatus;
 
-    // Only update if status changed
     const currentProgress = progressMap.get(bookId);
-    const currentStatus = currentProgress?.status ?? 'not_planned';
+    const currentStatus = currentProgress?.status ?? 'to_read';
 
     if (currentStatus !== newStatus) {
-      // This will trigger optimistic update and API call
       updateProgress.mutate({ bookId, status: newStatus });
     }
 
@@ -147,16 +135,12 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
     setOverId(null);
   }
 
-  const emptyMessage = t('library.empty');
-  const emptyDesc = t('library.emptyDesc');
-  const noBooksText = t('kanban.noBooks');
-
   if (books.length === 0) {
     return (
       <EmptyState
         icon={BookOpen}
-        title={emptyMessage}
-        description={emptyDesc}
+        title={t('library.empty')}
+        description={t('library.emptyDesc')}
         size="lg"
       />
     );
@@ -171,20 +155,15 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={cn(
-        "grid gap-3 md:gap-4",
-        showNotPlanned
-          ? "grid-cols-2 md:grid-cols-4"
-          : "grid-cols-2 md:grid-cols-3"
-      )}>
-        {visibleColumns.map((column) => (
-          <div key={column.status} className="flex flex-col min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        {columns.map((column) => (
+          <div key={column.status} className="flex flex-col">
             <div className={cn(
               "flex items-center gap-2 pb-3 mb-3 border-b-2",
               column.color
             )}>
               {column.icon}
-              <h2 className="font-semibold truncate">{column.label}</h2>
+              <h2 className="font-semibold">{column.label}</h2>
               <span className="ml-auto text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                 {booksByStatus[column.status].length}
               </span>
@@ -195,26 +174,27 @@ export function BookKanban({ books, progressMap, showNotPlanned }: BookKanbanPro
               items={booksByStatus[column.status].map(b => b.id)}
               isOver={overId === column.status}
             >
-              {booksByStatus[column.status].length === 0 ? (
-                <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
-                  <p className="text-sm text-muted-foreground">{noBooksText}</p>
-                </div>
-              ) : (
-                booksByStatus[column.status].map((book) => (
-                  <SortableBookCard
-                    key={book.id}
-                    book={book}
-                    progress={progressMap.get(book.id)}
-                    isDragging={activeId === book.id}
-                  />
-                ))
-              )}
+              <div className="flex flex-col gap-3 flex-1 min-h-full">
+                {booksByStatus[column.status].length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
+                    <p className="text-sm text-muted-foreground">{t('kanban.noBooks')}</p>
+                  </div>
+                ) : (
+                  booksByStatus[column.status].map((book) => (
+                    <SortableBookCard
+                      key={book.id}
+                      book={book}
+                      progress={progressMap.get(book.id)}
+                      isDragging={activeId === book.id}
+                    />
+                  ))
+                )}
+              </div>
             </DroppableColumn>
           </div>
         ))}
       </div>
 
-      {/* Drag overlay - follows cursor during drag */}
       <DragOverlay>
         {activeBook ? (
           <BookCard

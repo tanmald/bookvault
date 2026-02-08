@@ -7,7 +7,6 @@ export const translations = {
     'nav.addBook': 'Adicionar Livro',
     'nav.profile': 'Perfil',
     'nav.logout': 'Sair',
-    'nav.currentLibrary': 'Biblioteca Atual',
     
     // Library
     'library.title': 'A Minha Biblioteca',
@@ -24,15 +23,13 @@ export const translations = {
 
     // Kanban
     'kanban.noBooks': 'Sem livros',
-    'kanban.dragHelp': 'Arraste livros entre colunas para alterar o estado',
-    'kanban.keyboardHelp': 'Teclado: Espaço para pegar, Setas para mover, Espaço para soltar',
     
     // Book status
-    'status.notPlanned': 'Não Planeado',
     'status.toRead': 'Para Ler',
     'status.reading': 'A Ler',
     'status.read': 'Lido',
-    'status.all': 'Todos os estados',
+    'status.notPlanned': 'Não Planeado',
+    'status.all': 'Todos',
     
     // Filters
     'filters.search': 'Pesquisar por título ou autor...',
@@ -178,19 +175,7 @@ export const translations = {
     'upload.fetchingCover': 'A procurar capa online...',
     'upload.coverFetched': 'Capa encontrada automaticamente',
     'upload.coverNotFound': 'Capa não encontrada online',
-    'upload.fetchAnotherCover': 'Procurar outra capa',
-    'upload.previousCover': 'Capa anterior',
-    'upload.nextCover': 'Próxima capa',
-    'upload.coverCounter': '{current} / {total}',
-    'upload.coversFound': 'Capas encontradas',
-    'upload.coversFoundDesc': 'Encontradas {count} capas alternativas',
-    'upload.noCoversFound': 'Nenhuma capa encontrada',
-    'upload.noCoversFoundDesc': 'Não foram encontradas capas alternativas para este livro',
-    'upload.missingInfo': 'Informação em falta',
-    'upload.needTitleOrIsbn': 'É necessário título ou ISBN para procurar capas',
-    'upload.currentCover': 'Capa atual',
-    'upload.alternativeCovers': 'Capas alternativas',
-
+    
     // Book Details
     'book.by': 'por',
     'book.download': 'Download',
@@ -213,7 +198,7 @@ export const translations = {
     'book.finished': '✓ Livro concluído',
     'book.finishedOn': 'em',
     'book.editFinishedDate': 'Editar data de conclusão',
-    'book.futureDateError': 'A data não pode ser no futuro',
+    'book.futureDateError': 'A data de conclusão não pode ser no futuro',
     'book.descriptionTitle': 'Descrição',
     'book.infoTitle': 'Informações',
     'book.addedOn': 'Adicionado em:',
@@ -224,14 +209,18 @@ export const translations = {
     'book.removeVersion': 'Remover esta versão?',
     'book.removeVersionDesc': 'Esta ação irá remover a versão em {language} ({type}). Esta ação não pode ser desfeita.',
     'book.remove': 'Remover',
-    'book.coverUpdated': 'Capa atualizada',
-    'book.coverUpdatedDesc': 'A capa do livro foi atualizada com sucesso',
-    'book.coverUpdateError': 'Erro ao atualizar capa',
-    'book.coverUpdateErrorDesc': 'Não foi possível atualizar a capa. Tenta novamente.',
-    'book.changeCover': 'Alterar capa',
-    'book.saveCover': 'Guardar capa',
-    'book.cancelCover': 'Cancelar',
-
+    
+    // Copy Book
+    'copyBook.title': 'Copiar para Biblioteca',
+    'copyBook.description': 'Seleciona a biblioteca de destino para "{title}"',
+    'copyBook.selectLibrary': 'Selecionar biblioteca',
+    'copyBook.createNew': 'Criar nova biblioteca',
+    'copyBook.copying': 'A copiar...',
+    'copyBook.success': 'Livro copiado com sucesso!',
+    'copyBook.copyButton': 'Copiar Livro',
+    'copyBook.noLibraries': 'Não estás em nenhuma outra biblioteca',
+    'copyBook.copyProgress': 'Copiar progresso atual de leitura',
+    
     // Scoreboard
     'scoreboard.title': 'Scoreboard dos Amigos',
     'scoreboard.noFriends': 'Ainda não tens amigos!',
@@ -242,27 +231,7 @@ export const translations = {
     'scoreboard.lessThanDay': 'menos de 1 dia',
     'scoreboard.oneDay': '1 dia',
     'scoreboard.days': 'dias',
-    'scoreboard.finishedOn': 'Terminado em',
-    'scoreboard.you': 'Você',
-
-    // Review
-    'review.title': 'Avaliar Livro',
-    'review.description': 'Como foi "{bookTitle}"? Deixa a tua avaliação!',
-    'review.rating': 'Avaliação',
-    'review.ratingRequired': 'Avaliação obrigatória',
-    'review.comment': 'Comentário',
-    'review.optional': 'opcional',
-    'review.commentPlaceholder': 'Escreve o que achaste do livro...',
-    'review.cancel': 'Cancelar',
-    'review.submit': 'Submeter',
-    'review.saving': 'A guardar...',
-    'review.edit': 'Editar avaliação',
-    'review.delete': 'Apagar avaliação',
-    'review.deleteConfirm': 'Tens a certeza que queres apagar esta avaliação?',
-    'review.yourReview': 'A tua avaliação',
-    'review.noReview': 'Ainda não avaliaste este livro',
-    'review.add': 'Adicionar avaliação',
-
+    
     // Onboarding
     'onboarding.welcome': 'Bem-vindo ao BookVault!',
     'onboarding.chooseOption': 'Como queres começar?',
@@ -418,35 +387,6 @@ export const translations = {
     'common.next': 'Seguinte',
     'common.languages': 'idiomas',
     
-    // Copy Book
-    'copyBook.title': 'Copiar para Biblioteca',
-    'copyBook.description': 'Seleciona a biblioteca de destino para "{title}"',
-    'copyBook.selectLibrary': 'Selecionar biblioteca',
-    'copyBook.createNew': 'Criar nova biblioteca',
-    'copyBook.copying': 'A copiar...',
-    'copyBook.success': 'Livro copiado com sucesso!',
-    'copyBook.copyButton': 'Copiar Livro',
-    'copyBook.noLibraries': 'Não estás em nenhuma outra biblioteca',
-    'copyBook.copyProgress': 'Copiar progresso atual de leitura',
-
-    // Kobo Send
-    'kobo.send': 'Enviar para Kobo',
-    'kobo.title': 'Enviar para Kobo',
-    'kobo.description': 'Transferir livro para o teu Kobo',
-    'kobo.generating': 'A gerar link...',
-    'kobo.shortening': 'A encurtar URL...',
-    'kobo.directUrl': 'URL',
-    'kobo.copy': 'Copiar',
-    'kobo.copied': 'URL copiado!',
-    'kobo.shortened': 'URL encurtado (mais fácil de escrever)',
-    'kobo.shortenError': 'Não foi possível encurtar o URL. A usar URL completo.',
-    'kobo.retry': 'Tentar novamente',
-    'kobo.instructionsTitle': 'Como transferir',
-    'kobo.step1': 'No Kobo: Definições → Funcionalidades Beta → Browser',
-    'kobo.step2': 'Escreve o URL abaixo no browser do Kobo',
-    'kobo.step3': 'O download começa automaticamente',
-    'kobo.expiryNotice': 'Link válido por 30 minutos (independentemente do URL encurtado)',
-
     // Genres
     'genre.autoajuda': 'Autoajuda',
     'genre.biografia': 'Biografia',
@@ -472,7 +412,6 @@ export const translations = {
     'nav.addBook': 'Add Book',
     'nav.profile': 'Profile',
     'nav.logout': 'Logout',
-    'nav.currentLibrary': 'Current Library',
     
     // Library
     'library.title': 'My Library',
@@ -489,15 +428,13 @@ export const translations = {
 
     // Kanban
     'kanban.noBooks': 'No books',
-    'kanban.dragHelp': 'Drag books between columns to change status',
-    'kanban.keyboardHelp': 'Keyboard: Space to pick up, Arrow keys to move, Space to drop',
     
     // Book status
-    'status.notPlanned': 'Not Planned',
     'status.toRead': 'To Read',
     'status.reading': 'Reading',
     'status.read': 'Read',
-    'status.all': 'All statuses',
+    'status.notPlanned': 'Not Planned',
+    'status.all': 'All',
     
     // Filters
     'filters.search': 'Search by title or author...',
@@ -643,18 +580,6 @@ export const translations = {
     'upload.fetchingCover': 'Searching for cover online...',
     'upload.coverFetched': 'Cover found automatically',
     'upload.coverNotFound': 'Cover not found online',
-    'upload.fetchAnotherCover': 'Fetch another cover',
-    'upload.previousCover': 'Previous cover',
-    'upload.nextCover': 'Next cover',
-    'upload.coverCounter': '{current} / {total}',
-    'upload.coversFound': 'Covers found',
-    'upload.coversFoundDesc': 'Found {count} alternative covers',
-    'upload.noCoversFound': 'No covers found',
-    'upload.noCoversFoundDesc': 'No alternative covers found for this book',
-    'upload.missingInfo': 'Missing information',
-    'upload.needTitleOrIsbn': 'Title or ISBN is required to search for covers',
-    'upload.currentCover': 'Current cover',
-    'upload.alternativeCovers': 'Alternative covers',
 
     // Book Details
     'book.by': 'by',
@@ -677,8 +602,8 @@ export const translations = {
     'book.progressLabel': 'Progress:',
     'book.finished': '✓ Book completed',
     'book.finishedOn': 'on',
-    'book.editFinishedDate': 'Edit completion date',
-    'book.futureDateError': 'Date cannot be in the future',
+    'book.editFinishedDate': 'Edit finished date',
+    'book.futureDateError': 'Finished date cannot be in the future',
     'book.descriptionTitle': 'Description',
     'book.infoTitle': 'Information',
     'book.addedOn': 'Added on:',
@@ -689,14 +614,18 @@ export const translations = {
     'book.removeVersion': 'Remove this version?',
     'book.removeVersionDesc': 'This action will remove the {language} ({type}) version. This action cannot be undone.',
     'book.remove': 'Remove',
-    'book.coverUpdated': 'Cover updated',
-    'book.coverUpdatedDesc': 'The book cover has been updated successfully',
-    'book.coverUpdateError': 'Error updating cover',
-    'book.coverUpdateErrorDesc': 'Could not update the cover. Please try again.',
-    'book.changeCover': 'Change cover',
-    'book.saveCover': 'Save cover',
-    'book.cancelCover': 'Cancel',
-
+    
+    // Copy Book
+    'copyBook.title': 'Copy to Library',
+    'copyBook.description': 'Select target library for "{title}"',
+    'copyBook.selectLibrary': 'Select library',
+    'copyBook.createNew': 'Create new library',
+    'copyBook.copying': 'Copying...',
+    'copyBook.success': 'Book copied successfully!',
+    'copyBook.copyButton': 'Copy Book',
+    'copyBook.noLibraries': "You're not in any other libraries",
+    'copyBook.copyProgress': 'Copy current reading progress',
+    
     // Scoreboard
     'scoreboard.title': 'Friends Scoreboard',
     'scoreboard.noFriends': "You don't have friends yet!",
@@ -707,27 +636,7 @@ export const translations = {
     'scoreboard.lessThanDay': 'less than 1 day',
     'scoreboard.oneDay': '1 day',
     'scoreboard.days': 'days',
-    'scoreboard.finishedOn': 'Finished on',
-    'scoreboard.you': 'You',
-
-    // Review
-    'review.title': 'Review Book',
-    'review.description': 'How was "{bookTitle}"? Leave your review!',
-    'review.rating': 'Rating',
-    'review.ratingRequired': 'Rating is required',
-    'review.comment': 'Comment',
-    'review.optional': 'optional',
-    'review.commentPlaceholder': 'Write what you thought about the book...',
-    'review.cancel': 'Cancel',
-    'review.submit': 'Submit',
-    'review.saving': 'Saving...',
-    'review.edit': 'Edit review',
-    'review.delete': 'Delete review',
-    'review.deleteConfirm': 'Are you sure you want to delete this review?',
-    'review.yourReview': 'Your review',
-    'review.noReview': 'You haven\'t reviewed this book yet',
-    'review.add': 'Add review',
-
+    
     // Onboarding
     'onboarding.welcome': 'Welcome to BookVault!',
     'onboarding.chooseOption': 'How would you like to start?',
@@ -883,35 +792,6 @@ export const translations = {
     'common.next': 'Next',
     'common.languages': 'languages',
     
-    // Copy Book
-    'copyBook.title': 'Copy to Library',
-    'copyBook.description': 'Select target library for "{title}"',
-    'copyBook.selectLibrary': 'Select library',
-    'copyBook.createNew': 'Create new library',
-    'copyBook.copying': 'Copying...',
-    'copyBook.success': 'Book copied successfully!',
-    'copyBook.copyButton': 'Copy Book',
-    'copyBook.noLibraries': "You're not in any other libraries",
-    'copyBook.copyProgress': 'Copy current reading progress',
-
-    // Kobo Send
-    'kobo.send': 'Send to Kobo',
-    'kobo.title': 'Send to Kobo',
-    'kobo.description': 'Transfer "{title}" to your Kobo e-reader',
-    'kobo.generating': 'Generating link...',
-    'kobo.shortening': 'Shortening URL...',
-    'kobo.directUrl': 'URL',
-    'kobo.copy': 'Copy',
-    'kobo.copied': 'URL copied!',
-    'kobo.shortened': 'URL shortened (easier to type)',
-    'kobo.shortenError': 'Could not shorten URL. Using full URL.',
-    'kobo.retry': 'Try again',
-    'kobo.instructionsTitle': 'How to transfer',
-    'kobo.step1': 'On Kobo: Settings → Beta Features → Browser',
-    'kobo.step2': 'Type the URL below in Kobo browser',
-    'kobo.step3': 'Download starts automatically',
-    'kobo.expiryNotice': 'Link valid for 30 minutes (regardless of shortened URL)',
-
     // Genres
     'genre.autoajuda': 'Self-Help',
     'genre.biografia': 'Biography',

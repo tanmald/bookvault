@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type ReadingStatus = 'not_planned' | 'to_read' | 'reading' | 'read';
+export type ReadingStatus = 'to_read' | 'reading' | 'read' | 'not_planned';
 
 export interface ReadingProgress {
   id: string;
@@ -103,7 +103,7 @@ export function useReadingProgress(bookId?: string) {
       const optimisticUpdate: Partial<ReadingProgress> = {
         book_id: bookId,
         user_id: user?.id,
-        status: status ?? existingProgress?.status ?? 'not_planned',
+        status: status ?? existingProgress?.status ?? 'to_read',
         progress: status === 'read' ? 100 : (progressValue ?? existingProgress?.progress ?? 0),
         updated_at: now,
       };
@@ -155,21 +155,8 @@ export function useReadingProgress(bookId?: string) {
   });
 
   const updateFinishedDate = useMutation({
-    mutationFn: async ({
-      bookId,
-      finishedAt,
-    }: {
-      bookId: string;
-      finishedAt: string;
-    }) => {
+    mutationFn: async ({ bookId, finishedAt }: { bookId: string; finishedAt: string }) => {
       if (!user) throw new Error('Not authenticated');
-
-      // Validate date is not in the future
-      const selectedDate = new Date(finishedAt);
-      const now = new Date();
-      if (selectedDate > now) {
-        throw new Error('A data de conclusão não pode ser no futuro');
-      }
 
       const { data, error } = await supabase
         .from('reading_progress')

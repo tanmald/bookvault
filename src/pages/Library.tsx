@@ -7,7 +7,6 @@ import { BookGridSkeleton, BookKanbanSkeleton } from '@/components/books/BookCar
 import { BookFilters } from '@/components/books/BookFilters';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { useNotPlannedVisibility } from '@/hooks/useNotPlannedVisibility';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
@@ -17,6 +16,7 @@ import { cn } from '@/lib/utils';
 type ViewMode = 'grid' | 'kanban';
 
 const STORAGE_KEY = 'bookvault-library-view';
+const SHOW_NOT_PLANNED_KEY = 'bookvault-show-not-planned';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -24,7 +24,6 @@ export default function Library() {
   // Pass undefined if no library (shows all books as fallback)
   const { books, isLoading, hasMore, loadAllBooks, isLoadingAll } = useBooks(currentLibrary?.id);
   const { progress } = useReadingProgress();
-  const { showNotPlanned, setShowNotPlanned } = useNotPlannedVisibility();
   const { t } = useLanguage();
 
   console.log('Current library:', currentLibrary);
@@ -34,6 +33,13 @@ export default function Library() {
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [genreFilter, setGenreFilter] = useState<string | 'all'>('all');
   const [authorFilter, setAuthorFilter] = useState<string | 'all'>('all');
+  const [showNotPlanned, setShowNotPlanned] = useState(() => {
+    const stored = localStorage.getItem(SHOW_NOT_PLANNED_KEY);
+    if (stored !== null) {
+      return stored === 'true';
+    }
+    return true;
+  });
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'grid' || stored === 'kanban') {
@@ -45,6 +51,11 @@ export default function Library() {
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
     localStorage.setItem(STORAGE_KEY, mode);
+  };
+
+  const handleShowNotPlannedChange = (value: boolean) => {
+    setShowNotPlanned(value);
+    localStorage.setItem(SHOW_NOT_PLANNED_KEY, String(value));
   };
 
   const progressMap = useMemo(() => {
@@ -64,13 +75,6 @@ export default function Library() {
   const filteredBooks = useMemo(() => {
     return books
       .filter((book) => {
-        // Hide not_planned books if toggle is off
-        if (!showNotPlanned) {
-          const bookProgress = progressMap.get(book.id);
-          const bookStatus = bookProgress?.status ?? 'not_planned';
-          if (bookStatus === 'not_planned') return false;
-        }
-
         // Search filter
         if (search) {
           const searchLower = search.toLowerCase();
@@ -82,7 +86,7 @@ export default function Library() {
         // Status filter (only in grid view, kanban shows all statuses)
         if (statusFilter !== 'all' && viewMode === 'grid') {
           const bookProgress = progressMap.get(book.id);
-          const bookStatus = bookProgress?.status ?? 'not_planned';
+          const bookStatus = bookProgress?.status ?? 'to_read';
           if (bookStatus !== statusFilter) return false;
         }
 
@@ -104,7 +108,7 @@ export default function Library() {
         const titleB = b.title.toLowerCase();
         return titleA.localeCompare(titleB);
       });
-  }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode, showNotPlanned]);
+  }, [books, search, statusFilter, genreFilter, authorFilter, progressMap, viewMode]);
 
   const clearFilters = () => {
     setSearch('');
@@ -120,8 +124,8 @@ export default function Library() {
     <>
       <AppLayout>
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold mb-1 truncate">
+          <div>
+            <h1 className="text-2xl font-semibold mb-1">
               {currentLibrary?.name || t('library.title')}
             </h1>
             <p className="text-muted-foreground">
@@ -129,32 +133,32 @@ export default function Library() {
             </p>
           </div>
           
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className={cn(
-                "h-8 px-2 md:px-3",
-                viewMode === 'kanban' && "bg-background shadow-sm"
-              )}
-            >
-              <Columns3 className="h-4 w-4 mr-0 md:mr-1.5" />
-              <span className="hidden md:inline">{t('library.viewKanban')}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "h-8 px-2 md:px-3",
-                viewMode === 'grid' && "bg-background shadow-sm"
-              )}
-            >
-              <LayoutGrid className="h-4 w-4 mr-0 md:mr-1.5" />
-              <span className="hidden md:inline">{t('library.viewGrid')}</span>
-            </Button>
-          </div>
+            <div className="flex items-center gap-1 bg-muted py-1 px-2 rounded-lg">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className={cn(
+                  "h-8 px-3",
+                  viewMode === 'kanban' && "bg-background shadow-sm"
+                )}
+              >
+                <Columns3 className="h-4 w-4 mr-0 sm:mr-1.5" />
+                <span className="hidden sm:inline">{t('library.viewKanban')}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "h-8 px-3",
+                  viewMode === 'grid' && "bg-background shadow-sm"
+                )}
+              >
+                <LayoutGrid className="h-4 w-4 mr-0 sm:mr-1.5" />
+                <span className="hidden sm:inline">{t('library.viewGrid')}</span>
+              </Button>
+            </div>
         </div>
 
         <BookFilters
@@ -170,7 +174,7 @@ export default function Library() {
           onClearFilters={clearFilters}
           hideStatusFilter={viewMode === 'kanban'}
           showNotPlanned={showNotPlanned}
-          onToggleNotPlanned={setShowNotPlanned}
+          onToggleNotPlanned={handleShowNotPlannedChange}
         />
 
         {isLoading ? (

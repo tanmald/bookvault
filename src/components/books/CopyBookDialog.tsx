@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, Loader2, Plus, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -35,16 +35,23 @@ export function CopyBookDialog({
   onSuccess,
 }: CopyBookDialogProps) {
   const { t } = useLanguage();
-  const { libraries } = useLibrary();
+  const { libraries, refetch: refetchLibraries } = useLibrary();
   const { createLibrary } = useLibraries();
   const copyBook = useCopyBookToLibrary();
   
   const [selectedLibraryId, setSelectedLibraryId] = useState<string>('');
   const [copyProgress, setCopyProgress] = useState(true);
   const [showCreateLibrary, setShowCreateLibrary] = useState(false);
+  const [newlyCreatedLibraryId, setNewlyCreatedLibraryId] = useState<string | null>(null);
 
-  // Filter out current library
   const availableLibraries = libraries.filter(lib => lib.id !== currentLibraryId);
+
+  useEffect(() => {
+    if (newlyCreatedLibraryId) {
+      setSelectedLibraryId(newlyCreatedLibraryId);
+      setNewlyCreatedLibraryId(null);
+    }
+  }, [newlyCreatedLibraryId, libraries]);
 
   const handleCopy = async () => {
     if (!selectedLibraryId) return;
@@ -59,10 +66,16 @@ export function CopyBookDialog({
     onSuccess?.();
   };
 
-  const handleCreateLibrarySuccess = (newLibrary: { id: string }) => {
+  const handleCreateLibrarySuccess = async () => {
+    await refetchLibraries();
     setShowCreateLibrary(false);
-    setSelectedLibraryId(newLibrary.id);
   };
+
+  useEffect(() => {
+    if (createLibrary.isSuccess && createLibrary.data) {
+      setNewlyCreatedLibraryId(createLibrary.data.id);
+    }
+  }, [createLibrary.isSuccess, createLibrary.data]);
 
   return (
     <>
@@ -71,10 +84,10 @@ export function CopyBookDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowRight className="h-5 w-5" />
-              Copiar para Biblioteca
+              {t('copyBook.title')}
             </DialogTitle>
             <DialogDescription>
-              Seleciona a biblioteca de destino para "{bookTitle}"
+              {t('copyBook.description').replace('{title}', bookTitle)}
             </DialogDescription>
           </DialogHeader>
 
@@ -82,21 +95,20 @@ export function CopyBookDialog({
             {availableLibraries.length === 0 ? (
               <div className="text-center py-8 space-y-4">
                 <Library className="h-12 w-12 text-muted-foreground mx-auto" />
-                <p className="text-muted-foreground">Não estás em nenhuma outra biblioteca</p>
+                <p className="text-muted-foreground">{t('copyBook.noLibraries')}</p>
                 <Button
                   variant="outline"
                   onClick={() => setShowCreateLibrary(true)}
                   className="w-full"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Criar nova biblioteca
+                  {t('copyBook.createNew')}
                 </Button>
               </div>
             ) : (
               <>
-                {/* Library Selection */}
                 <div className="space-y-3">
-                  <Label>Selecionar biblioteca</Label>
+                  <Label>{t('copyBook.selectLibrary')}</Label>
                   <RadioGroup
                     value={selectedLibraryId}
                     onValueChange={setSelectedLibraryId}
@@ -127,17 +139,15 @@ export function CopyBookDialog({
                   </RadioGroup>
                 </div>
 
-                {/* Create New Library Option */}
                 <Button
                   variant="outline"
                   onClick={() => setShowCreateLibrary(true)}
                   className="w-full"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Criar nova biblioteca
+                  {t('copyBook.createNew')}
                 </Button>
 
-                {/* Copy Progress Checkbox */}
                 <div className="flex items-center space-x-2 pt-2">
                   <Checkbox
                     id="copyProgress"
@@ -148,11 +158,10 @@ export function CopyBookDialog({
                     htmlFor="copyProgress"
                     className="text-sm font-normal cursor-pointer"
                   >
-                    Copiar progresso atual de leitura
+                    {t('copyBook.copyProgress')}
                   </Label>
                 </div>
 
-                {/* Copy Button */}
                 <Button
                   onClick={handleCopy}
                   disabled={!selectedLibraryId || copyBook.isPending}
@@ -161,12 +170,12 @@ export function CopyBookDialog({
                   {copyBook.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      A copiar...
+                      {t('copyBook.copying')}
                     </>
                   ) : (
                     <>
                       <ArrowRight className="mr-2 h-4 w-4" />
-                      Copiar Livro
+                      {t('copyBook.copyButton')}
                     </>
                   )}
                 </Button>
@@ -176,13 +185,12 @@ export function CopyBookDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Create Library Dialog */}
       <CreateLibraryDialog
         open={showCreateLibrary}
         onOpenChange={(open) => {
           setShowCreateLibrary(open);
-          if (!open && !selectedLibraryId) {
-            // If closing without creating, stay on copy dialog
+          if (!open) {
+            handleCreateLibrarySuccess();
           }
         }}
       />
