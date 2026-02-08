@@ -591,7 +591,7 @@ export default function UploadBook() {
                 </CardHeader>
                 <CardContent>
                   {coverPreview ? (
-                    <div className="flex items-start gap-4">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
                       <img
                         src={coverPreview}
                         alt={t('upload.coverPreview')}
