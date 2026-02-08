@@ -382,10 +382,21 @@ export default function BookDetails() {
                                 });
                                 return;
                               }
-                              updateFinishedDate.mutate({
-                                bookId: id,
-                                finishedAt: date.toISOString(),
-                              });
+                              updateFinishedDate.mutate(
+                                {
+                                  bookId: id,
+                                  finishedAt: date.toISOString(),
+                                },
+                                {
+                                  onSuccess: () => {
+                                    toast({
+                                      title: t('common.success'),
+                                      description: t('book.progressSaved'),
+                                      variant: 'success',
+                                    });
+                                  },
+                                }
+                              );
                               setIsDatePickerOpen(false);
                             }
                           }}
