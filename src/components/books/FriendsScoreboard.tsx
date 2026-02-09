@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Trophy, Users, BookOpen, Clock, CheckCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/dateUtils';
 
 interface FriendsScoreboardProps {
   bookId: string;
@@ -46,13 +47,6 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
       }
       return next;
     });
-  };
-
-  const formatReadingTime = (days: number | null): string => {
-    if (days === null) return '';
-    if (days === 0) return t('scoreboard.lessThanDay');
-    if (days === 1) return t('scoreboard.oneDay');
-    return `${days} ${t('scoreboard.days')}`;
   };
 
   // Count readers by status for summary
@@ -173,13 +167,13 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
 
         {/* Status badge / reading time */}
         <div className="flex-shrink-0">
-          {isRead && (
+          {isRead && friend.finished_at && (
             <Badge
               variant={isTopThree ? 'default' : 'secondary'}
               className="flex items-center gap-1"
             >
               <Clock className="h-3 w-3" />
-              {formatReadingTime(friend.reading_time_days)}
+              {formatDate(friend.finished_at, language)}
             </Badge>
           )}
           {isReading && (
