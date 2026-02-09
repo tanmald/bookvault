@@ -1,7 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, ExternalLink, Copy, BookCopy, PartyPopper, Loader2 } from 'lucide-react';
+import { Download, ExternalLink, BookCopy, PartyPopper, Loader2 } from 'lucide-react';
 
 interface Step4_DownloadsProps {
   onFinish: () => void;
@@ -26,14 +26,10 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
                 <Download className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="font-medium">{t('onboarding.kindleDownload')}</p>
-                <p className="text-xs text-muted-foreground">{t('onboarding.kindleDirect')}</p>
+                <p className="font-medium">Download de ficheiros</p>
+                <p className="text-xs text-muted-foreground">Faz o download direto de ficheiros para o teu dispositivo</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" />
-              {language === 'pt' ? 'Demo' : 'Demo'}
-            </Button>
           </CardContent>
         </Card>
 
@@ -48,10 +44,6 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
                 <p className="text-xs text-muted-foreground">{t('onboarding.koboBrowser')}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              <Copy className="h-4 w-4 mr-1" />
-              {t('invites.copy')}
-            </Button>
           </CardContent>
         </Card>
 
@@ -66,10 +58,6 @@ export function Step4_Downloads({ onFinish, isLoading }: Step4_DownloadsProps) {
                 <p className="text-xs text-muted-foreground">{t('onboarding.copyToLibraryDesc')}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              <Copy className="h-4 w-4 mr-1" />
-              {t('invites.copy')}
-            </Button>
           </CardContent>
         </Card>
       </div>
