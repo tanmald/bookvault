@@ -103,7 +103,7 @@ export function useOnboarding() {
     };
 
     fetchOnboardingStatus();
-  }, [user]);
+  }, [user?.id]);
 
   const updateStep = useCallback(async (step: number) => {
     if (!user) return;
@@ -118,7 +118,7 @@ export function useOnboarding() {
     }
 
     setState(prev => ({ ...prev, currentStep: step }));
-  }, [user]);
+  }, [user?.id]);
 
   const completeOnboarding = useCallback(async () => {
     if (!user) return;

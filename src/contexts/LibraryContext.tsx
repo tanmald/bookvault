@@ -117,7 +117,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setCurrentLibraryState(null);
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const setCurrentLibrary = (library: Library) => {
     setCurrentLibraryState(library);
