@@ -7,6 +7,7 @@ export interface Activity {
   type: 'reading' | 'finished' | 'review';
   user_id: string;
   user_name: string | null;
+  avatar_url: string | null;
   book_id: string;
   book_title: string;
   rating?: number;
@@ -39,7 +40,9 @@ export function useActivityFeed() {
       if (!friends || friends.length === 0) return [];
 
       const friendIds = friends.map((f) => f.friend_user_id);
-      const profileMap = new Map(friends.map((f) => [f.friend_user_id, f.display_name]));
+      const profileMap = new Map(
+        friends.map((f) => [f.friend_user_id, { display_name: f.display_name, avatar_url: f.avatar_url }])
+      );
 
       // Run reading progress and reviews queries in parallel
       const [progressResult, reviewsResult] = await Promise.all([
@@ -84,7 +87,8 @@ export function useActivityFeed() {
           id: `progress-${p.id}`,
           type: (p.status === 'read' ? 'finished' : 'reading') as 'reading' | 'finished',
           user_id: p.user_id,
-          user_name: profileMap.get(p.user_id) || null,
+          user_name: profileMap.get(p.user_id)?.display_name || null,
+          avatar_url: profileMap.get(p.user_id)?.avatar_url || null,
           book_id: p.book_id,
           book_title: getBookTitle(p.book),
           created_at: p.updated_at,
@@ -93,7 +97,8 @@ export function useActivityFeed() {
           id: `review-${r.id}`,
           type: 'review' as const,
           user_id: r.user_id,
-          user_name: profileMap.get(r.user_id) || null,
+          user_name: profileMap.get(r.user_id)?.display_name || null,
+          avatar_url: profileMap.get(r.user_id)?.avatar_url || null,
           book_id: r.book_id,
           book_title: getBookTitle(r.book),
           rating: r.rating,

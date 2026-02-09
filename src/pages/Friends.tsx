@@ -1,6 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLibraryMembers } from '@/hooks/useLibraryMembers';
@@ -88,6 +88,7 @@ export default function Friends() {
                 <Card key={member.user_id}>
                   <CardContent className="flex items-center gap-4 p-4">
                     <Avatar className="h-12 w-12">
+                      {member.avatar_url && <AvatarImage src={member.avatar_url} />}
                       <AvatarFallback>
                         {member.display_name?.substring(0, 2).toUpperCase() || 'U'}
                       </AvatarFallback>
@@ -201,6 +202,7 @@ export default function Friends() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-8 w-8">
+                        {activity.avatar_url && <AvatarImage src={activity.avatar_url} />}
                         <AvatarFallback className="text-xs">
                           {activity.user_name?.substring(0, 2).toUpperCase() || 'U'}
                         </AvatarFallback>
