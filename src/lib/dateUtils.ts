@@ -20,7 +20,7 @@ export function formatDate(
 }
 
 /**
- * Format a date string as shortdate (day/month)
+ * Format a date string as shortdate (day/month/year)
  */
 export function shortdate(
   dateString: string | null | undefined,
@@ -33,6 +33,7 @@ export function shortdate(
     return date.toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
+      year: 'numeric',
     });
   } catch {
     return '';
