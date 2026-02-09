@@ -20,6 +20,7 @@ import Invites from "./pages/Invites";
 import JoinInvite from "./pages/JoinInvite";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import ResponsibleUse from "./pages/ResponsibleUse";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,14 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/terms"
+                    element={
+                      <ProtectedRoute>
+                        <ResponsibleUse />
                       </ProtectedRoute>
                     }
                   />

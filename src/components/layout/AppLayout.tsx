@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSe
 import { CreateLibraryDialog } from '@/components/library/CreateLibraryDialog';
 import { JoinLibraryDialog } from '@/components/library/JoinLibraryDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Footer } from '@/components/layout/Footer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -304,6 +305,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main Content */}
       <main className="container py-6">{children}</main>
+
+      <Footer />
 
       {/* Dialogs */}
       <CreateLibraryDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
