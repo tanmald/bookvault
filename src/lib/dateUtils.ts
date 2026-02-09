@@ -20,6 +20,26 @@ export function formatDate(
 }
 
 /**
+ * Format a date string as shortdate (day/month)
+ */
+export function shortdate(
+  dateString: string | null | undefined,
+  locale: string = 'pt-PT'
+): string {
+  if (!dateString) return '';
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(locale, {
+      day: '2-digit',
+      month: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Format a date with time
  */
 export function formatDateTime(

@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Trophy, Users, BookOpen, Clock, CheckCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/dateUtils';
+import { shortdate } from '@/lib/dateUtils';
 
 interface FriendsScoreboardProps {
   bookId: string;
@@ -174,7 +174,7 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
               className="flex items-center gap-1"
             >
               <Clock className="h-3 w-3" />
-              {formatDate(friend.finished_at, language)}
+              {shortdate(friend.finished_at, language)}
             </Badge>
           )}
           {isReading && (

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, ChevronRight, Check, BookOpen, Clock } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { formatDate } from '@/lib/dateUtils';
+import { shortdate } from '@/lib/dateUtils';
 
 interface Step3_FriendsProps {
   onContinue: () => void;
@@ -126,7 +126,7 @@ export function Step3_Friends({ onContinue, isInviteMode = false }: Step3_Friend
                     {isRead && friend.finishedDate !== undefined && (
                       <Badge variant={isTopThree ? 'default' : 'secondary'} className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatDate(friend.finishedDate, language)}
+                        {shortdate(friend.finishedDate, language)}
                       </Badge>
                     )}
                     {isReading && (
