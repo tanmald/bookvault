@@ -35,6 +35,7 @@ import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
+import { ReviewDialog } from '@/components/books/ReviewDialog';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -61,6 +62,7 @@ export default function BookDetails() {
   const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
@@ -112,10 +114,32 @@ export default function BookDetails() {
 
   const handleStatusChange = (status: ReadingStatus) => {
     if (!id) return;
+
+    if (status === 'read') {
+      setIsReviewDialogOpen(true);
+    } else {
+      updateProgress.mutate(
+        { bookId: id, status },
+        {
+          onSuccess: () => {
+            toast({
+              title: t('common.success'),
+              description: t('book.progressSaved'),
+              variant: 'success',
+            });
+          },
+        }
+      );
+    }
+  };
+
+  const handleReviewSubmit = () => {
+    if (!id) return;
     updateProgress.mutate(
-      { bookId: id, status },
+      { bookId: id, status: 'read' },
       {
         onSuccess: () => {
+          setIsReviewDialogOpen(false);
           toast({
             title: t('common.success'),
             description: t('book.progressSaved'),
@@ -470,6 +494,13 @@ export default function BookDetails() {
             navigate(`/?library=${currentLibrary.id}`);
           }
         }}
+      />
+
+      <ReviewDialog
+        isOpen={isReviewDialogOpen}
+        onClose={() => setIsReviewDialogOpen(false)}
+        bookId={id || ''}
+        onSubmit={handleReviewSubmit}
       />
     </AppLayout>
   );
