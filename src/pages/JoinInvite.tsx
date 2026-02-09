@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
+import { Footer } from '@/components/layout/Footer';
 
 // Type for the owner profile relation
 interface OwnerProfile {
@@ -238,6 +239,7 @@ export default function JoinInvite() {
           )}
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

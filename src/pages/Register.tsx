@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BookOpen, Loader2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -212,6 +213,7 @@ export default function Register() {
           </form>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }

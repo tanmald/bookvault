@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -109,6 +110,7 @@ export default function Login() {
           </form>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 }
