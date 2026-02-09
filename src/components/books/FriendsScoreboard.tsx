@@ -76,6 +76,7 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
     friend: FriendProgress;
     rank: number;
   }) => {
+    const { language } = useLanguage();
     const isRead = friend.status === 'read';
     const isReading = friend.status === 'reading';
     const isTopThree = isRead && rank <= 3;
