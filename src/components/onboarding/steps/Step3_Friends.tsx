@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, ChevronRight, Check, BookOpen, Clock } from 'lucide-react';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { formatDate } from '@/lib/dateUtils';
 
 interface Step3_FriendsProps {
   onContinue: () => void;
@@ -19,22 +20,17 @@ interface MockFriend {
   status: 'read' | 'reading' | 'to_read';
   progress?: number;
   finishedDays?: number;
+  finishedDate?: string;
 }
 
 const mockFriends: MockFriend[] = [
-  { name: 'Ana', avatar: 'A', books: 12, reading: 3, status: 'read', finishedDays: 2 },
+  { name: 'Ana', avatar: 'A', books: 12, reading: 3, status: 'read', finishedDays: 2, finishedDate: '2026-02-07' },
+  { name: 'Sofia', avatar: 'S', books: 15, reading: 2, status: 'read', finishedDays: 5, finishedDate: '2026-02-04' },
   { name: 'Miguel', avatar: 'M', books: 8, reading: 1, status: 'reading', progress: 45 },
-  { name: 'Sofia', avatar: 'S', books: 15, reading: 2, status: 'read', finishedDays: 5 },
 ];
 
 function getInitials(name: string): string {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
-}
-
-function formatReadingTime(days: number): string {
-  if (days === 0) return '<1 day';
-  if (days === 1) return '1 day';
-  return `${days} days`;
 }
 
 export function Step3_Friends({ onContinue, isInviteMode = false }: Step3_FriendsProps) {
@@ -127,10 +123,10 @@ export function Step3_Friends({ onContinue, isInviteMode = false }: Step3_Friend
                   </div>
 
                   <div className="flex-shrink-0">
-                    {isRead && friend.finishedDays !== undefined && (
+                    {isRead && friend.finishedDate !== undefined && (
                       <Badge variant={isTopThree ? 'default' : 'secondary'} className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatReadingTime(friend.finishedDays)}
+                        {formatDate(friend.finishedDate, language)}
                       </Badge>
                     )}
                     {isReading && (
