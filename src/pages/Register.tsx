@@ -102,116 +102,118 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-10 w-10 text-accent" />
-            <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-1 items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center space-y-2 text-center">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-10 w-10 text-accent" />
+              <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+            </div>
+            <p className="text-muted-foreground">{t('auth.createDigitalLibrary')}</p>
           </div>
-          <p className="text-muted-foreground">{t('auth.createDigitalLibrary')}</p>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('auth.registerTitle')}</CardTitle>
-            <CardDescription>{t('auth.registerDesc')}</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="displayName">{t('auth.name')}</Label>
-                <Input
-                  id="displayName"
-                  type="text"
-                  placeholder={t('auth.namePlaceholder')}
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  autoComplete="name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t('auth.emailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.password')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                />
-                <p className={`text-xs ${password.length >= 8 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                  {t('auth.passwordRequirements')} {password.length > 0 && `(${password.length}/8)`}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
-                <div className="relative">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('auth.registerTitle')}</CardTitle>
+              <CardDescription>{t('auth.registerDesc')}</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">{t('auth.name')}</Label>
                   <Input
-                    id="confirmPassword"
+                    id="displayName"
+                    type="text"
+                    placeholder={t('auth.namePlaceholder')}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t('auth.email')}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder={t('auth.emailPlaceholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('auth.password')}</Label>
+                  <Input
+                    id="password"
                     type="password"
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="new-password"
-                    className={cn(
-                      confirmPassword.length > 0 && (
-                        validation.passwordsMatch
-                          ? 'border-green-500 focus-visible:ring-green-500'
-                          : 'border-destructive focus-visible:ring-destructive'
-                      )
-                    )}
                   />
-                  {confirmPassword.length > 0 && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {validation.passwordsMatch ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <X className="h-4 w-4 text-destructive" />
+                  <p className={`text-xs ${password.length >= 8 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                    {t('auth.passwordRequirements')} {password.length > 0 && `(${password.length}/8)`}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      autoComplete="new-password"
+                      className={cn(
+                        confirmPassword.length > 0 && (
+                          validation.passwordsMatch
+                            ? 'border-green-500 focus-visible:ring-green-500'
+                            : 'border-destructive focus-visible:ring-destructive'
+                        )
                       )}
-                    </div>
+                    />
+                    {confirmPassword.length > 0 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {validation.passwordsMatch ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {confirmPassword.length > 0 && !validation.passwordsMatch && (
+                    <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
                   )}
                 </div>
-                {confirmPassword.length > 0 && !validation.passwordsMatch && (
-                  <p className="text-xs text-destructive">{t('auth.passwordMismatch')}</p>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading || !isFormValid}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('auth.registering')}
-                  </>
-                ) : (
-                  t('auth.createAccount')
-                )}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                {t('auth.hasAccount')}{' '}
-                <Link to="/login" className="font-medium text-primary hover:underline">
-                  {t('auth.login')}
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button type="submit" className="w-full" disabled={isLoading || !isFormValid}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('auth.registering')}
+                    </>
+                  ) : (
+                    t('auth.createAccount')
+                  )}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  {t('auth.hasAccount')}{' '}
+                  <Link to="/login" className="font-medium text-primary hover:underline">
+                    {t('auth.login')}
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
       </div>
       <Footer />
     </div>
