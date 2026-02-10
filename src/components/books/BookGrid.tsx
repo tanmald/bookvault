@@ -1,4 +1,7 @@
 import { BookCard } from './BookCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { BookOpen } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 
@@ -8,15 +11,16 @@ interface BookGridProps {
 }
 
 export function BookGrid({ books, progressMap }: BookGridProps) {
+  const { t } = useLanguage();
+
   if (books.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-6xl mb-4">📚</div>
-        <h3 className="text-lg font-medium mb-2">Nenhum livro encontrado</h3>
-        <p className="text-muted-foreground">
-          Adiciona o teu primeiro livro à biblioteca!
-        </p>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title={t('library.empty')}
+        description={t('library.emptyDesc')}
+        size="lg"
+      />
     );
   }
 

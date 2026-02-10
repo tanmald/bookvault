@@ -60,7 +60,9 @@ export const translations = {
     'profile.saving': 'A guardar...',
     'profile.addPhoto': 'Adicionar Foto',
     'profile.changePhoto': 'Alterar Foto',
-    
+    'profile.removePhoto': 'Remover Foto',
+    'auth.invalidImage': 'O ficheiro deve ser uma imagem',
+    'auth.imageTooLarge': 'A imagem deve ter no máximo 5MB',
     // Settings
     'settings.title': 'Definições',
     'settings.language': 'Idioma',
@@ -587,7 +589,9 @@ export const translations = {
     'profile.saving': 'Saving...',
     'profile.addPhoto': 'Add Photo',
     'profile.changePhoto': 'Change Photo',
-    
+    'profile.removePhoto': 'Remove Photo',
+    'auth.invalidImage': 'The file must be an image',
+    'auth.imageTooLarge': 'The image must be at most 5MB',
     // Settings
     'settings.title': 'Settings',
     'settings.language': 'Language',

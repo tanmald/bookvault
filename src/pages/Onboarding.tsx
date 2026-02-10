@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Onboarding() {
   const { user, loading } = useAuth();
@@ -28,5 +29,12 @@ export default function Onboarding() {
     return null;
   }
 
-  return <OnboardingWizard />;
+  return (
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
+      <div className="flex-1">
+        <OnboardingWizard />
+      </div>
+      <Footer />
+    </div>
+  );
 }

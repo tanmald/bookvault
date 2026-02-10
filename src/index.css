@@ -94,6 +94,19 @@
   body {
     @apply bg-background text-foreground antialiased;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  main {
+    flex: 1;
   }
 }
 

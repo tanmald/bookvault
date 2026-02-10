@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ userId: string | null; error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -60,10 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: error?.message
       });
 
-      return { error };
+      if (error) {
+        return { userId: null, error };
+      }
+
+      return { userId: data.user?.id ?? null, error: null };
     } catch (err) {
       console.error('[SignUp] Exception:', err);
-      return { error: err as Error };
+      return { userId: null, error: err as Error };
     }
   };
 
