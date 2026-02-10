@@ -35,69 +35,71 @@ const App = () => (
               <Sonner />
               <Analytics />
               <BrowserRouter>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/join/:code" element={<JoinInvite />} />
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <Library />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/upload"
-                    element={
-                      <ProtectedRoute>
-                        <UploadBook />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/book/:id"
-                    element={
-                      <ProtectedRoute>
-                        <BookDetails />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/friends"
-                    element={
-                      <ProtectedRoute>
-                        <Friends />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/invites"
-                    element={
-                      <ProtectedRoute>
-                        <Invites />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/terms"
-                    element={
-                      <ProtectedRoute>
-                        <ResponsibleUse />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <div className="flex flex-1 flex-col">
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/join/:code" element={<JoinInvite />} />
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <Library />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/upload"
+                      element={
+                        <ProtectedRoute>
+                          <UploadBook />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/book/:id"
+                      element={
+                        <ProtectedRoute>
+                          <BookDetails />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/friends"
+                      element={
+                        <ProtectedRoute>
+                          <Friends />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/invites"
+                      element={
+                        <ProtectedRoute>
+                          <Invites />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/terms"
+                      element={
+                        <ProtectedRoute>
+                          <ResponsibleUse />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
               </BrowserRouter>
             </TooltipProvider>
           </LibraryProvider>
