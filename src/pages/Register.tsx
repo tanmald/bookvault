@@ -10,6 +10,7 @@ import { BookOpen, Loader2, Check, X, Upload, X as XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -231,8 +232,9 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center space-y-2 text-center">
           <div className="flex items-center gap-2">
             <BookOpen className="h-10 w-10 text-accent" />
@@ -396,6 +398,8 @@ export default function Register() {
           </form>
         </Card>
       </div>
+      <Footer />
+    </div>
     </div>
   );
 }
