@@ -30,10 +30,8 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex flex-col bg-background">
-      <div className="flex flex-1 items-center justify-center p-4">
-        <OnboardingWizard />
-      </div>
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
+      <OnboardingWizard />
       <Footer />
     </div>
   );
