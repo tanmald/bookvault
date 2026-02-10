@@ -90,11 +90,7 @@ const App = () => (
                   />
                   <Route
                     path="/terms"
-                    element={
-                      <ProtectedRoute>
-                        <ResponsibleUse />
-                      </ProtectedRoute>
-                    }
+                    element={<ResponsibleUse />}
                   />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
