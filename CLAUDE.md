@@ -14,6 +14,14 @@ npm run test         # Run tests once (Vitest)
 npm run test:watch   # Run tests in watch mode
 ```
 
+## 🚨 CRITICAL: Development Branch
+
+**ALL development work MUST be done in the `DEV` branch. NEVER commit directly to `main`!**
+
+- Create feature branches from `DEV`: `git checkout dev && git checkout -b feature/my-feature`
+- Merge completed work into `DEV` via PR
+- `main` branch is for production releases only
+
 ## Architecture Overview
 
 BookVault is a social book library application built with React + TypeScript + Vite, using Supabase as the backend (auth, PostgreSQL database, real-time subscriptions).
