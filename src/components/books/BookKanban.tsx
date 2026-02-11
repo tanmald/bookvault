@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookCard } from './BookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { BookOpen, Clock, CheckCircle, CircleDashed } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, CircleDashed, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface BookKanbanProps {
   books: Book[];
@@ -15,6 +17,7 @@ interface BookKanbanProps {
 
 export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKanbanProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const allColumns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
     {
@@ -87,6 +90,12 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
         title={t('library.empty')}
         description={t('library.emptyDesc')}
         size="lg"
+        action={
+          <Button onClick={() => navigate('/upload')}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('nav.addBook')}
+          </Button>
+        }
       />
     );
   }

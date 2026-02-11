@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { BookCard } from './BookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 
@@ -12,6 +14,7 @@ interface BookGridProps {
 
 export function BookGrid({ books, progressMap }: BookGridProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   if (books.length === 0) {
     return (
@@ -20,6 +23,12 @@ export function BookGrid({ books, progressMap }: BookGridProps) {
         title={t('library.empty')}
         description={t('library.emptyDesc')}
         size="lg"
+        action={
+          <Button onClick={() => navigate('/upload')}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('nav.addBook')}
+          </Button>
+        }
       />
     );
   }
