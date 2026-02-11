@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookCard } from './BookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
@@ -84,20 +85,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
   }, [books, progressMap]);
 
   if (books.length === 0) {
-    return (
-      <EmptyState
-        icon={BookOpen}
-        title={t('library.empty')}
-        description={t('library.emptyDesc')}
-        size="lg"
-        action={
-          <Button onClick={() => navigate('/upload')}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('nav.addBook')}
-          </Button>
-        }
-      />
-    );
+    return <LibraryEmptyState />;
   }
 
   return (
