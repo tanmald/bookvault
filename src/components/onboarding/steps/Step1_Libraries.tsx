@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibraries } from '@/hooks/useLibraries';
+import { useLibrary } from '@/contexts/LibraryContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ export function Step1_Libraries({
   const { toast } = useToast();
   const { user } = useAuth();
   const { createLibrary } = useLibraries();
+  const { setCurrentLibrary } = useLibrary();
   const [searchParams] = useSearchParams();
 
   const [choice, setChoice] = useState<Choice>('create');
@@ -109,6 +111,7 @@ export function Step1_Libraries({
         });
 
         if (result) {
+          setCurrentLibrary(result);
           toast({
             title: t('onboarding.libraryCreated'),
           });

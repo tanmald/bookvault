@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useLibraries } from '@/hooks/useLibraries';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLibrary } from '@/contexts/LibraryContext';
 
 interface CreateLibraryDialogProps {
   open: boolean;
@@ -19,12 +21,14 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
   const { createLibrary } = useLibraries();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { setCurrentLibrary } = useLibrary();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await createLibrary.mutateAsync({ name, description });
+      const result = await createLibrary.mutateAsync({ name, description });
       toast({
         title: t('libraries.created'),
         description: t('libraries.createdDesc').replace('{name}', name),
@@ -32,6 +36,8 @@ export function CreateLibraryDialog({ open, onOpenChange }: CreateLibraryDialogP
       setName('');
       setDescription('');
       onOpenChange(false);
+      setCurrentLibrary(result);
+      navigate('/');
     } catch (error) {
       toast({
         title: t('libraries.createError'),
