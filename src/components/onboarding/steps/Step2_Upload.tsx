@@ -40,10 +40,10 @@ export function Step2_Upload({
             <p className="text-sm text-muted-foreground">{t('onboarding.demoBookAuthor')}</p>
           </div>
           <div className="p-3 bg-primary/5 rounded-lg text-xs space-y-1">
-            <p className="font-medium">✨ {language === 'pt' ? 'O BookVault extrai automaticamente:' : 'BookVault automatically extracts:'}</p>
-            <p>• {language === 'pt' ? 'Título e Autor' : 'Title & Author'}</p>
-            <p>• {language === 'pt' ? 'Género e Idioma' : 'Genre & Language'}</p>
-            <p>• {language === 'pt' ? 'Capa do livro' : 'Book cover'}</p>
+            <p className="font-medium">📚 {language === 'pt' ? 'Partilha com amigos:' : 'Share with friends:'}</p>
+            <p>• {language === 'pt' ? 'Vê o progresso de leitura' : 'See reading progress'}</p>
+            <p>• {language === 'pt' ? 'Compete no scoreboard' : 'Compete on the scoreboard'}</p>
+            <p>• {language === 'pt' ? 'Lê em conjunto' : 'Read together'}</p>
           </div>
         </CardContent>
       </Card>
@@ -54,8 +54,8 @@ export function Step2_Upload({
           <p className="text-sm font-medium">{t('onboarding.aiExtraction')}</p>
           <p className="text-xs text-muted-foreground mt-1">
             {language === 'pt'
-              ? 'Quando carregares os teus próprios livros, vais ver como é fácil organizar a tua biblioteca.'
-              : 'When you upload your own books, you will see how easy it is to organize your library.'}
+              ? 'O BookVault identifica automaticamente o livro para que possas partilhar o teu progresso com amigos.'
+              : 'BookVault automatically identifies the book so you can share your progress with friends.'}
           </p>
         </div>
       </div>
