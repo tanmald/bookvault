@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 
 const INITIAL_BOOKS_LIMIT = 100;
 
@@ -156,9 +157,16 @@ export function useBooks(libraryId?: string) {
 
       return book as Book;
     },
-    onSuccess: () => {
+    onSuccess: (book) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({ title: 'Livro adicionado com sucesso!' });
+      posthog.capture('book created', {
+        book_id: book.id,
+        title: book.title,
+        author: book.author,
+        file_type: book.file_type,
+        genre_id: book.genre_id,
+      });
     },
     onError: (error) => {
       toast({
@@ -166,6 +174,7 @@ export function useBooks(libraryId?: string) {
         title: 'Erro ao adicionar livro',
         description: error.message,
       });
+      posthog.captureException(error);
     },
   });
 
@@ -228,41 +237,55 @@ export function useBooks(libraryId?: string) {
         .from('books')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          genre:genres(id, name, slug),
-          book_files(id, book_id, language, file_url, file_type, file_size, created_at)
-        `)
-        .single();
+        .select('*, genre:genres(id, name, slug), book_files(id, book_id, language, file_url, file_type, file_size, created_at)')
+        .maybeSingle();
 
       if (error) throw error;
       return data as Book;
     },
     onMutate: async ({ id, ...updates }) => {
+      // Capture query key values at mutation start to ensure consistency
+      const queryKey = ['books', user?.id, libraryId, loadAll] as const;
+      
       // Cancel any outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ['books'] });
 
-      // Snapshot the previous value
-      const previousBooks = queryClient.getQueryData<Book[]>(['books', user?.id, libraryId, loadAll]);
+      // Snapshot the previous value for rollback
+      const previousBooks = queryClient.getQueryData<Book[]>(queryKey);
 
-      // Optimistically update the cache
-      if (previousBooks) {
-        queryClient.setQueryData<Book[]>(['books', user?.id, libraryId, loadAll], (old) =>
-          old?.map((book) => (book.id === id ? { ...book, ...updates } : book))
+      // Optimistically update ALL book caches
+      queryClient.setQueriesData<Book[]>(
+        { queryKey: ['books'] },
+        (old) => {
+          if (!old) return old;
+          return old.map((book) => (book.id === id ? { ...book, ...updates } : book));
+        }
+      );
+
+      return { previousBooks, queryKey };
+    },
+    onSuccess: (data, _variables, context) => {
+      // Update ALL book caches, not just the specific one
+      // This ensures the library list and book details page stay in sync
+      if (data) {
+        queryClient.setQueriesData<Book[]>(
+          { queryKey: ['books'] },
+          (old) => {
+            if (!old) return old;
+            return old.map((book) => (book.id === data.id ? data : book));
+          }
         );
       }
 
-      return { previousBooks };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({ title: 'Livro atualizado!' });
     },
     onError: (error, _variables, context) => {
-      // Rollback to previous value on error
-      if (context?.previousBooks) {
-        queryClient.setQueryData(['books', user?.id, libraryId, loadAll], context.previousBooks);
+      // Rollback to previous value on error using captured queryKey
+      if (context?.previousBooks && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousBooks);
       }
+      // Also invalidate all book caches to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar livro',
@@ -292,9 +315,10 @@ export function useBooks(libraryId?: string) {
 
       return { previousBooks };
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({ title: 'Livro removido!' });
+      posthog.capture('book deleted', { book_id: id });
     },
     onError: (error, _id, context) => {
       // Rollback on error

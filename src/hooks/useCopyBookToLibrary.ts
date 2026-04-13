@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 import type { Book, BookFile } from './useBooks';
 import type { ReadingProgress } from './useReadingProgress';
 
@@ -131,11 +132,17 @@ export function useCopyBookToLibrary() {
 
       return newBook as Book;
     },
-    onSuccess: () => {
+    onSuccess: (newBook, variables) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({
         title: 'Livro copiado com sucesso!',
         description: 'O livro foi copiado para a biblioteca selecionada.',
+      });
+      posthog.capture('book copied to library', {
+        source_book_id: variables.sourceBookId,
+        target_library_id: variables.targetLibraryId,
+        new_book_id: newBook.id,
+        copy_progress: variables.copyProgress,
       });
     },
     onError: (error) => {

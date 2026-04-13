@@ -57,6 +57,7 @@ export function BookCard({ book, progress, compact = false, isDragging = false, 
       )}>
         {book.cover_url ? (
           <img
+            key={book.cover_url}
             src={book.cover_url}
             alt={book.title}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"

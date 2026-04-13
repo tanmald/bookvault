@@ -35,6 +35,7 @@ import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
+import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -49,6 +50,7 @@ import {
   Globe,
   Pencil,
   Calendar,
+  Image,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -60,7 +62,9 @@ export default function BookDetails() {
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [isChangeCoverDialogOpen, setIsChangeCoverDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [coverVersion, setCoverVersion] = useState(0);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
@@ -204,7 +208,8 @@ export default function BookDetails() {
           <div className="aspect-[2/3] overflow-hidden rounded-lg bg-muted">
             {book.cover_url ? (
               <img
-                src={book.cover_url}
+                key={`${book.id}-${book.cover_url}-${coverVersion}`}
+                src={`${book.cover_url}?nocache=${coverVersion}`}
                 alt={book.title}
                 className="h-full w-full object-cover"
               />
@@ -217,6 +222,16 @@ export default function BookDetails() {
               </div>
             )}
           </div>
+
+          {/* Change Cover Button */}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setIsChangeCoverDialogOpen(true)}
+          >
+            <Image className="mr-2 h-4 w-4" />
+            {t('book.changeCover')}
+          </Button>
 
           {/* Book Versions Card */}
           <Card>
@@ -471,6 +486,23 @@ export default function BookDetails() {
           }
         }}
       />
+
+        {book && (
+        <ChangeCoverDialog
+          isOpen={isChangeCoverDialogOpen}
+          onClose={() => {
+            setIsChangeCoverDialogOpen(false);
+            setCoverVersion(v => v + 1);
+          }}
+          book={{
+            id: book.id,
+            title: book.title,
+            author: book.author || '',
+            cover_url: book.cover_url,
+            isbn: book.isbn,
+          }}
+        />
+      )}
     </AppLayout>
   );
 }

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Footer } from '@/components/layout/Footer';
+import posthog from '@/lib/posthog';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -216,6 +217,14 @@ export default function Register() {
     if (avatarPreview) {
       URL.revokeObjectURL(avatarPreview);
     }
+
+    posthog.identify(userId, {
+      email,
+      name: displayName.trim(),
+    });
+    posthog.capture('user signed up', {
+      has_avatar: !!avatarUrl,
+    });
 
     toast({
       title: t('auth.accountCreated'),

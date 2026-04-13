@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
 
 // Type for the owner profile relation
@@ -126,6 +127,8 @@ export default function JoinInvite() {
 
       setStatus('success');
       toast({ title: t('joinInvite.friendCreated') });
+
+      posthog.capture('invite accepted', { invite_code: code });
 
       setTimeout(() => navigate('/friends'), 2000);
     } catch (err: unknown) {

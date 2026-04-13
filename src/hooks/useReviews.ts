@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 
 export interface Review {
   id: string;
@@ -86,10 +87,15 @@ export function useReviews(bookId?: string) {
       if (error) throw error;
       return data as Review;
     },
-    onSuccess: () => {
+    onSuccess: (review) => {
       queryClient.invalidateQueries({ queryKey: ['my-review'] });
       queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
+      posthog.capture('review submitted', {
+        book_id: review.book_id,
+        rating: review.rating,
+        has_content: !!review.content,
+      });
     },
     onError: (error) => {
       toast({

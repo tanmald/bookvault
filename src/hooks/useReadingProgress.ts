@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 
 export type ReadingStatus = 'to_read' | 'reading' | 'read' | 'not_planned';
 
@@ -135,8 +136,15 @@ export function useReadingProgress(bookId?: string) {
 
       return { previousProgress, previousAllProgress };
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+      if (variables.status) {
+        posthog.capture('reading status updated', {
+          book_id: variables.bookId,
+          status: variables.status,
+          progress: variables.progress ?? data.progress,
+        });
+      }
     },
     onError: (error, _variables, context) => {
       // Rollback on error

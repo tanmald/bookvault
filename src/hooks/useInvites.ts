@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 
 export interface InviteLink {
   id: string;
@@ -90,9 +91,15 @@ export function useInvites(libraryId?: string) {
       if (error) throw error;
       return data as InviteLink;
     },
-    onSuccess: () => {
+    onSuccess: (invite) => {
       queryClient.invalidateQueries({ queryKey: ['invites'] });
       toast({ title: 'Link de convite criado!' });
+      posthog.capture('invite created', {
+        invite_id: invite.id,
+        library_id: invite.library_id,
+        has_expiry: !!invite.expires_at,
+        has_max_uses: !!invite.max_uses,
+      });
     },
     onError: (error) => {
       toast({

@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import posthog from '@/lib/posthog';
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -39,6 +41,11 @@ export default function Login() {
       });
       setIsLoading(false);
     } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        posthog.identify(session.user.id, { email: session.user.email });
+        posthog.capture('user signed in');
+      }
       // If there's an invite code, redirect to the join page
       const redirectTo = code ? `/join/${code}` : from;
       navigate(redirectTo, { replace: true });

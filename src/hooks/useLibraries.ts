@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
+import posthog from '@/lib/posthog';
 
 interface CreateLibraryInput {
   name: string;
@@ -36,9 +37,15 @@ export function useLibraries() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetch();
       queryClient.invalidateQueries({ queryKey: ['libraries'] });
+      posthog.capture('library created', {
+        library_id: data.id,
+        library_name: data.name,
+        is_public: data.is_public,
+        allow_member_uploads: data.allow_member_uploads,
+      });
     },
   });
 
