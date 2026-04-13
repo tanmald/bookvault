@@ -1,7 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import { BookCard } from './BookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { BookOpen } from 'lucide-react';
+import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
+import { BookOpen, Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
 import type { Book } from '@/hooks/useBooks';
 import type { ReadingProgress } from '@/hooks/useReadingProgress';
 
@@ -12,16 +15,10 @@ interface BookGridProps {
 
 export function BookGrid({ books, progressMap }: BookGridProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   if (books.length === 0) {
-    return (
-      <EmptyState
-        icon={BookOpen}
-        title={t('library.empty')}
-        description={t('library.emptyDesc')}
-        size="lg"
-      />
-    );
+    return <LibraryEmptyState />;
   }
 
   return (

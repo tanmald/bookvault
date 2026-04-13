@@ -10,6 +10,7 @@ import { BookOpen, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import posthog from '@/lib/posthog';
+import { Footer } from '@/components/layout/Footer';
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -53,69 +54,72 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-10 w-10 text-accent" />
-            <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-1 items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center space-y-2 text-center">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-10 w-10 text-accent" />
+              <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+            </div>
+            <p className="text-muted-foreground">{t('auth.tagline')}</p>
           </div>
-          <p className="text-muted-foreground">{t('auth.tagline')}</p>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('auth.loginTitle')}</CardTitle>
-            <CardDescription>{t('auth.loginDesc')}</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t('auth.emailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.password')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('auth.loggingIn')}
-                  </>
-                ) : (
-                  t('auth.login')
-                )}
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                {t('auth.noAccount')}{' '}
-                <Link to="/register" className="font-medium text-primary hover:underline">
-                  {t('auth.register')}
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('auth.loginTitle')}</CardTitle>
+              <CardDescription>{t('auth.loginDesc')}</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t('auth.email')}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder={t('auth.emailPlaceholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('auth.password')}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('auth.loggingIn')}
+                    </>
+                  ) : (
+                    t('auth.login')
+                  )}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  {t('auth.noAccount')}{' '}
+                  <Link to="/register" className="font-medium text-primary hover:underline">
+                    {t('auth.register')}
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

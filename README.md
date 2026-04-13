@@ -67,11 +67,11 @@ Never lose track again:
 
 ### 👥 Compare & Share
 Your reading journey, with friends:
-- **Friends Scoreboard** — See yourself ranked with friends who finished the same books (sorted by who finished first)
-- **Book Reviews** — Rate books with 1-5 stars and leave reviews
+- **Friends Scoreboard** — See yourself ranked with friends who finished the same books, sorted by completion date so you know exactly when everyone finished
+- **Book Reviews** — Rate books with 1-5 stars and leave optional comments—review prompts appear automatically when you mark a book as "read" so you never forget your thoughts
 - **Social Sharing** — Invite friends with secure, private links
 - **Activity Feed** — Follow what friends are reading, finishing, and reviewing
-- **Perfect for Book Clubs** — Share reading lists and track group progress
+- **Perfect for Book Clubs** — Share reading lists and track group progress with precise completion dates
 
 ### 🎨 Beautiful & Responsive
 Built for readers, by readers:
@@ -192,6 +192,13 @@ This means you're free to use, modify, and share BookVault for any purpose—per
 ---
 
 ## 🎉 Recent Updates
+
+### v1.2.0 — Smart Reviews & Better Scoreboards (Feb 10, 2026)
+- ✅ **Automatic review prompts** — Rate books instantly when you finish with 1-5 stars and optional comments
+- ✅ **Precise completion dates** — Scoreboard shows exactly when friends finished reading (e.g., "05/02/2024")
+- ✅ **Consistent branding** — Footer with brand identity and legal links now appears on all public pages (login, register, invite)
+- ✅ **Editable reviews** — Update your ratings and comments anytime
+- ✅ **Locale-aware dates** — Dates respect your language preferences (Portuguese/English)
 
 ### v1.1.0 — Mobile Experience & Social Reading (Feb 7, 2026)
 - ✅ **Zero horizontal scroll** — Fully responsive mobile design

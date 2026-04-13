@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import posthog from '@/lib/posthog';
 import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
+import { Footer } from '@/components/layout/Footer';
 
 // Type for the owner profile relation
 interface OwnerProfile {
@@ -154,93 +155,96 @@ export default function JoinInvite() {
   const ownerName = inviteOwner?.display_name || t('joinInvite.aUser');
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-10 w-10 text-accent" />
-            <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-1 items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center space-y-2 text-center">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-10 w-10 text-accent" />
+              <span className="text-3xl font-semibold tracking-tight">BookVault</span>
+            </div>
           </div>
-        </div>
 
-        <Card>
-          {status === 'invalid' || status === 'error' ? (
-            <>
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-                  <X className="h-6 w-6 text-destructive" />
-                </div>
-                <CardTitle>{t('joinInvite.invalidTitle')}</CardTitle>
-                <CardDescription>{error}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link to="/">{t('joinInvite.goToLibrary')}</Link>
-                </Button>
-              </CardContent>
-            </>
-          ) : status === 'success' ? (
-            <>
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-                  <Check className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle>{t('joinInvite.welcome')}</CardTitle>
-                <CardDescription>
-                  {t('joinInvite.welcomeDesc').replace('{name}', ownerName)}
-                </CardDescription>
-              </CardHeader>
-            </>
-          ) : (
-            <>
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-                  <UserPlus className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle>{t('joinInvite.inviteTitle')}</CardTitle>
-                <CardDescription>
-                  {t('joinInvite.inviteDesc').replace('{name}', ownerName)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!user ? (
-                  <>
-                    <p className="text-sm text-muted-foreground text-center">
-                      {t('joinInvite.needAccount')}
-                    </p>
-                    <div className="flex gap-3">
-                      <Button asChild variant="outline" className="flex-1">
-                        <Link to={`/login?code=${code}`}>{t('joinInvite.login')}</Link>
-                      </Button>
-                      <Button asChild className="flex-1">
-                        <Link to={`/register?code=${code}`}>{t('joinInvite.createAccount')}</Link>
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <Button
-                    onClick={handleJoin}
-                    disabled={status === 'joining'}
-                    className="w-full"
-                  >
-                    {status === 'joining' ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t('joinInvite.accepting')}
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        {t('joinInvite.acceptInvite')}
-                      </>
-                    )}
+          <Card>
+            {status === 'invalid' || status === 'error' ? (
+              <>
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                    <X className="h-6 w-6 text-destructive" />
+                  </div>
+                  <CardTitle>{t('joinInvite.invalidTitle')}</CardTitle>
+                  <CardDescription>{error}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link to="/">{t('joinInvite.goToLibrary')}</Link>
                   </Button>
-                )}
-              </CardContent>
-            </>
-          )}
-        </Card>
+                </CardContent>
+              </>
+            ) : status === 'success' ? (
+              <>
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                    <Check className="h-6 w-6 text-accent" />
+                  </div>
+                  <CardTitle>{t('joinInvite.welcome')}</CardTitle>
+                  <CardDescription>
+                    {t('joinInvite.welcomeDesc').replace('{name}', ownerName)}
+                  </CardDescription>
+                </CardHeader>
+              </>
+            ) : (
+              <>
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                    <UserPlus className="h-6 w-6 text-accent" />
+                  </div>
+                  <CardTitle>{t('joinInvite.inviteTitle')}</CardTitle>
+                  <CardDescription>
+                    {t('joinInvite.inviteDesc').replace('{name}', ownerName)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!user ? (
+                    <>
+                      <p className="text-sm text-muted-foreground text-center">
+                        {t('joinInvite.needAccount')}
+                      </p>
+                      <div className="flex gap-3">
+                        <Button asChild variant="outline" className="flex-1">
+                          <Link to={`/login?code=${code}`}>{t('joinInvite.login')}</Link>
+                        </Button>
+                        <Button asChild className="flex-1">
+                          <Link to={`/register?code=${code}`}>{t('joinInvite.createAccount')}</Link>
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={handleJoin}
+                      disabled={status === 'joining'}
+                      className="w-full"
+                    >
+                      {status === 'joining' ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {t('joinInvite.accepting')}
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          {t('joinInvite.acceptInvite')}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardContent>
+              </>
+            )}
+          </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

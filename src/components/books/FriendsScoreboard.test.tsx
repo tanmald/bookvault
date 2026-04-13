@@ -118,7 +118,7 @@ describe("FriendsScoreboard", () => {
 
       expect(screen.getByText("Alice")).toBeInTheDocument();
       expect(screen.getByText("Bob")).toBeInTheDocument();
-      expect(screen.getByText("Jan 5, 2024")).toBeInTheDocument();
+      expect(screen.getByText("01/05/2024")).toBeInTheDocument();
       expect(screen.getByText("Reading")).toBeInTheDocument();
       expect(screen.getByText("To Read")).toBeInTheDocument();
     });
@@ -162,7 +162,7 @@ describe("FriendsScoreboard", () => {
 
       render(<FriendsScoreboard bookId="book-1" />, { wrapper: createWrapper() });
 
-      expect(screen.getByText("Jan 5, 2024")).toBeInTheDocument();
+      expect(screen.getByText("01/05/2024")).toBeInTheDocument();
       expect(screen.getByText("Reading")).toBeInTheDocument();
       expect(screen.getByText("To Read")).toBeInTheDocument();
     });
