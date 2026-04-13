@@ -14,6 +14,8 @@ alter table "public"."reading_progress" alter column status type "public"."readi
 
 alter table "public"."reading_progress" alter column "status" set default 'to_read'::public.reading_status;
 
+DROP FUNCTION IF EXISTS public.get_library_friends_book_progress(uuid, uuid);
+
 drop type "public"."reading_status__old_version_to_be_dropped";
 
 alter table "public"."library_members" disable row level security;

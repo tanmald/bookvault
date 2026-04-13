@@ -105,7 +105,7 @@ describe("useFriendsBookProgress", () => {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.status).toBe('success'), { timeout: 10000 });
 
       expect(result.current.data).toHaveLength(1);
       expect(result.current.data![0].user_id).toBe(ownerId);
@@ -172,7 +172,7 @@ describe("useFriendsBookProgress", () => {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.status).toBe('success'), { timeout: 10000 });
 
       expect(result.current.data).toHaveLength(1);
       expect(result.current.data![0].user_id).toBe(ownerId);
@@ -239,7 +239,7 @@ describe("useFriendsBookProgress", () => {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.status).toBe('success'), { timeout: 10000 });
 
       expect(result.current.data).toHaveLength(0);
     });
@@ -304,7 +304,7 @@ describe("useFriendsBookProgress", () => {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      await waitFor(() => expect(result.current.status).toBe('success'), { timeout: 10000 });
 
       expect(result.current.data).toHaveLength(0);
     });

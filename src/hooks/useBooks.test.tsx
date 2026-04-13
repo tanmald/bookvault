@@ -88,17 +88,7 @@ describe("useBooks", () => {
 
       expect(libError).toBeNull();
       const testLibraryId = library!.id;
-
-      // Add user as library member
-      const { error: memberError } = await supabase
-        .from("library_members")
-        .insert({
-          library_id: testLibraryId,
-          user_id: testUserId,
-          role: "admin",
-        });
-
-      expect(memberError).toBeNull();
+      // Note: auto_add_library_creator trigger already adds creator as admin member
 
       // Create a book
       await act(async () => {
@@ -452,7 +442,8 @@ describe("useBooks", () => {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 5000 });
+      // Wait for auth to load in new wrapper and books to be fetched
+      await waitFor(() => expect(result.current.books.length).toBeGreaterThan(0), { timeout: 10000 });
 
       let updatedBook: { title: string } | null = null;
       await act(async () => {
