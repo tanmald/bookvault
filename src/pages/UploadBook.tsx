@@ -53,6 +53,8 @@ export default function UploadBook() {
   // Check if we're adding to an existing book from URL params
   const bookIdFromUrl = searchParams.get('bookId');
 
+  const canUploadFiles = currentLibrary?.allow_member_uploads === true;
+
   const [file, setFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -318,11 +320,20 @@ export default function UploadBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!file || !user || !currentLibrary) {
+    if (!user || !currentLibrary) {
       toast({
         variant: 'destructive',
         title: t('upload.error'),
-        description: !currentLibrary ? 'No library selected' : t('upload.selectFile'),
+        description: 'No library selected',
+      });
+      return;
+    }
+
+    if (canUploadFiles && !file) {
+      toast({
+        variant: 'destructive',
+        title: t('upload.error'),
+        description: t('upload.selectFile'),
       });
       return;
     }
@@ -348,40 +359,89 @@ export default function UploadBook() {
     setIsUploading(true);
 
     try {
-      // Upload book file
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
-      const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      // --- Resolve file details (only when upload is permitted and a file was selected) ---
+      let bookFileUrl: string | undefined;
+      let bookFileType: string | undefined;
+      let bookFileSize: number | undefined;
 
-      const { error: uploadError } = await supabase.storage
-        .from('books')
-        .upload(fileName, file);
+      if (canUploadFiles && file) {
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+        const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('books')
+          .upload(fileName, file);
 
-      const { data: fileData } = supabase.storage
-        .from('books')
-        .getPublicUrl(fileName);
+        if (uploadError) throw uploadError;
 
-      if (mode === 'existing') {
-        // Add file to existing book
-        await addBookFile.mutateAsync({
-          book_id: selectedBookId,
-          language: selectedLanguage,
-          file_url: fileData.publicUrl,
-          file_type: fileExt.toUpperCase(),
-          file_size: file.size,
-        });
-      } else {
-        // Create new book
-        let coverUrl: string | undefined;
+        const { data: fileData } = supabase.storage
+          .from('books')
+          .getPublicUrl(fileName);
 
-        if (coverFile) {
-          const coverExt = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-          const coverName = `${user.id}/${crypto.randomUUID()}.${coverExt}`;
+        bookFileUrl = fileData.publicUrl;
+        bookFileType = fileExt.toUpperCase();
+        bookFileSize = file.size;
+
+        if (mode === 'existing') {
+          // Add file to existing book and exit
+          await addBookFile.mutateAsync({
+            book_id: selectedBookId,
+            language: selectedLanguage,
+            file_url: bookFileUrl,
+            file_type: bookFileType,
+            file_size: bookFileSize,
+          });
+          navigate('/');
+          return;
+        }
+      }
+
+      // --- Resolve cover ---
+      let coverUrl: string | undefined;
+
+      if (coverFile) {
+        const coverExt = coverFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const coverName = `${user.id}/${crypto.randomUUID()}.${coverExt}`;
+
+        const { error: coverError } = await supabase.storage
+          .from('covers')
+          .upload(coverName, coverFile);
+
+        if (coverError) throw coverError;
+
+        const { data: coverData } = supabase.storage
+          .from('covers')
+          .getPublicUrl(coverName);
+
+        coverUrl = coverData.publicUrl;
+      } else if (extractedCoverBase64) {
+        try {
+          if (!extractedCoverBase64.includes(',') || !extractedCoverBase64.includes(':')) {
+            throw new Error('Invalid base64 format');
+          }
+
+          const base64Data = extractedCoverBase64.split(',')[1];
+          const mimeMatch = extractedCoverBase64.match(/data:([^;]+);/);
+          const mimeType = mimeMatch?.[1] || 'image/jpeg';
+
+          if (!base64Data) {
+            throw new Error('No base64 data found');
+          }
+
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: mimeType });
+
+          const ext = mimeType.split('/')[1] || 'jpg';
+          const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
           const { error: coverError } = await supabase.storage
             .from('covers')
-            .upload(coverName, coverFile);
+            .upload(coverName, blob);
 
           if (coverError) throw coverError;
 
@@ -390,114 +450,73 @@ export default function UploadBook() {
             .getPublicUrl(coverName);
 
           coverUrl = coverData.publicUrl;
-        } else if (extractedCoverBase64) {
-          // Validate and parse base64 data URL format: data:image/type;base64,DATA
-          try {
-            if (!extractedCoverBase64.includes(',') || !extractedCoverBase64.includes(':')) {
-              throw new Error('Invalid base64 format');
-            }
-
-            const base64Data = extractedCoverBase64.split(',')[1];
-            const mimeMatch = extractedCoverBase64.match(/data:([^;]+);/);
-            const mimeType = mimeMatch?.[1] || 'image/jpeg';
-
-            if (!base64Data) {
-              throw new Error('No base64 data found');
-            }
-
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: mimeType });
-
-            const ext = mimeType.split('/')[1] || 'jpg';
-            const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-            const { error: coverError } = await supabase.storage
-              .from('covers')
-              .upload(coverName, blob);
-
-            if (coverError) throw coverError;
-
-            const { data: coverData } = supabase.storage
-              .from('covers')
-              .getPublicUrl(coverName);
-
-            coverUrl = coverData.publicUrl;
-          } catch (base64Error) {
-            console.error('Error processing extracted cover:', base64Error);
-            toast({
-              variant: 'destructive',
-              title: t('upload.coverWarning'),
-              description: t('upload.coverWarningDesc'),
-            });
-            // Continue without cover - don't fail the entire upload
-          }
+        } catch (base64Error) {
+          console.error('Error processing extracted cover:', base64Error);
+          toast({
+            variant: 'destructive',
+            title: t('upload.coverWarning'),
+            description: t('upload.coverWarningDesc'),
+          });
+          // Continue without cover - don't fail the entire upload
         }
-
-        // If no cover was provided, try to fetch one automatically
-        if (!coverUrl) {
-          setIsFetchingCover(true);
-          try {
-            const fetchedCoverUrl = await fetchCoverAutomatically(
-              extractedIsbn,
-              formData.title.trim(),
-              formData.author.trim() || undefined
-            );
-
-            if (fetchedCoverUrl) {
-              // Download and store the cover in our bucket
-              try {
-                const coverResponse = await fetch(fetchedCoverUrl);
-                const coverBlob = await coverResponse.blob();
-
-                const ext = fetchedCoverUrl.includes('.jpg') || fetchedCoverUrl.includes('.jpeg') ? 'jpg' : 'png';
-                const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
-
-                const { error: uploadError } = await supabase.storage
-                  .from('covers')
-                  .upload(coverName, coverBlob);
-
-                if (!uploadError) {
-                  const { data: coverData } = supabase.storage
-                    .from('covers')
-                    .getPublicUrl(coverName);
-
-                  coverUrl = coverData.publicUrl;
-                  console.log('Auto-fetched cover uploaded successfully');
-                }
-              } catch (fetchError) {
-                console.error('Error downloading/uploading auto-fetched cover:', fetchError);
-                // Continue without cover - don't fail the upload
-              }
-            }
-          } catch (error) {
-            console.error('Error in auto-fetch cover:', error);
-          } finally {
-            setIsFetchingCover(false);
-          }
-        }
-
-        await createBook.mutateAsync({
-          title: formData.title.trim(),
-          author: formData.author.trim() || undefined,
-          description: formData.description.trim() || undefined,
-          genre_id: formData.genre_id || undefined,
-          year: formData.year ? parseInt(formData.year) : undefined,
-          isbn: extractedIsbn || undefined,
-          file_url: fileData.publicUrl,
-          file_type: fileExt.toUpperCase(),
-          file_size: file.size,
-          cover_url: coverUrl,
-          language: selectedLanguage,
-          library_id: currentLibrary.id,
-        });
       }
 
-      // Navigate to library after successful upload
+      // If no cover was provided, try to fetch one automatically
+      if (!coverUrl) {
+        setIsFetchingCover(true);
+        try {
+          const fetchedCoverUrl = await fetchCoverAutomatically(
+            extractedIsbn,
+            formData.title.trim(),
+            formData.author.trim() || undefined
+          );
+
+          if (fetchedCoverUrl) {
+            try {
+              const coverResponse = await fetch(fetchedCoverUrl);
+              const coverBlob = await coverResponse.blob();
+
+              const ext = fetchedCoverUrl.includes('.jpg') || fetchedCoverUrl.includes('.jpeg') ? 'jpg' : 'png';
+              const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('covers')
+                .upload(coverName, coverBlob);
+
+              if (!uploadError) {
+                const { data: coverData } = supabase.storage
+                  .from('covers')
+                  .getPublicUrl(coverName);
+
+                coverUrl = coverData.publicUrl;
+              }
+            } catch (fetchError) {
+              console.error('Error downloading/uploading auto-fetched cover:', fetchError);
+            }
+          }
+        } catch (error) {
+          console.error('Error in auto-fetch cover:', error);
+        } finally {
+          setIsFetchingCover(false);
+        }
+      }
+
+      // --- Create new book (with or without a file) ---
+      await createBook.mutateAsync({
+        title: formData.title.trim(),
+        author: formData.author.trim() || undefined,
+        description: formData.description.trim() || undefined,
+        genre_id: formData.genre_id || undefined,
+        year: formData.year ? parseInt(formData.year) : undefined,
+        isbn: extractedIsbn || undefined,
+        file_url: bookFileUrl,
+        file_type: bookFileType,
+        file_size: bookFileSize,
+        cover_url: coverUrl,
+        language: selectedLanguage,
+        library_id: currentLibrary.id,
+      });
+
       navigate('/');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -520,13 +539,13 @@ export default function UploadBook() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold mb-1">{t('upload.title')}</h1>
           <p className="text-muted-foreground">
-            {t('upload.subtitle')}
+            {canUploadFiles ? t('upload.subtitle') : t('upload.manualSubtitle')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          <Card>
+          {canUploadFiles && <Card>
             <CardHeader>
               <CardTitle className="text-lg">{t('upload.bookFile')}</CardTitle>
               <CardDescription>
@@ -571,7 +590,7 @@ export default function UploadBook() {
                 </p>
               </div>
             </CardContent>
-          </Card>
+          </Card>}
 
           {mode === 'new' && (
             <>
@@ -704,8 +723,8 @@ export default function UploadBook() {
             </div>
           )}
 
-          {/* Mode Selection */}
-          <Card>
+          {/* Mode Selection — only shown when file upload is available */}
+          {canUploadFiles && <Card>
             <CardHeader>
               <CardTitle className="text-lg">{t('upload.uploadType')}</CardTitle>
               <CardDescription>
@@ -787,7 +806,7 @@ export default function UploadBook() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Duplicate Book Modal */}
           <DuplicateBookSelector
@@ -811,7 +830,7 @@ export default function UploadBook() {
             </Button>
             <Button
               type="submit"
-              disabled={!file || isUploading || isFetchingCover || (mode === 'existing' && !selectedBookId)}
+              disabled={(canUploadFiles && !file) || isUploading || isFetchingCover || (mode === 'existing' && !selectedBookId)}
               className="flex-1"
             >
               {isUploading || isFetchingCover ? (
@@ -826,7 +845,7 @@ export default function UploadBook() {
                 </>
               ) : (
                 <>
-                  <Upload className="mr-2 h-4 w-4" />
+                  {canUploadFiles ? <Upload className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
                   {t('upload.submit')}
                 </>
               )}

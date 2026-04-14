@@ -47,8 +47,8 @@ export interface CreateBookInput {
   year?: number;
   isbn?: string;
   cover_url?: string;
-  file_url: string;
-  file_type: string;
+  file_url?: string;
+  file_type?: string;
   file_size?: number;
   language?: string;
   library_id: string;
@@ -134,25 +134,27 @@ export function useBooks(libraryId?: string) {
 
       if (bookError) throw bookError;
 
-      // Create the book file record
-      const { error: fileError } = await supabase
-        .from('book_files')
-        .insert({
-          book_id: book.id,
-          language,
-          file_url,
-          file_type,
-          file_size,
-        });
+      // Create the book file record only if a file was provided
+      if (file_url && file_type) {
+        const { error: fileError } = await supabase
+          .from('book_files')
+          .insert({
+            book_id: book.id,
+            language,
+            file_url,
+            file_type,
+            file_size,
+          });
 
-      if (fileError) {
-        console.error('Error creating book file:', fileError);
-        // Warn user but don't fail - the book was created successfully
-        toast({
-          variant: 'destructive',
-          title: 'Aviso: erro ao criar versão do ficheiro',
-          description: 'O livro foi criado, mas houve um problema ao registar a versão do ficheiro.',
-        });
+        if (fileError) {
+          console.error('Error creating book file:', fileError);
+          // Warn user but don't fail - the book was created successfully
+          toast({
+            variant: 'destructive',
+            title: 'Aviso: erro ao criar versão do ficheiro',
+            description: 'O livro foi criado, mas houve um problema ao registar a versão do ficheiro.',
+          });
+        }
       }
 
       return book as Book;
