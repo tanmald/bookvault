@@ -140,6 +140,7 @@ export const translations = {
     // Upload
     'upload.title': 'Adicionar Livro',
     'upload.subtitle': 'Faz upload de um novo livro ou adiciona uma versão a um livro existente',
+    'upload.manualSubtitle': 'Preenche os detalhes do livro para o adicionar à tua biblioteca',
     'upload.dragDrop': 'Arrasta um ficheiro ou clica para selecionar',
     'upload.or': 'ou',
     'upload.browse': 'Procurar ficheiros',
@@ -687,6 +688,7 @@ export const translations = {
     // Upload
     'upload.title': 'Add Book',
     'upload.subtitle': 'Upload a new book or add a version to an existing book',
+    'upload.manualSubtitle': 'Fill in the book details to add it to your library',
     'upload.dragDrop': 'Drag a file or click to select',
     'upload.or': 'or',
     'upload.browse': 'Browse files',
