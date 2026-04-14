@@ -46,9 +46,11 @@ export function ReadingGoalCard() {
     const actualProgress = booksRead / goal.target;
 
     if (actualProgress >= expectedProgress) {
-      return { status: 'ahead', diff: Math.max(0, Math.round((actualProgress - expectedProgress) * goal.target)) };
+      const diff = Math.floor((actualProgress - expectedProgress) * goal.target);
+      return diff > 0 ? { status: 'ahead', diff } : { status: 'onTrack', diff: 0 };
     } else {
-      return { status: 'behind', diff: Math.max(0, Math.round((expectedProgress - actualProgress) * goal.target)) };
+      const diff = Math.ceil((expectedProgress - actualProgress) * goal.target);
+      return diff > 0 ? { status: 'behind', diff } : { status: 'onTrack', diff: 0 };
     }
   };
 
@@ -112,6 +114,7 @@ export function ReadingGoalCard() {
               {status && (
                 <p className="text-sm text-muted-foreground">
                   {status.status === 'completed' && t('goals.completed')}
+                  {status.status === 'onTrack' && t('goals.onTrack')}
                   {status.status === 'ahead' && t('goals.ahead').replace('{count}', status.diff.toString())}
                   {status.status === 'behind' && t('goals.behind').replace('{count}', status.diff.toString())}
                 </p>

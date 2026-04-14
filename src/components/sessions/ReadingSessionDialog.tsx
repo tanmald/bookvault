@@ -23,6 +23,7 @@ import { Clock } from 'lucide-react';
 import { useReadingSessions } from '@/hooks/useReadingSessions';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ReadingSessionDialogProps {
   children?: React.ReactNode;
@@ -35,6 +36,7 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { t } = useLanguage();
   const { addSession, todaySession, weeklyTotal } = useReadingSessions();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
@@ -74,7 +76,7 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
         {children || (
           <Button variant="outline" size="sm" className="gap-2">
             <Clock className="h-4 w-4" />
-            Registar leitura
+            {t('sessions.logButton')}
           </Button>
         )}
       </DialogTrigger>
@@ -82,10 +84,10 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Registar tempo de leitura
+            {t('sessions.dialogTitle')}
           </DialogTitle>
           <DialogDescription>
-            Regista quanto tempo leste hoje. Podes adicionar notas sobre o que leste.
+            {t('sessions.dialogDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -95,15 +97,16 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
               <span className="font-medium text-foreground">
                 {todaySession ? `${todaySession.duration_minutes} min` : '0 min'}
               </span>{' '}
-              hoje
+              {t('sessions.today')}
             </div>
             <div>
-              <span className="font-medium text-foreground">{weeklyTotal} min</span> esta semana
+              <span className="font-medium text-foreground">{weeklyTotal} min</span>{' '}
+              {t('sessions.thisWeek')}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="duration">Duração (minutos)</Label>
+            <Label htmlFor="duration">{t('sessions.durationLabel')}</Label>
             <Input
               id="duration"
               type="number"
@@ -130,15 +133,15 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="book">Livro (opcional)</Label>
+            <Label htmlFor="book">{t('sessions.bookLabel')}</Label>
             <Select value={selectedBook} onValueChange={setSelectedBook}>
               <SelectTrigger>
-                <SelectValue placeholder="Seleciona um livro..." />
+                <SelectValue placeholder={t('sessions.bookPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {activeBooks.length === 0 ? (
                   <SelectItem value="none" disabled>
-                    Sem livros em leitura
+                    {t('sessions.noBooks')}
                   </SelectItem>
                 ) : (
                   activeBooks.map((book) => (
@@ -152,10 +155,10 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas (opcional)</Label>
+            <Label htmlFor="notes">{t('sessions.notesLabel')}</Label>
             <Textarea
               id="notes"
-              placeholder="O que leste hoje?"
+              placeholder={t('sessions.notesPlaceholder')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
@@ -164,10 +167,10 @@ export function ReadingSessionDialog({ children }: ReadingSessionDialogProps) {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting || !duration}>
-              {isSubmitting ? 'A guardar...' : 'Guardar'}
+              {isSubmitting ? t('profile.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </form>

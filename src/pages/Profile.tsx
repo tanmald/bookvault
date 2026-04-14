@@ -118,10 +118,10 @@ export default function Profile() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Flame className="h-5 w-5 text-orange-500" />
-              Sessões de Leitura
+              {t('sessions.title')}
             </CardTitle>
             <CardDescription>
-              Regista o tempo que leste para acompanhar o teu progresso
+              {t('sessions.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -130,24 +130,24 @@ export default function Profile() {
                 <div className="text-2xl font-semibold">
                   {todaySession ? `${todaySession.duration_minutes}` : '0'}
                 </div>
-                <div className="text-sm text-muted-foreground">min hoje</div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minToday')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-semibold">{weeklyTotal}</div>
-                <div className="text-sm text-muted-foreground">min semana</div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minWeek')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-semibold flex items-center justify-center gap-1">
                   <Flame className="h-5 w-5 text-orange-500" />
                   {streak}
                 </div>
-                <div className="text-sm text-muted-foreground">dias seguidos</div>
+                <div className="text-sm text-muted-foreground">{t('sessions.daysStreak')}</div>
               </div>
             </div>
             <ReadingSessionDialog>
               <Button className="w-full">
                 <Clock className="h-4 w-4 mr-2" />
-                Registar leitura
+                {t('sessions.logButton')}
               </Button>
             </ReadingSessionDialog>
           </CardContent>
