@@ -27,6 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Sparkles, Plus, BookCopy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { DuplicateBookSelector } from '@/components/upload/DuplicateBookSelector';
+import { BookSearchDropdown } from '@/components/upload/BookSearchDropdown';
+import { useBookSearch } from '@/hooks/useBookSearch';
 import type { Book } from '@/hooks/useBooks';
 
 interface ExtractedMetadata {
@@ -82,6 +84,14 @@ export default function UploadBook() {
     genre_id: '',
     year: '',
   });
+
+  // Book search state (manual entry mode only)
+  const [bookSearchActive, setBookSearchActive] = useState(false);
+  const [bookSearchCoverUrl, setBookSearchCoverUrl] = useState<string | null>(null);
+  const [titleQuery, setTitleQuery] = useState('');
+  const { results: bookSearchResults, isLoading: isSearching } = useBookSearch(
+    !canUploadFiles && bookSearchActive ? titleQuery : ''
+  );
 
   const extractMetadata = useCallback(async (selectedFile: File) => {
     const fileName = selectedFile.name.toLowerCase();
@@ -288,6 +298,24 @@ export default function UploadBook() {
     setShowDuplicateModal(false);
   };
 
+  const handleSelectSearchResult = useCallback((result: import('@/hooks/useBookSearch').BookSearchResult) => {
+    const genreId = genres?.find(g => g.slug === result.genreSlug)?.id ?? '';
+    setFormData({
+      title: result.title,
+      author: result.author,
+      description: result.description,
+      year: result.year,
+      genre_id: genreId,
+    });
+    setExtractedIsbn(result.isbn);
+    if (result.coverUrl) {
+      setBookSearchCoverUrl(result.coverUrl);
+      setCoverPreview(result.coverUrl);
+      setExtractedCoverBase64(null);
+    }
+    setBookSearchActive(false);
+  }, [genres]);
+
   const fetchCoverAutomatically = async (
     isbn: string | null,
     title: string,
@@ -461,6 +489,25 @@ export default function UploadBook() {
         }
       }
 
+      // Use cover from book search result if available
+      if (!coverUrl && bookSearchCoverUrl) {
+        try {
+          const coverResponse = await fetch(bookSearchCoverUrl);
+          const coverBlob = await coverResponse.blob();
+          const ext = bookSearchCoverUrl.includes('.png') ? 'png' : 'jpg';
+          const coverName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from('covers')
+            .upload(coverName, coverBlob);
+          if (!uploadError) {
+            const { data: coverData } = supabase.storage.from('covers').getPublicUrl(coverName);
+            coverUrl = coverData.publicUrl;
+          }
+        } catch {
+          // continue without cover
+        }
+      }
+
       // If no cover was provided, try to fetch one automatically
       if (!coverUrl) {
         setIsFetchingCover(true);
@@ -602,15 +649,29 @@ export default function UploadBook() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="relative space-y-2">
                     <Label htmlFor="title">{t('upload.titleRequired')}</Label>
                     <Input
                       id="title"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, title: e.target.value });
+                        if (!canUploadFiles) setTitleQuery(e.target.value);
+                      }}
+                      onFocus={() => { if (!canUploadFiles) setBookSearchActive(true); }}
                       placeholder={t('upload.titlePlaceholder')}
                       required
+                      autoComplete="off"
                     />
+                    {!canUploadFiles && bookSearchActive && (isSearching || bookSearchResults.length > 0 || formData.title.trim().length >= 2) && (
+                      <BookSearchDropdown
+                        results={bookSearchResults}
+                        isLoading={isSearching}
+                        query={formData.title}
+                        onSelect={handleSelectSearchResult}
+                        onClose={() => setBookSearchActive(false)}
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
