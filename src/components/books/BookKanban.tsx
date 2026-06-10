@@ -1,14 +1,28 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SwipeableBookCard } from './SwipeableBookCard';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { SortableBookCard } from './SortableBookCard';
+import { DroppableColumn } from './DroppableColumn';
+import { BookCard } from './BookCard';
 import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import type { Book } from '@/hooks/useBooks';
-import type { ReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
-import { BookOpen, Clock, CheckCircle, CircleDashed, Plus } from 'lucide-react';
+import type { ReadingProgress } from '@/hooks/useReadingProgress';
+import { BookOpen, Clock, CheckCircle, CircleDashed } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 interface BookKanbanProps {
   books: Book[];
@@ -17,9 +31,20 @@ interface BookKanbanProps {
   compact?: boolean;
 }
 
+const STATUS_VALUES: ReadingStatus[] = ['not_planned', 'to_read', 'reading', 'read'];
+
 export function BookKanban({ books, progressMap, showNotPlanned = true, compact = false }: BookKanbanProps) {
   const { t } = useLanguage();
-  const navigate = useNavigate();
+  const { updateProgress } = useReadingProgress();
+  const isTouchDevice = 'ontouchstart' in window;
+
+  const [activeBook, setActiveBook] = useState<Book | null>(null);
+  const [overColumn, setOverColumn] = useState<ReadingStatus | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const allColumns: { status: ReadingStatus; label: string; icon: React.ReactNode; color: string }[] = [
     {
@@ -85,49 +110,103 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     };
   }, [books, progressMap]);
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const book = books.find(b => b.id === event.active.id);
+    if (book) setActiveBook(book);
+  }, [books]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { over } = event;
+    if (!over) { setOverColumn(null); return; }
+    if ((STATUS_VALUES as string[]).includes(over.id as string)) {
+      setOverColumn(over.id as ReadingStatus);
+    } else {
+      const col = Object.entries(booksByStatus).find(([, bks]) =>
+        bks.some(b => b.id === over.id)
+      )?.[0] as ReadingStatus | undefined;
+      setOverColumn(col ?? null);
+    }
+  }, [booksByStatus]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveBook(null);
+    setOverColumn(null);
+    if (!over) return;
+
+    const bookId = active.id as string;
+    const targetStatus = (STATUS_VALUES as string[]).includes(over.id as string)
+      ? (over.id as ReadingStatus)
+      : (Object.entries(booksByStatus).find(([, bks]) =>
+          bks.some(b => b.id === over.id)
+        )?.[0] as ReadingStatus | undefined);
+
+    if (targetStatus) {
+      const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
+      if (targetStatus !== currentStatus) {
+        updateProgress.mutate({ bookId, status: targetStatus });
+      }
+    }
+  }, [booksByStatus, progressMap, updateProgress]);
+
   if (books.length === 0) {
     return <LibraryEmptyState />;
   }
 
   return (
-    <div className={cn(
-      compact
-        ? showNotPlanned ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-3"
-        : "grid-cols-2 md:grid-cols-3",
-      "grid gap-3 md:gap-4"
-    )}>
-      {columns.map((column) => (
-        <div key={column.status} className="flex flex-col">
-          <div className={cn(
-            "flex items-center gap-2 pb-3 mb-3 border-b-2",
-            column.color
-          )}>
-            {column.icon}
-            <h2 className="font-semibold">{column.label}</h2>
-            <span className="ml-auto text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {booksByStatus[column.status].length}
-            </span>
-          </div>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+      <div className={cn(
+        compact
+          ? showNotPlanned ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-3"
+          : "grid-cols-2 md:grid-cols-3",
+        "grid gap-3 md:gap-4"
+      )}>
+        {columns.map((column) => (
+          <div key={column.status} className="flex flex-col">
+            <div className={cn(
+              "flex items-center gap-2 pb-3 mb-3 border-b-2",
+              column.color
+            )}>
+              {column.icon}
+              <h2 className="font-semibold">{column.label}</h2>
+              <span className="ml-auto text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {booksByStatus[column.status].length}
+              </span>
+            </div>
 
-          <div className="flex flex-col gap-3 flex-1 min-h-[100px]">
-            {booksByStatus[column.status].length === 0 ? (
-              <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
-                <p className="text-sm text-muted-foreground">{t('kanban.noBooks')}</p>
-              </div>
-            ) : (
-              booksByStatus[column.status].map((book) => (
-                <SwipeableBookCard
-                  key={book.id}
-                  book={book}
-                  progress={progressMap.get(book.id)}
-                  compact={true}
-                  mini={compact}
-                />
-              ))
-            )}
+            <DroppableColumn id={column.status} isOver={overColumn === column.status}>
+              {booksByStatus[column.status].length === 0 ? (
+                <div className="flex-1 flex items-center justify-center py-8 border-2 border-dashed rounded-lg">
+                  <p className="text-sm text-muted-foreground">{t('kanban.noBooks')}</p>
+                </div>
+              ) : (
+                <SortableContext
+                  items={booksByStatus[column.status].map(b => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {booksByStatus[column.status].map((book) =>
+                    isTouchDevice
+                      ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} />
+                      : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} />
+                  )}
+                </SortableContext>
+              )}
+            </DroppableColumn>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      <DragOverlay>
+        {activeBook && (
+          <BookCard
+            book={activeBook}
+            progress={progressMap.get(activeBook.id)}
+            compact={true}
+            mini={compact}
+            isDragging={true}
+          />
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }
