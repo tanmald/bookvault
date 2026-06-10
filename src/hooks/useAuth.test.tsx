@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { isSupabaseReachable } from "@/test/helpers/supabase-check";
+
+const supabaseAvailable = await isSupabaseReachable();
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -31,7 +34,7 @@ function createWrapper() {
   };
 }
 
-describe("useAuth", () => {
+describe.skipIf(!supabaseAvailable)("useAuth", () => {
   let testEmail: string;
 
   beforeEach(async () => {
