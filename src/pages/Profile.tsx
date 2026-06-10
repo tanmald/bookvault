@@ -11,12 +11,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';
 import { useProfile } from '@/hooks/useProfile';
+import { useKanbanSize } from '@/hooks/useKanbanSize';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X } from 'lucide-react';
+import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X, Columns3, LayoutList, Clock, Flame } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 import { LibraryManagementCard } from '@/components/library/LibraryManagementCard';
+import { ReadingGoalCard } from '@/components/goals/ReadingGoalCard';
+import { ReadingSessionDialog } from '@/components/sessions/ReadingSessionDialog';
+import { ReadingWrappedCard } from '@/components/wrapped/ReadingWrappedCard';
+import { useReadingSessions } from '@/hooks/useReadingSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,9 +29,11 @@ export default function Profile() {
   const { user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const { kanbanSize, setKanbanSize } = useKanbanSize();
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
+  const { todaySession, weeklyTotal, streak } = useReadingSessions();
   const { uploadAvatar, isUploading: isUploadingAvatar } = useAvatarUpload();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +112,50 @@ export default function Profile() {
             {t('profile.subtitle')}
           </p>
         </div>
+
+        <ReadingGoalCard />
+
+        {/* Reading Sessions */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              {t('sessions.title')}
+            </CardTitle>
+            <CardDescription>
+              {t('sessions.subtitle')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold">
+                  {todaySession ? `${todaySession.duration_minutes}` : '0'}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minToday')}</div>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold">{weeklyTotal}</div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minWeek')}</div>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold flex items-center justify-center gap-1">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  {streak}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('sessions.daysStreak')}</div>
+              </div>
+            </div>
+            <ReadingSessionDialog>
+              <Button className="w-full">
+                <Clock className="h-4 w-4 mr-2" />
+                {t('sessions.logButton')}
+              </Button>
+            </ReadingSessionDialog>
+          </CardContent>
+        </Card>
+
+        <ReadingWrappedCard />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
@@ -195,6 +246,33 @@ export default function Profile() {
                   <Label htmlFor="theme-system" className="cursor-pointer font-normal flex items-center gap-1">
                     <Monitor className="h-4 w-4" />
                     {t('settings.themeSystem')}
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+
+            {/* Kanban Size */}
+            <div className="space-y-3">
+              <Label>{t('settings.kanbanSize')}</Label>
+              <p className="text-sm text-muted-foreground">{t('settings.kanbanSizeDesc')}</p>
+              <RadioGroup
+                value={kanbanSize}
+                onValueChange={(value) => setKanbanSize(value as 'large' | 'small')}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="large" id="kanban-large" />
+                  <Label htmlFor="kanban-large" className="cursor-pointer font-normal flex items-center gap-1">
+                    <Columns3 className="h-4 w-4" />
+                    {t('settings.kanbanSizeLarge')}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="small" id="kanban-small" />
+                  <Label htmlFor="kanban-small" className="cursor-pointer font-normal flex items-center gap-1">
+                    <LayoutList className="h-4 w-4" />
+                    {t('settings.kanbanSizeSmall')}
                   </Label>
                 </div>
               </RadioGroup>

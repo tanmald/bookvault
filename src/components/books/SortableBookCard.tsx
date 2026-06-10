@@ -11,9 +11,10 @@ interface SortableBookCardProps {
   progress?: ReadingProgress;
   isDragging?: boolean;
   isOver?: boolean;
+  mini?: boolean;
 }
 
-export function SortableBookCard({ book, progress, isDragging, isOver }: SortableBookCardProps) {
+export function SortableBookCard({ book, progress, isDragging, isOver, mini }: SortableBookCardProps) {
   const [clicked, setClicked] = useState(false);
 
   const {
@@ -51,6 +52,7 @@ export function SortableBookCard({ book, progress, isDragging, isOver }: Sortabl
         book={book}
         progress={progress}
         compact={true}
+        mini={mini}
         isDragging={isDragging || isSortableDragging}
       />
     </div>
