@@ -72,7 +72,11 @@ export const translations = {
     'settings.themeLight': 'Claro',
     'settings.themeDark': 'Escuro',
     'settings.themeSystem': 'Sistema',
-    
+    'settings.kanbanSize': 'Tamanho do Kanban',
+    'settings.kanbanSizeDesc': 'Escolhe o tamanho das capas na vista Kanban',
+    'settings.kanbanSizeLarge': 'Grande',
+    'settings.kanbanSizeSmall': 'Pequeno',
+
     // Friends
     'friends.title': 'Amigos',
     'friends.subtitle': 'Vê o que os teus amigos estão a ler',
@@ -141,6 +145,8 @@ export const translations = {
     'upload.title': 'Adicionar Livro',
     'upload.subtitle': 'Faz upload de um novo livro ou adiciona uma versão a um livro existente',
     'upload.manualSubtitle': 'Preenche os detalhes do livro para o adicionar à tua biblioteca',
+    'upload.searchingBooks': 'A procurar livros...',
+    'upload.noBookResults': 'Nenhum resultado encontrado',
     'upload.dragDrop': 'Arrasta um ficheiro ou clica para selecionar',
     'upload.or': 'ou',
     'upload.browse': 'Procurar ficheiros',
@@ -660,7 +666,11 @@ export const translations = {
     'settings.themeLight': 'Light',
     'settings.themeDark': 'Dark',
     'settings.themeSystem': 'System',
-    
+    'settings.kanbanSize': 'Kanban Size',
+    'settings.kanbanSizeDesc': 'Choose cover size in the Kanban view',
+    'settings.kanbanSizeLarge': 'Large',
+    'settings.kanbanSizeSmall': 'Small',
+
     // Friends
     'friends.title': 'Friends',
     'friends.subtitle': 'See what your friends are reading',
@@ -729,6 +739,8 @@ export const translations = {
     'upload.title': 'Add Book',
     'upload.subtitle': 'Upload a new book or add a version to an existing book',
     'upload.manualSubtitle': 'Fill in the book details to add it to your library',
+    'upload.searchingBooks': 'Searching books...',
+    'upload.noBookResults': 'No results found',
     'upload.dragDrop': 'Drag a file or click to select',
     'upload.or': 'or',
     'upload.browse': 'Browse files',
