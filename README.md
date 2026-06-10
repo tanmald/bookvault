@@ -59,7 +59,6 @@ Watch your library organize itself automatically:
 - **Book Search Autocomplete** — Start typing a title when adding a book manually and get instant suggestions from Google Books—select one and all fields fill automatically
 - **Drag-and-Drop Upload** — Simply drag files in, and your library comes to life
 - **Multiple Libraries** — Create separate collections for different purposes (personal, work, book clubs, research)
-- **Upload Permissions** — Library admins control whether members can upload files or use manual entry
 
 ### 📖 Track Your Reading Journey
 Never lose track again:
@@ -206,7 +205,6 @@ This means you're free to use, modify, and share BookVault for any purpose—per
 - ✅ **2026 Reading Wrapped** — Shareable yearly stats card with books read, streak, and goal percentage
 - ✅ **Kanban Size Setting** — Toggle between large covers and a compact view (all 4 columns visible at once) from Profile → Settings
 - ✅ **Book Search Autocomplete** — Typing a title when adding a book manually now shows Google Books suggestions and auto-fills all fields
-- ✅ **Upload Permission Gate** — Library admins can control whether members see file upload or manual entry
 
 ### v1.2.0 — Smart Reviews & Better Scoreboards (Feb 10, 2026)
 - ✅ **Automatic review prompts** — Rate books instantly when you finish with 1-5 stars and optional comments
