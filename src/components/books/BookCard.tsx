@@ -51,10 +51,10 @@ export function BookCard({ book, progress, compact = false, mini = false, isDrag
   if (mini) {
     const miniCard = (
       <Card className={cn(
-        "group flex flex-row overflow-hidden transition-all hover:shadow-md cursor-pointer h-20",
+        "group flex flex-row overflow-hidden transition-all hover:shadow-md cursor-pointer h-32",
         isDragging && "ring-2 ring-accent shadow-lg rotate-1"
       )}>
-        <div className="relative w-16 shrink-0 bg-muted">
+        <div className="relative w-28 shrink-0 bg-muted">
           {book.cover_url ? (
             <img
               key={book.cover_url}
@@ -73,16 +73,16 @@ export function BookCard({ book, progress, compact = false, mini = false, isDrag
             </div>
           )}
         </div>
-        <div className="flex-1 px-2 py-1.5 flex flex-col justify-center min-w-0">
-          <div className="flex items-start justify-between gap-1">
-            <h3 className="text-xs font-medium line-clamp-2 leading-tight min-w-0">{book.title}</h3>
-            <Badge className={cn('text-xs shrink-0 ml-1', statusColors[status as keyof typeof statusColors])}>
-              {statusLabels[status]}
-            </Badge>
+        <div className="flex-1 px-3 py-2 flex flex-col justify-center gap-2 min-w-0">
+          <div>
+            <h3 className="text-base font-medium line-clamp-2 leading-tight">{book.title}</h3>
+            {book.author && (
+              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{book.author}</p>
+            )}
           </div>
-          {book.author && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{book.author}</p>
-          )}
+          <Badge className={cn('text-xs self-start', statusColors[status as keyof typeof statusColors])}>
+            {statusLabels[status]}
+          </Badge>
         </div>
       </Card>
     );
