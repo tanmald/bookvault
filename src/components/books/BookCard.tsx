@@ -13,23 +13,26 @@ interface BookCardProps {
   book: Book;
   progress?: ReadingProgress;
   compact?: boolean;
+  mini?: boolean;
   isDragging?: boolean;
   disableLink?: boolean;
   onBookClick?: () => void;
 }
 
 const statusColors = {
+  not_planned: 'bg-destructive/20 text-destructive-foreground',
   to_read: 'bg-muted text-muted-foreground',
   reading: 'bg-accent text-accent-foreground',
   read: 'bg-primary text-primary-foreground',
 };
 
-export function BookCard({ book, progress, compact = false, isDragging = false, disableLink = false, onBookClick }: BookCardProps) {
+export function BookCard({ book, progress, compact = false, mini = false, isDragging = false, disableLink = false, onBookClick }: BookCardProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const status = progress?.status ?? 'to_read';
   
   const statusLabels = {
+    not_planned: t('status.notPlanned'),
     to_read: t('status.toRead'),
     reading: t('status.reading'),
     read: t('status.read'),
@@ -44,6 +47,48 @@ export function BookCard({ book, progress, compact = false, isDragging = false, 
       onBookClick();
     }
   };
+
+  if (mini) {
+    const miniCard = (
+      <Card className={cn(
+        "group flex flex-row overflow-hidden transition-all hover:shadow-md cursor-pointer h-20",
+        isDragging && "ring-2 ring-accent shadow-lg rotate-1"
+      )}>
+        <div className="relative w-16 shrink-0 bg-muted">
+          {book.cover_url ? (
+            <img
+              key={book.cover_url}
+              src={book.cover_url}
+              alt={book.title}
+              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-secondary">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          {status === 'reading' && progress && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-muted">
+              <div className="h-full bg-accent" style={{ width: `${progress.progress}%` }} />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 px-2 py-1.5 flex flex-col justify-center min-w-0">
+          <div className="flex items-start justify-between gap-1">
+            <h3 className="text-xs font-medium line-clamp-2 leading-tight min-w-0">{book.title}</h3>
+            <Badge className={cn('text-xs shrink-0 ml-1', statusColors[status as keyof typeof statusColors])}>
+              {statusLabels[status]}
+            </Badge>
+          </div>
+          {book.author && (
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{book.author}</p>
+          )}
+        </div>
+      </Card>
+    );
+    if (disableLink) return <div onClick={handleClick}>{miniCard}</div>;
+    return <Link to={`/book/${book.id}`}>{miniCard}</Link>;
+  }
 
   const card = (
     <Card className={cn(

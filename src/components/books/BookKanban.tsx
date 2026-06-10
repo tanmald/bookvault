@@ -14,9 +14,10 @@ interface BookKanbanProps {
   books: Book[];
   progressMap: Map<string, ReadingProgress>;
   showNotPlanned?: boolean;
+  compact?: boolean;
 }
 
-export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKanbanProps) {
+export function BookKanban({ books, progressMap, showNotPlanned = true, compact = false }: BookKanbanProps) {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -89,7 +90,10 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+    <div className={cn(
+      compact ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3",
+      "grid gap-3 md:gap-4"
+    )}>
       {columns.map((column) => (
         <div key={column.status} className="flex flex-col">
           <div className={cn(
@@ -115,6 +119,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true }: BookKa
                   book={book}
                   progress={progressMap.get(book.id)}
                   compact={true}
+                  mini={compact}
                 />
               ))
             )}

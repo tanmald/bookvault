@@ -72,7 +72,11 @@ export const translations = {
     'settings.themeLight': 'Claro',
     'settings.themeDark': 'Escuro',
     'settings.themeSystem': 'Sistema',
-    
+    'settings.kanbanSize': 'Tamanho do Kanban',
+    'settings.kanbanSizeDesc': 'Escolhe o tamanho das capas na vista Kanban',
+    'settings.kanbanSizeLarge': 'Grande',
+    'settings.kanbanSizeSmall': 'Pequeno',
+
     // Friends
     'friends.title': 'Amigos',
     'friends.subtitle': 'Vê o que os teus amigos estão a ler',
@@ -622,7 +626,11 @@ export const translations = {
     'settings.themeLight': 'Light',
     'settings.themeDark': 'Dark',
     'settings.themeSystem': 'System',
-    
+    'settings.kanbanSize': 'Kanban Size',
+    'settings.kanbanSizeDesc': 'Choose cover size in the Kanban view',
+    'settings.kanbanSizeLarge': 'Large',
+    'settings.kanbanSizeSmall': 'Small',
+
     // Friends
     'friends.title': 'Friends',
     'friends.subtitle': 'See what your friends are reading',

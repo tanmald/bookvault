@@ -9,6 +9,7 @@ import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useKanbanSize } from '@/hooks/useKanbanSize';
 import { Loader2, LayoutGrid, Columns3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ export default function Library() {
     }
     return true;
   });
+  const { kanbanSize } = useKanbanSize();
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'grid' || stored === 'kanban') {
@@ -180,7 +182,7 @@ export default function Library() {
         {isLoading ? (
           viewMode === 'kanban' ? <BookKanbanSkeleton /> : <BookGridSkeleton />
         ) : viewMode === 'kanban' ? (
-          <BookKanban books={filteredBooks} progressMap={progressMap} showNotPlanned={showNotPlanned} />
+          <BookKanban books={filteredBooks} progressMap={progressMap} showNotPlanned={showNotPlanned} compact={kanbanSize === 'small'} />
         ) : (
           <BookGrid books={filteredBooks} progressMap={progressMap} />
         )}
