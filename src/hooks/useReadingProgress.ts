@@ -138,6 +138,7 @@ export function useReadingProgress(bookId?: string) {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       if (variables.status) {
         posthog.capture('reading status updated', {
           book_id: variables.bookId,
@@ -185,6 +186,7 @@ export function useReadingProgress(bookId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       toast({
         title: 'Data atualizada',
         description: 'A data de conclusão foi atualizada com sucesso.',

@@ -1,13 +1,11 @@
-import { useState } from 'react';
 import { useFriendsBookProgress, FriendProgress } from '@/hooks/useFriendsBookProgress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Trophy, Users, BookOpen, Clock, CheckCircle, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Users, BookOpen, Clock, CheckCircle, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { shortdate } from '@/lib/dateUtils';
@@ -35,19 +33,6 @@ function getInitials(name: string | null): string {
 export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
   const { data: friendsProgress, isLoading } = useFriendsBookProgress(bookId);
   const { t } = useLanguage();
-  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
-
-  const toggleComment = (userId: string) => {
-    setExpandedComments(prev => {
-      const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
-        next.add(userId);
-      }
-      return next;
-    });
-  };
 
   // Count readers by status for summary
   const readCount = friendsProgress?.filter((f) => f.status === 'read').length || 0;
@@ -138,31 +123,9 @@ export function FriendsScoreboard({ bookId }: FriendsScoreboardProps) {
             </div>
           )}
           {isRead && friend.review_text && (
-            <div className="mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                onClick={() => toggleComment(friend.user_id)}
-              >
-                {expandedComments.has(friend.user_id) ? (
-                  <>
-                    <ChevronUp className="h-3 w-3" />
-                    {t('review.hideComment')}
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3" />
-                    {t('review.showComment')}
-                  </>
-                )}
-              </Button>
-              {expandedComments.has(friend.user_id) && (
-                <p className="mt-1 text-sm text-muted-foreground italic border-l-2 border-muted pl-2">
-                  "{friend.review_text}"
-                </p>
-              )}
-            </div>
+            <p className="mt-2 text-sm text-muted-foreground italic border-l-2 border-muted pl-2">
+              "{friend.review_text}"
+            </p>
           )}
         </div>
 
