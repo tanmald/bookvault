@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookCard } from './BookCard';
+import { SwipeableBookCard } from './SwipeableBookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -116,7 +116,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
               </div>
             ) : (
               booksByStatus[column.status].map((book) => (
-                <BookCard
+                <SwipeableBookCard
                   key={book.id}
                   book={book}
                   progress={progressMap.get(book.id)}
