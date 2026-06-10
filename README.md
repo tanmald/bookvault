@@ -43,6 +43,7 @@ Your books deserve better than scattered folders and manual spreadsheets.
 **What makes it different:**
 - 🤖 **AI-powered metadata extraction** — No manual data entry. Just upload and go
 - 👥 **Social reading features** — See what friends are reading, compare progress, celebrate milestones
+- 📊 **Reading Goals & Wrapped** — Set annual targets, log sessions, and get a shareable year-in-review
 - 📱 **Beautiful on every device** — Fully responsive with zero horizontal scroll
 - 🔒 **Privacy-first** — You control who sees your books and reading progress
 - 🌍 **Multi-language** — Available in English and Portuguese
@@ -55,8 +56,10 @@ Your books deserve better than scattered folders and manual spreadsheets.
 ### 🤖 AI-Powered Organization
 Watch your library organize itself automatically:
 - **Smart Metadata Extraction** — AI extracts titles, authors, genres, and cover images from your EPUB/PDF files
+- **Book Search Autocomplete** — Start typing a title when adding a book manually and get instant suggestions from Google Books—select one and all fields fill automatically
 - **Drag-and-Drop Upload** — Simply drag files in, and your library comes to life
 - **Multiple Libraries** — Create separate collections for different purposes (personal, work, book clubs, research)
+- **Upload Permissions** — Library admins control whether members can upload files or use manual entry
 
 ### 📖 Track Your Reading Journey
 Never lose track again:
@@ -64,6 +67,9 @@ Never lose track again:
 - **Progress Tracking** — Track your reading percentage (0-100%) as you read
 - **Finish Dates** — Record and edit when you finished each book
 - **Reading Stats** — See your reading history and completion dates at a glance
+- **Reading Goals** — Set an annual target and track whether you're ahead or behind pace
+- **Reading Sessions** — Log daily reading time with quick-pick durations and build a streak
+- **2026 Reading Wrapped** — A shareable yearly stats card with books read, streak, and goal progress
 
 ### 👥 Compare & Share
 Your reading journey, with friends:
@@ -76,6 +82,7 @@ Your reading journey, with friends:
 ### 🎨 Beautiful & Responsive
 Built for readers, by readers:
 - **Three View Options** — Grid, list, or Kanban layouts—choose what works for you
+- **Kanban Size Setting** — Toggle between large covers and a compact row view that fits all 4 columns at once
 - **Fully Mobile-Optimized** — Zero horizontal scroll on phones, tablets, or desktop
 - **Light & Dark Themes** — Choose what's comfortable for your eyes
 - **Collapsible Filters** — Smart filter UI that adapts to your screen size
@@ -192,6 +199,14 @@ This means you're free to use, modify, and share BookVault for any purpose—per
 ---
 
 ## 🎉 Recent Updates
+
+### v1.3.0 — Reading Goals, Wrapped & Kanban Size (Jun 2026)
+- ✅ **Reading Goals** — Set an annual book target with a progress bar and ahead/behind pace tracking
+- ✅ **Reading Sessions** — Log daily reading time, link to a book, and build a streak
+- ✅ **2026 Reading Wrapped** — Shareable yearly stats card with books read, streak, and goal percentage
+- ✅ **Kanban Size Setting** — Toggle between large covers and a compact view (all 4 columns visible at once) from Profile → Settings
+- ✅ **Book Search Autocomplete** — Typing a title when adding a book manually now shows Google Books suggestions and auto-fills all fields
+- ✅ **Upload Permission Gate** — Library admins can control whether members see file upload or manual entry
 
 ### v1.2.0 — Smart Reviews & Better Scoreboards (Feb 10, 2026)
 - ✅ **Automatic review prompts** — Rate books instantly when you finish with 1-5 stars and optional comments
