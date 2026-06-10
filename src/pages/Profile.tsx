@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ export default function Profile() {
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const { kanbanSize, setKanbanSize } = useKanbanSize();
+  const navigate = useNavigate();
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
@@ -54,10 +56,10 @@ export default function Profile() {
   }, [profile]);
 
   const handleSave = () => {
-    updateProfile.mutate({
-      display_name: formData.display_name.trim() || null,
-      bio: formData.bio.trim() || null,
-    });
+    updateProfile.mutate(
+      { display_name: formData.display_name.trim() || null, bio: formData.bio.trim() || null },
+      { onSuccess: () => navigate('/') }
+    );
   };
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
