@@ -15,7 +15,7 @@ import { useKanbanSize } from '@/hooks/useKanbanSize';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { useBooks } from '@/hooks/useBooks';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
-import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X, Columns3, LayoutList } from 'lucide-react';
+import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X, Columns3, LayoutList, Clock, Flame } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 import { LibraryManagementCard } from '@/components/library/LibraryManagementCard';
 import { useQueryClient } from '@tanstack/react-query';
