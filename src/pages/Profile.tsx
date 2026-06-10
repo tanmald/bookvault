@@ -18,6 +18,10 @@ import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { Loader2, Save, BookOpen, BookMarked, Check, Globe, Sun, Moon, Monitor, Camera, X, Columns3, LayoutList, Clock, Flame } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 import { LibraryManagementCard } from '@/components/library/LibraryManagementCard';
+import { ReadingGoalCard } from '@/components/goals/ReadingGoalCard';
+import { ReadingSessionDialog } from '@/components/sessions/ReadingSessionDialog';
+import { ReadingWrappedCard } from '@/components/wrapped/ReadingWrappedCard';
+import { useReadingSessions } from '@/hooks/useReadingSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +33,7 @@ export default function Profile() {
   const { profile, isLoading, updateProfile } = useProfile();
   const { books } = useBooks();
   const { progress } = useReadingProgress();
+  const { todaySession, weeklyTotal, streak } = useReadingSessions();
   const { uploadAvatar, isUploading: isUploadingAvatar } = useAvatarUpload();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -107,6 +112,50 @@ export default function Profile() {
             {t('profile.subtitle')}
           </p>
         </div>
+
+        <ReadingGoalCard />
+
+        {/* Reading Sessions */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              {t('sessions.title')}
+            </CardTitle>
+            <CardDescription>
+              {t('sessions.subtitle')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold">
+                  {todaySession ? `${todaySession.duration_minutes}` : '0'}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minToday')}</div>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold">{weeklyTotal}</div>
+                <div className="text-sm text-muted-foreground">{t('sessions.minWeek')}</div>
+              </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <div className="text-2xl font-semibold flex items-center justify-center gap-1">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  {streak}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('sessions.daysStreak')}</div>
+              </div>
+            </div>
+            <ReadingSessionDialog>
+              <Button className="w-full">
+                <Clock className="h-4 w-4 mr-2" />
+                {t('sessions.logButton')}
+              </Button>
+            </ReadingSessionDialog>
+          </CardContent>
+        </Card>
+
+        <ReadingWrappedCard />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
