@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { isSupabaseReachable } from "@/test/helpers/supabase-check";
+
+const supabaseAvailable = await isSupabaseReachable();
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFriendsBookProgress } from "./useFriendsBookProgress";
@@ -28,7 +31,7 @@ function createWrapper() {
   };
 }
 
-describe("useFriendsBookProgress", () => {
+describe.skipIf(!supabaseAvailable)("useFriendsBookProgress", () => {
   beforeEach(async () => {
     await cleanupTestData();
     await signOutUser();
