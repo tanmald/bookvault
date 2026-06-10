@@ -91,7 +91,9 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
 
   return (
     <div className={cn(
-      compact ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3",
+      compact
+        ? showNotPlanned ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3"
+        : "grid-cols-2 md:grid-cols-3",
       "grid gap-3 md:gap-4"
     )}>
       {columns.map((column) => (
