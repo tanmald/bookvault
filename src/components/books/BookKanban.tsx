@@ -16,6 +16,7 @@ import { SwipeableBookCard } from './SwipeableBookCard';
 import { SortableBookCard } from './SortableBookCard';
 import { DroppableColumn } from './DroppableColumn';
 import { BookCard } from './BookCard';
+import { StartNextBookDialog } from './StartNextBookDialog';
 import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
@@ -42,6 +43,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
   const [overColumn, setOverColumn] = useState<ReadingStatus | null>(null);
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
   const [suppressTransitions, setSuppressTransitions] = useState(false);
+  const [nextBookToSuggest, setNextBookToSuggest] = useState<Book | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -171,6 +173,10 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     if (targetStatus !== currentStatus) {
       setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
       updateProgress.mutate({ bookId, status: targetStatus });
+      if (targetStatus === 'read') {
+        const firstToRead = booksByStatus.to_read[0] ?? null;
+        if (firstToRead) setNextBookToSuggest(firstToRead);
+      }
       return;
     }
 
@@ -232,7 +238,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
                 >
                   {booksByStatus[column.status].map((book) =>
                     isTouchDevice
-                      ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} />
+                      ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} onMovedToRead={() => { const firstToRead = booksByStatus.to_read[0] ?? null; if (firstToRead) setNextBookToSuggest(firstToRead); }} />
                       : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} suppressTransitions={suppressTransitions} />
                   )}
                 </SortableContext>
@@ -253,6 +259,16 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
           />
         )}
       </DragOverlay>
+
+      <StartNextBookDialog
+        open={!!nextBookToSuggest}
+        book={nextBookToSuggest}
+        onConfirm={() => {
+          if (nextBookToSuggest) updateProgress.mutate({ bookId: nextBookToSuggest.id, status: 'reading' });
+          setNextBookToSuggest(null);
+        }}
+        onDismiss={() => setNextBookToSuggest(null)}
+      />
     </DndContext>
   );
 }
