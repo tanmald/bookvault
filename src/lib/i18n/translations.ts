@@ -592,6 +592,12 @@ export const translations = {
     'genre.romance': 'Romance',
     'genre.tecnologia': 'Tecnologia',
     'genre.thriller': 'Thriller',
+
+    // Start Next Book
+    'startNextBook.title': 'Começar próximo livro?',
+    'startNextBook.description': 'Queres começar a ler "{title}"?',
+    'startNextBook.confirm': 'Sim, começar!',
+    'startNextBook.dismiss': 'Agora não',
   },
   en: {
     // Navigation
@@ -1186,6 +1192,12 @@ export const translations = {
     'genre.romance': 'Romance',
     'genre.tecnologia': 'Technology',
     'genre.thriller': 'Thriller',
+
+    // Start Next Book
+    'startNextBook.title': 'Start your next book?',
+    'startNextBook.description': 'Would you like to start reading "{title}"?',
+    'startNextBook.confirm': 'Yes, start reading!',
+    'startNextBook.dismiss': 'Not now',
   },
 } as const;
 

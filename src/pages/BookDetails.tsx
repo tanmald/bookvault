@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useBooks } from '@/hooks/useBooks';
+import type { Book } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,6 +38,7 @@ import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
 import { ReviewDialog } from '@/components/books/ReviewDialog';
+import { StartNextBookDialog } from '@/components/books/StartNextBookDialog';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -62,11 +64,13 @@ export default function BookDetails() {
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
+  const { progress: allProgress } = useReadingProgress();
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isChangeCoverDialogOpen, setIsChangeCoverDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [coverVersion, setCoverVersion] = useState(0);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [nextBookToSuggest, setNextBookToSuggest] = useState<Book | null>(null);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
@@ -74,6 +78,20 @@ export default function BookDetails() {
   const bookProgress = progress.find((p) => p.book_id === id);
   const currentStatus = bookProgress?.status ?? 'to_read';
   const currentProgress = bookProgress?.progress ?? 0;
+
+  const firstToReadBook = (() => {
+    const progressByBookId = new Map(allProgress.map(p => [p.book_id, p]));
+    const toReadBooks = books.filter(b => b.id !== id && (progressByBookId.get(b.id)?.status ?? 'to_read') === 'to_read');
+    toReadBooks.sort((a, b) => {
+      const ra = progressByBookId.get(a.id)?.sort_order ?? null;
+      const rb = progressByBookId.get(b.id)?.sort_order ?? null;
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
+      return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+    });
+    return toReadBooks[0] ?? null;
+  })();
 
   const isOwner = book?.owner_id === user?.id;
 
@@ -149,6 +167,7 @@ export default function BookDetails() {
             description: t('book.progressSaved'),
             variant: 'success',
           });
+          if (firstToReadBook) setNextBookToSuggest(firstToReadBook);
         },
       }
     );
@@ -533,6 +552,16 @@ export default function BookDetails() {
         onClose={() => setIsReviewDialogOpen(false)}
         bookId={id || ''}
         onSubmit={handleReviewSubmit}
+      />
+
+      <StartNextBookDialog
+        open={!!nextBookToSuggest}
+        book={nextBookToSuggest}
+        onConfirm={() => {
+          if (nextBookToSuggest) updateProgress.mutate({ bookId: nextBookToSuggest.id, status: 'reading' });
+          setNextBookToSuggest(null);
+        }}
+        onDismiss={() => setNextBookToSuggest(null)}
       />
     </AppLayout>
   );
