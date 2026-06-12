@@ -40,6 +40,8 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
 
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [overColumn, setOverColumn] = useState<ReadingStatus | null>(null);
+  const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
+  const [suppressTransitions, setSuppressTransitions] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -101,12 +103,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
       return sortByTitle(a, b);
     };
 
-    const sortByFinishedFallback = (a: { book: Book; finishedAt: string | null }, b: { book: Book; finishedAt: string | null }) => {
-      const ra = progressMap.get(a.book.id)?.sort_order ?? null;
-      const rb = progressMap.get(b.book.id)?.sort_order ?? null;
-      if (ra !== null && rb !== null) return ra - rb;
-      if (ra !== null) return -1;
-      if (rb !== null) return 1;
+    const sortByFinishedAt = (a: { book: Book; finishedAt: string | null }, b: { book: Book; finishedAt: string | null }) => {
       if (!a.finishedAt && !b.finishedAt) return sortByTitle(a, b);
       if (!a.finishedAt) return 1;
       if (!b.finishedAt) return -1;
@@ -116,15 +113,22 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     grouped.not_planned.sort(sortByTitleFallback);
     grouped.to_read.sort(sortByTitleFallback);
     grouped.reading.sort(sortByTitleFallback);
-    grouped.read.sort(sortByFinishedFallback);
+    grouped.read.sort(sortByFinishedAt);
+
+    const applyLocalOrder = (status: string, sorted: Book[]): Book[] => {
+      const ids = localOrder.get(status);
+      if (!ids) return sorted;
+      const byId = new Map(sorted.map(b => [b.id, b]));
+      return ids.map(id => byId.get(id)).filter(Boolean) as Book[];
+    };
 
     return {
-      not_planned: grouped.not_planned.map(g => g.book),
-      to_read: grouped.to_read.map(g => g.book),
-      reading: grouped.reading.map(g => g.book),
+      not_planned: applyLocalOrder('not_planned', grouped.not_planned.map(g => g.book)),
+      to_read: applyLocalOrder('to_read', grouped.to_read.map(g => g.book)),
+      reading: applyLocalOrder('reading', grouped.reading.map(g => g.book)),
       read: grouped.read.map(g => g.book),
     };
-  }, [books, progressMap]);
+  }, [books, progressMap, localOrder]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const book = books.find(b => b.id === event.active.id);
@@ -148,10 +152,13 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     const { active, over } = event;
     setActiveBook(null);
     setOverColumn(null);
-    if (!over) return;
-
     const bookId = active.id as string;
     const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
+
+    if (!over) {
+      setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
+      return;
+    }
 
     const targetStatus = (STATUS_VALUES as string[]).includes(over.id as string)
       ? (over.id as ReadingStatus)
@@ -162,19 +169,30 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     if (!targetStatus) return;
 
     if (targetStatus !== currentStatus) {
+      setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
       updateProgress.mutate({ bookId, status: targetStatus });
       return;
     }
 
-    // Within-column reorder
+    // Within-column reorder — "read" is always chronological, not manually sortable
+    if (currentStatus === 'read') return;
+
     const columnBooks = booksByStatus[currentStatus];
     const oldIndex = columnBooks.findIndex(b => b.id === bookId);
     const newIndex = columnBooks.findIndex(b => b.id === over.id);
     if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
     const reordered = arrayMove(columnBooks, oldIndex, newIndex);
+    setSuppressTransitions(true);
+    setLocalOrder(prev => new Map(prev).set(currentStatus, reordered.map(b => b.id)));
+    setTimeout(() => setSuppressTransitions(false), 0);
+
     const rankUpdates = reordered.map((b, i) => ({ bookId: b.id, sortOrder: i }));
-    updateRanks.mutate(rankUpdates);
+    updateRanks.mutate(rankUpdates, {
+      onSettled: () => {
+        setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
+      },
+    });
   }, [booksByStatus, progressMap, updateProgress, updateRanks]);
 
   if (books.length === 0) {
@@ -215,7 +233,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
                   {booksByStatus[column.status].map((book) =>
                     isTouchDevice
                       ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} />
-                      : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} />
+                      : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} suppressTransitions={suppressTransitions} />
                   )}
                 </SortableContext>
               )}
