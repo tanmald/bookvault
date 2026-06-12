@@ -12,9 +12,10 @@ interface SortableBookCardProps {
   isDragging?: boolean;
   isOver?: boolean;
   mini?: boolean;
+  suppressTransitions?: boolean;
 }
 
-export function SortableBookCard({ book, progress, isDragging, isOver, mini }: SortableBookCardProps) {
+export function SortableBookCard({ book, progress, isDragging, isOver, mini, suppressTransitions }: SortableBookCardProps) {
   const [clicked, setClicked] = useState(false);
 
   const {
@@ -28,7 +29,7 @@ export function SortableBookCard({ book, progress, isDragging, isOver, mini }: S
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: suppressTransitions ? 'none' : transition,
     opacity: isSortableDragging ? 0.5 : 1,
   };
 

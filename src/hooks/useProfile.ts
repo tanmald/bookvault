@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  kanban_size: 'small' | 'large';
   created_at: string;
   updated_at: string;
 }

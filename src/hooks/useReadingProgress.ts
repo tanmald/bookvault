@@ -12,6 +12,7 @@ export interface ReadingProgress {
   book_id: string;
   status: ReadingStatus;
   progress: number;
+  sort_order: number | null;
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
@@ -201,10 +202,39 @@ export function useReadingProgress(bookId?: string) {
     },
   });
 
+  const updateRanks = useMutation({
+    mutationFn: async (updates: { bookId: string; sortOrder: number }[]) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const rows = updates.map(({ bookId, sortOrder }) => ({
+        user_id: user.id,
+        book_id: bookId,
+        sort_order: sortOrder,
+      }));
+
+      const { error } = await supabase
+        .from('reading_progress')
+        .upsert(rows, { onConflict: 'user_id,book_id' });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao guardar ordem',
+        description: error.message,
+      });
+    },
+  });
+
   return {
     progress: progressQuery.data ?? [],
     isLoading: progressQuery.isLoading,
     updateProgress,
     updateFinishedDate,
+    updateRanks,
   };
 }

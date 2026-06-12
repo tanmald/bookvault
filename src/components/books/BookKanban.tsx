@@ -11,7 +11,7 @@ import {
   DragOverEvent,
   DragStartEvent,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { SwipeableBookCard } from './SwipeableBookCard';
 import { SortableBookCard } from './SortableBookCard';
 import { DroppableColumn } from './DroppableColumn';
@@ -35,11 +35,13 @@ const STATUS_VALUES: ReadingStatus[] = ['not_planned', 'to_read', 'reading', 're
 
 export function BookKanban({ books, progressMap, showNotPlanned = true, compact = false }: BookKanbanProps) {
   const { t } = useLanguage();
-  const { updateProgress } = useReadingProgress();
+  const { updateProgress, updateRanks } = useReadingProgress();
   const isTouchDevice = 'ontouchstart' in window;
 
   const [activeBook, setActiveBook] = useState<Book | null>(null);
   const [overColumn, setOverColumn] = useState<ReadingStatus | null>(null);
+  const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
+  const [suppressTransitions, setSuppressTransitions] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -92,23 +94,41 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     const sortByTitle = (a: { book: Book }, b: { book: Book }) =>
       a.book.title.toLowerCase().localeCompare(b.book.title.toLowerCase());
 
-    grouped.not_planned.sort(sortByTitle);
-    grouped.to_read.sort(sortByTitle);
-    grouped.reading.sort(sortByTitle);
-    grouped.read.sort((a, b) => {
+    const sortByTitleFallback = (a: { book: Book }, b: { book: Book }) => {
+      const ra = progressMap.get(a.book.id)?.sort_order ?? null;
+      const rb = progressMap.get(b.book.id)?.sort_order ?? null;
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
+      return sortByTitle(a, b);
+    };
+
+    const sortByFinishedAt = (a: { book: Book; finishedAt: string | null }, b: { book: Book; finishedAt: string | null }) => {
       if (!a.finishedAt && !b.finishedAt) return sortByTitle(a, b);
       if (!a.finishedAt) return 1;
       if (!b.finishedAt) return -1;
       return new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime();
-    });
+    };
+
+    grouped.not_planned.sort(sortByTitleFallback);
+    grouped.to_read.sort(sortByTitleFallback);
+    grouped.reading.sort(sortByTitleFallback);
+    grouped.read.sort(sortByFinishedAt);
+
+    const applyLocalOrder = (status: string, sorted: Book[]): Book[] => {
+      const ids = localOrder.get(status);
+      if (!ids) return sorted;
+      const byId = new Map(sorted.map(b => [b.id, b]));
+      return ids.map(id => byId.get(id)).filter(Boolean) as Book[];
+    };
 
     return {
-      not_planned: grouped.not_planned.map(g => g.book),
-      to_read: grouped.to_read.map(g => g.book),
-      reading: grouped.reading.map(g => g.book),
+      not_planned: applyLocalOrder('not_planned', grouped.not_planned.map(g => g.book)),
+      to_read: applyLocalOrder('to_read', grouped.to_read.map(g => g.book)),
+      reading: applyLocalOrder('reading', grouped.reading.map(g => g.book)),
       read: grouped.read.map(g => g.book),
     };
-  }, [books, progressMap]);
+  }, [books, progressMap, localOrder]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const book = books.find(b => b.id === event.active.id);
@@ -132,22 +152,48 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     const { active, over } = event;
     setActiveBook(null);
     setOverColumn(null);
-    if (!over) return;
-
     const bookId = active.id as string;
+    const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
+
+    if (!over) {
+      setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
+      return;
+    }
+
     const targetStatus = (STATUS_VALUES as string[]).includes(over.id as string)
       ? (over.id as ReadingStatus)
       : (Object.entries(booksByStatus).find(([, bks]) =>
           bks.some(b => b.id === over.id)
         )?.[0] as ReadingStatus | undefined);
 
-    if (targetStatus) {
-      const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
-      if (targetStatus !== currentStatus) {
-        updateProgress.mutate({ bookId, status: targetStatus });
-      }
+    if (!targetStatus) return;
+
+    if (targetStatus !== currentStatus) {
+      setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
+      updateProgress.mutate({ bookId, status: targetStatus });
+      return;
     }
-  }, [booksByStatus, progressMap, updateProgress]);
+
+    // Within-column reorder — "read" is always chronological, not manually sortable
+    if (currentStatus === 'read') return;
+
+    const columnBooks = booksByStatus[currentStatus];
+    const oldIndex = columnBooks.findIndex(b => b.id === bookId);
+    const newIndex = columnBooks.findIndex(b => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+    const reordered = arrayMove(columnBooks, oldIndex, newIndex);
+    setSuppressTransitions(true);
+    setLocalOrder(prev => new Map(prev).set(currentStatus, reordered.map(b => b.id)));
+    setTimeout(() => setSuppressTransitions(false), 0);
+
+    const rankUpdates = reordered.map((b, i) => ({ bookId: b.id, sortOrder: i }));
+    updateRanks.mutate(rankUpdates, {
+      onSettled: () => {
+        setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
+      },
+    });
+  }, [booksByStatus, progressMap, updateProgress, updateRanks]);
 
   if (books.length === 0) {
     return <LibraryEmptyState />;
@@ -187,7 +233,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
                   {booksByStatus[column.status].map((book) =>
                     isTouchDevice
                       ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} />
-                      : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} />
+                      : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} suppressTransitions={suppressTransitions} />
                   )}
                 </SortableContext>
               )}
