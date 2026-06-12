@@ -11,7 +11,7 @@ import {
   DragOverEvent,
   DragStartEvent,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { SwipeableBookCard } from './SwipeableBookCard';
 import { SortableBookCard } from './SortableBookCard';
 import { DroppableColumn } from './DroppableColumn';
@@ -35,7 +35,7 @@ const STATUS_VALUES: ReadingStatus[] = ['not_planned', 'to_read', 'reading', 're
 
 export function BookKanban({ books, progressMap, showNotPlanned = true, compact = false }: BookKanbanProps) {
   const { t } = useLanguage();
-  const { updateProgress } = useReadingProgress();
+  const { updateProgress, updateRanks } = useReadingProgress();
   const isTouchDevice = 'ontouchstart' in window;
 
   const [activeBook, setActiveBook] = useState<Book | null>(null);
@@ -92,15 +92,31 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     const sortByTitle = (a: { book: Book }, b: { book: Book }) =>
       a.book.title.toLowerCase().localeCompare(b.book.title.toLowerCase());
 
-    grouped.not_planned.sort(sortByTitle);
-    grouped.to_read.sort(sortByTitle);
-    grouped.reading.sort(sortByTitle);
-    grouped.read.sort((a, b) => {
+    const sortByTitleFallback = (a: { book: Book }, b: { book: Book }) => {
+      const ra = progressMap.get(a.book.id)?.sort_order ?? null;
+      const rb = progressMap.get(b.book.id)?.sort_order ?? null;
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
+      return sortByTitle(a, b);
+    };
+
+    const sortByFinishedFallback = (a: { book: Book; finishedAt: string | null }, b: { book: Book; finishedAt: string | null }) => {
+      const ra = progressMap.get(a.book.id)?.sort_order ?? null;
+      const rb = progressMap.get(b.book.id)?.sort_order ?? null;
+      if (ra !== null && rb !== null) return ra - rb;
+      if (ra !== null) return -1;
+      if (rb !== null) return 1;
       if (!a.finishedAt && !b.finishedAt) return sortByTitle(a, b);
       if (!a.finishedAt) return 1;
       if (!b.finishedAt) return -1;
       return new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime();
-    });
+    };
+
+    grouped.not_planned.sort(sortByTitleFallback);
+    grouped.to_read.sort(sortByTitleFallback);
+    grouped.reading.sort(sortByTitleFallback);
+    grouped.read.sort(sortByFinishedFallback);
 
     return {
       not_planned: grouped.not_planned.map(g => g.book),
@@ -135,19 +151,31 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
     if (!over) return;
 
     const bookId = active.id as string;
+    const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
+
     const targetStatus = (STATUS_VALUES as string[]).includes(over.id as string)
       ? (over.id as ReadingStatus)
       : (Object.entries(booksByStatus).find(([, bks]) =>
           bks.some(b => b.id === over.id)
         )?.[0] as ReadingStatus | undefined);
 
-    if (targetStatus) {
-      const currentStatus = (progressMap.get(bookId)?.status ?? 'to_read') as ReadingStatus;
-      if (targetStatus !== currentStatus) {
-        updateProgress.mutate({ bookId, status: targetStatus });
-      }
+    if (!targetStatus) return;
+
+    if (targetStatus !== currentStatus) {
+      updateProgress.mutate({ bookId, status: targetStatus });
+      return;
     }
-  }, [booksByStatus, progressMap, updateProgress]);
+
+    // Within-column reorder
+    const columnBooks = booksByStatus[currentStatus];
+    const oldIndex = columnBooks.findIndex(b => b.id === bookId);
+    const newIndex = columnBooks.findIndex(b => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+    const reordered = arrayMove(columnBooks, oldIndex, newIndex);
+    const rankUpdates = reordered.map((b, i) => ({ bookId: b.id, sortOrder: i }));
+    updateRanks.mutate(rankUpdates);
+  }, [booksByStatus, progressMap, updateProgress, updateRanks]);
 
   if (books.length === 0) {
     return <LibraryEmptyState />;

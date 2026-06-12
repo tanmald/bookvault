@@ -437,6 +437,7 @@ export type Database = {
           finished_at: string | null
           id: string
           progress: number
+          sort_order: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["reading_status"]
           updated_at: string
@@ -448,6 +449,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           progress?: number
+          sort_order?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["reading_status"]
           updated_at?: string
@@ -459,6 +461,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           progress?: number
+          sort_order?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["reading_status"]
           updated_at?: string
