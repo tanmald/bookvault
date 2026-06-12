@@ -397,6 +397,7 @@ export type Database = {
           display_name: string | null
           has_completed_onboarding: boolean
           id: string
+          kanban_size: string
           onboarding_completed_at: string | null
           onboarding_step: number
           updated_at: string
@@ -410,6 +411,7 @@ export type Database = {
           display_name?: string | null
           has_completed_onboarding?: boolean
           id?: string
+          kanban_size?: string
           onboarding_completed_at?: string | null
           onboarding_step?: number
           updated_at?: string
@@ -423,6 +425,7 @@ export type Database = {
           display_name?: string | null
           has_completed_onboarding?: boolean
           id?: string
+          kanban_size?: string
           onboarding_completed_at?: string | null
           onboarding_step?: number
           updated_at?: string
