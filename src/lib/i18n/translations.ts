@@ -681,6 +681,12 @@ export const translations = {
 
     'toast.shortUrl.error': 'Erro ao encurtar URL',
     'toast.shortUrl.errorDesc': 'A usar URL completo em vez disso.',
+
+    // Error boundary (fallback UI shown when the app crashes)
+    'errorBoundary.title': 'Ocorreu um erro inesperado',
+    'errorBoundary.description': 'Algo correu mal. Podes tentar recarregar a página.',
+    'errorBoundary.reload': 'Recarregar página',
+    'errorBoundary.goHome': 'Voltar ao início',
   },
   en: {
     // Navigation
@@ -1364,6 +1370,12 @@ export const translations = {
 
     'toast.shortUrl.error': 'Error shortening URL',
     'toast.shortUrl.errorDesc': 'Using full URL instead.',
+
+    // Error boundary (fallback UI shown when the app crashes)
+    'errorBoundary.title': 'Something went wrong',
+    'errorBoundary.description': 'An unexpected error occurred. You can try reloading the page.',
+    'errorBoundary.reload': 'Reload page',
+    'errorBoundary.goHome': 'Go back home',
   },
 } as const;
 

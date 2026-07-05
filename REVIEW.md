@@ -121,9 +121,11 @@ committed anywhere in the repo.
   `strictNullChecks:false`; ESLint disables `@typescript-eslint/no-unused-vars`. Null-safety and
   implicit-any go uncaught project-wide. Recommend enabling incrementally (start with
   `strictNullChecks` on new/changed files).
-- **No error boundaries and no route lazy-loading** (`src/App.tsx`). A render error in any route
-  blanks the whole app, and every page ships in the initial bundle. Add a top-level
-  `ErrorBoundary` + `React.lazy`/`Suspense` per route.
+- **No error boundaries and no route lazy-loading [FIXED]** (`src/App.tsx`). Previously a render
+  error in any route blanked the whole app, and every page shipped in one 1.23 MB (gzip 362 KB)
+  bundle. Added a top-level `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) around the router
+  outlet with a translated fallback UI, and converted every page import to `React.lazy` behind a
+  `Suspense` boundary. The main bundle is now 558 KB (gzip 166 KB), with each page as its own chunk.
 - **`LibraryContext` is hand-rolled `useState`** (with a side effect that migrates all of a user's
   books on first load, `src/contexts/LibraryContext.tsx:54`) while every other data domain uses
   React Query. Port it to React Query for consistency and cache coherence.
@@ -223,9 +225,9 @@ Roughly ordered by value-to-effort:
 ## 7. Quick wins backlog (low effort, high value)
 
 ~~Route toasts through `t()`~~ **[FIXED]** · ~~delete the dead files/`console.*` listed in §3~~
-**[FIXED]** · add a top-level error boundary + lazy routes · set a `QueryClient` `staleTime` ·
-`git rm --cached` the `.env` files · swap `Math.random()` invite codes for a CSPRNG (server-side) ·
-drop `debug_user_access()` · add a `typecheck` npm script and a CI gate.
+**[FIXED]** · ~~add a top-level error boundary + lazy routes~~ **[FIXED]** · set a `QueryClient`
+`staleTime` · `git rm --cached` the `.env` files · swap `Math.random()` invite codes for a CSPRNG
+(server-side) · drop `debug_user_access()` · add a `typecheck` npm script and a CI gate.
 
 ---
 
@@ -245,5 +247,8 @@ drop `debug_user_access()` · add a `typecheck` npm script and a CI gate.
   all confirmed unreferenced before deletion.
 - **Changed:** `Library.tsx`, `LibraryContext.tsx`, `AuthContext.tsx` — removed leftover debug
   `console.log`s, including the ones logging the user's email/signup response.
+- **New:** `src/components/ErrorBoundary.tsx` — top-level error boundary with a translated fallback
+  UI (reload / go home). **Changed:** `src/App.tsx` — every page route now uses `React.lazy` behind
+  a `Suspense` boundary, wrapped by the new `ErrorBoundary`.
 
 Everything else in this document is left as prioritized recommendations, not code changes.
