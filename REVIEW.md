@@ -70,6 +70,12 @@ them — an impersonation / unwanted-membership vector.
 *Fix:* ignore the parameter and derive the joining user from `auth.uid()` (with an auth-required
 guard and an explicit "cannot use your own invite" check).
 
+### Toast i18n [FIXED — quick win]
+User-facing toast titles/descriptions across ~13 hook files were hardcoded (mostly Portuguese),
+bypassing the otherwise-complete i18n — English users saw Portuguese success/error toasts. A
+`toast.*` key namespace (full pt/en parity) was added to `src/lib/i18n/translations.ts` and every
+hook now calls `t()` instead of hardcoding strings.
+
 ### MEDIUM (recommended, not yet applied)
 
 - **M1 — `.env` / `.env.test` tracked in git.** Only the public Supabase anon key today (low
@@ -124,10 +130,10 @@ committed anywhere in the repo.
 - **React Query defaults everywhere** — no `staleTime`/`gcTime` is set, so data refetches
   aggressively on every mount/focus; invalidations are coarse (whole `['books']` prefix). Set a
   sensible `staleTime` in the `QueryClient` defaults and narrow invalidations.
-- **User-feedback toasts are hardcoded (mostly Portuguese)** across ~16 hook files (e.g.
-  `useBooks.ts:164`, `useLibraryMembers.ts:68`, `useReadingProgress.ts:161`), bypassing the
-  complete i18n. English users get Portuguese success/error toasts. Route them through `t()`. A
-  ready-made `useMutationWithToast.ts` helper exists but is unused — adopt or delete it.
+- **User-feedback toasts were hardcoded (mostly Portuguese) [FIXED]** across ~13 hook files (e.g.
+  `useBooks.ts`, `useLibraryMembers.ts`, `useReadingProgress.ts`), bypassing the complete i18n.
+  Now routed through a new `toast.*` translation namespace (see above). A ready-made
+  `useMutationWithToast.ts` helper still exists but is unused — adopt or delete it.
 - **Dead weight to remove:** `useMutationWithToast.ts` (unused), `components/auth/OnboardingChoice.tsx`
   (orphaned), `hooks/useNotPlannedVisibility.ts` (unused), `recharts` + `ui/chart.tsx` +
   `ui/pagination.tsx` (installed, never rendered), two `types.ts.backup*` files, root
@@ -212,10 +218,10 @@ Roughly ordered by value-to-effort:
 
 ## 7. Quick wins backlog (low effort, high value)
 
-Route toasts through `t()` · delete the dead files/`console.*` listed in §3 · add a top-level error
-boundary + lazy routes · set a `QueryClient` `staleTime` · `git rm --cached` the `.env` files ·
-swap `Math.random()` invite codes for a CSPRNG (server-side) · drop `debug_user_access()` · stop
-logging the user's email · add a `typecheck` npm script and a CI gate.
+~~Route toasts through `t()`~~ **[FIXED]** · delete the dead files/`console.*` listed in §3 · add a
+top-level error boundary + lazy routes · set a `QueryClient` `staleTime` · `git rm --cached` the
+`.env` files · swap `Math.random()` invite codes for a CSPRNG (server-side) · drop
+`debug_user_access()` · stop logging the user's email · add a `typecheck` npm script and a CI gate.
 
 ---
 
@@ -228,5 +234,7 @@ logging the user's email · add a `typecheck` npm script and a CI gate.
 - **Changed:** `src/pages/JoinInvite.tsx` — validates invites via the new RPC instead of reading
   `invite_links` directly.
 - **Changed:** `src/integrations/supabase/types.ts` — registers the `get_invite_link_info` RPC type.
+- **New:** `toast.*` key namespace in `src/lib/i18n/translations.ts` (full pt/en parity), and 13
+  hook files updated to call `t()` instead of hardcoding toast titles/descriptions.
 
 Everything else in this document is left as prioritized recommendations, not code changes.
