@@ -102,7 +102,7 @@ hook now calls `t()` instead of hardcoding strings.
   Supabase auth settings.
 - **L5 — `debug_user_access()` SECURITY DEFINER RPC shipped** in migrations. Low risk (scoped to
   `auth.uid()`) but shouldn't be in production.
-- **L6 — AuthContext logs the user's email to console** (`src/contexts/AuthContext.tsx:42`). Remove.
+- **L6 — AuthContext logged the user's email to console [FIXED]** (`src/contexts/AuthContext.tsx`).
 
 **Clean:** no `eval`, no user-data `dangerouslySetInnerHTML` (the only one is shadcn's chart CSS,
 not user-controlled), React auto-escaping covers user titles/reviews, and the login redirect is a
@@ -134,11 +134,15 @@ committed anywhere in the repo.
   `useBooks.ts`, `useLibraryMembers.ts`, `useReadingProgress.ts`), bypassing the complete i18n.
   Now routed through a new `toast.*` translation namespace (see above). A ready-made
   `useMutationWithToast.ts` helper still exists but is unused — adopt or delete it.
-- **Dead weight to remove:** `useMutationWithToast.ts` (unused), `components/auth/OnboardingChoice.tsx`
-  (orphaned), `hooks/useNotPlannedVisibility.ts` (unused), `recharts` + `ui/chart.tsx` +
-  `ui/pagination.tsx` (installed, never rendered), two `types.ts.backup*` files, root
-  `BOOKIE.txt` / `test-epub-cover.html` scratch files, 61 stray `console.*` calls (some logging
-  email), and a leftover `console.log` in `Library.tsx:30`.
+- **Dead weight [FIXED]:** removed `useMutationWithToast.ts` (unused), `components/auth/OnboardingChoice.tsx`
+  (orphaned), `hooks/useNotPlannedVisibility.ts` (unused), both `types.ts.backup*` files, and the
+  root `BOOKIE.txt` / `test-epub-cover.html` scratch files. Also removed the leftover debug
+  `console.log`s in `Library.tsx`, `LibraryContext.tsx`, and the ones logging the user's
+  email/signup response in `AuthContext.tsx` (L6). `console.error` calls in catch blocks were kept
+  — they're legitimate error diagnostics, not debug cruft.
+  Still open: `recharts` + `ui/chart.tsx` + `ui/pagination.tsx` remain installed but unrendered —
+  intentionally kept, since §6 recommends building the stats page and pagination UI on top of them
+  rather than removing them now.
 - **Testing is thinner than it looks.** The Vitest config sets an 80% coverage threshold, but the 6
   test files are integration tests against a live Supabase that `skipIf` silently when no DB is
   configured — so the threshold is illusory in CI. There is no `typecheck` script and no CI gate.
@@ -218,10 +222,10 @@ Roughly ordered by value-to-effort:
 
 ## 7. Quick wins backlog (low effort, high value)
 
-~~Route toasts through `t()`~~ **[FIXED]** · delete the dead files/`console.*` listed in §3 · add a
-top-level error boundary + lazy routes · set a `QueryClient` `staleTime` · `git rm --cached` the
-`.env` files · swap `Math.random()` invite codes for a CSPRNG (server-side) · drop
-`debug_user_access()` · stop logging the user's email · add a `typecheck` npm script and a CI gate.
+~~Route toasts through `t()`~~ **[FIXED]** · ~~delete the dead files/`console.*` listed in §3~~
+**[FIXED]** · add a top-level error boundary + lazy routes · set a `QueryClient` `staleTime` ·
+`git rm --cached` the `.env` files · swap `Math.random()` invite codes for a CSPRNG (server-side) ·
+drop `debug_user_access()` · add a `typecheck` npm script and a CI gate.
 
 ---
 
@@ -236,5 +240,10 @@ top-level error boundary + lazy routes · set a `QueryClient` `staleTime` · `gi
 - **Changed:** `src/integrations/supabase/types.ts` — registers the `get_invite_link_info` RPC type.
 - **New:** `toast.*` key namespace in `src/lib/i18n/translations.ts` (full pt/en parity), and 13
   hook files updated to call `t()` instead of hardcoding toast titles/descriptions.
+- **Removed:** `useMutationWithToast.ts`, `OnboardingChoice.tsx`, `useNotPlannedVisibility.ts`,
+  both `types.ts.backup*` files, and the root `BOOKIE.txt` / `test-epub-cover.html` scratch files —
+  all confirmed unreferenced before deletion.
+- **Changed:** `Library.tsx`, `LibraryContext.tsx`, `AuthContext.tsx` — removed leftover debug
+  `console.log`s, including the ones logging the user's email/signup response.
 
 Everything else in this document is left as prioritized recommendations, not code changes.
