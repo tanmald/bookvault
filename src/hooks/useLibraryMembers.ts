@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Database } from '@/integrations/supabase/types';
 
 type LibraryRole = Database['public']['Enums']['library_role'];
@@ -22,6 +23,7 @@ export function useLibraryMembers(libraryId?: string) {
   const { user } = useAuth();
   const { refetch, removeLibrary } = useLibrary();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   // Fetch members of the specified library using single RPC query
@@ -60,12 +62,12 @@ export function useLibraryMembers(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
-      toast({ title: 'Membro promovido a admin' });
+      toast({ title: t('toast.members.promoted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao promover membro',
+        title: t('toast.members.promoteError'),
         description: error.message,
       });
     },
@@ -86,12 +88,12 @@ export function useLibraryMembers(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
-      toast({ title: 'Membro despromovido' });
+      toast({ title: t('toast.members.demoted') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao despromover membro',
+        title: t('toast.members.demoteError'),
         description: error.message,
       });
     },
@@ -114,12 +116,12 @@ export function useLibraryMembers(libraryId?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
-      toast({ title: 'Membro removido da biblioteca' });
+      toast({ title: t('toast.members.removed') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover membro',
+        title: t('toast.members.removeError'),
         description: error.message,
       });
     },
@@ -148,14 +150,14 @@ export function useLibraryMembers(libraryId?: string) {
       queryClient.invalidateQueries({ queryKey: ['library-members'] });
       queryClient.invalidateQueries({ queryKey: ['libraries'] });
       refetch(); // Refresh library list in LibraryContext for eventual consistency
-      toast({ title: 'Saíste da biblioteca' });
+      toast({ title: t('toast.members.left') });
     },
     onError: (error) => {
       // Restore state by refetching if the mutation failed
       refetch();
       toast({
         variant: 'destructive',
-        title: 'Erro ao sair da biblioteca',
+        title: t('toast.members.leaveError'),
         description: error.message,
       });
     },

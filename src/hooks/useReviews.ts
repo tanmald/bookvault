@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 
 export interface Review {
@@ -17,6 +18,7 @@ export interface Review {
 export function useReviews(bookId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   // Query to get the current user's review for a specific book
@@ -100,7 +102,7 @@ export function useReviews(bookId?: string) {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Error saving review',
+        title: t('toast.reviews.saveError'),
         description: error.message,
       });
     },
@@ -124,14 +126,14 @@ export function useReviews(bookId?: string) {
       queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       toast({
-        title: 'Review deleted',
-        description: 'Your review has been deleted successfully.',
+        title: t('toast.reviews.deleted'),
+        description: t('toast.reviews.deletedDesc'),
       });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Error deleting review',
+        title: t('toast.reviews.deleteError'),
         description: error.message,
       });
     },

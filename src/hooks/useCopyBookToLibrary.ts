@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 import type { Book, BookFile } from './useBooks';
 import type { ReadingProgress } from './useReadingProgress';
@@ -15,6 +16,7 @@ interface CopyBookInput {
 export function useCopyBookToLibrary() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -135,8 +137,8 @@ export function useCopyBookToLibrary() {
     onSuccess: (newBook, variables) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({
-        title: 'Livro copiado com sucesso!',
-        description: 'O livro foi copiado para a biblioteca selecionada.',
+        title: t('toast.books.copied'),
+        description: t('toast.books.copiedDesc'),
       });
       posthog.capture('book copied to library', {
         source_book_id: variables.sourceBookId,
@@ -148,8 +150,8 @@ export function useCopyBookToLibrary() {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao copiar livro',
-        description: error instanceof Error ? error.message : 'Ocorreu um erro ao copiar o livro.',
+        title: t('toast.books.copyError'),
+        description: error instanceof Error ? error.message : t('toast.books.copyErrorGeneric'),
       });
     },
   });

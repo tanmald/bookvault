@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ShortenUrlResponse {
   status: string;
@@ -22,6 +23,7 @@ export function useShortUrl(): UseShortUrlReturn {
   const [error, setError] = useState<string | null>(null);
   const [lastUrl, setLastUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const shortenUrl = useCallback(async (longUrl: string) => {
     setIsLoading(true);
@@ -59,15 +61,15 @@ export function useShortUrl(): UseShortUrlReturn {
       setError(errorMessage);
       toast({
         variant: 'destructive',
-        title: 'Erro ao encurtar URL',
-        description: 'A usar URL completo em vez disso.',
+        title: t('toast.shortUrl.error'),
+        description: t('toast.shortUrl.errorDesc'),
       });
       // Fall back to original URL
       setShortUrl(longUrl);
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const retry = useCallback(() => {
     if (lastUrl) {

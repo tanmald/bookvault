@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 
 const INITIAL_BOOKS_LIMIT = 100;
@@ -65,6 +66,7 @@ export interface AddBookFileInput {
 export function useBooks(libraryId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [loadAll, setLoadAll] = useState(false);
 
@@ -151,8 +153,8 @@ export function useBooks(libraryId?: string) {
           // Warn user but don't fail - the book was created successfully
           toast({
             variant: 'destructive',
-            title: 'Aviso: erro ao criar versão do ficheiro',
-            description: 'O livro foi criado, mas houve um problema ao registar a versão do ficheiro.',
+            title: t('toast.books.fileWarningTitle'),
+            description: t('toast.books.fileWarningDesc'),
           });
         }
       }
@@ -161,7 +163,7 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: (book) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
-      toast({ title: 'Livro adicionado com sucesso!' });
+      toast({ title: t('toast.books.added') });
       posthog.capture('book created', {
         book_id: book.id,
         title: book.title,
@@ -173,7 +175,7 @@ export function useBooks(libraryId?: string) {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao adicionar livro',
+        title: t('toast.books.addError'),
         description: error.message,
       });
       posthog.captureException(error);
@@ -201,12 +203,12 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
-      toast({ title: 'Versão adicionada com sucesso!' });
+      toast({ title: t('toast.books.versionAdded') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao adicionar versão',
+        title: t('toast.books.versionAddError'),
         description: error.message,
       });
     },
@@ -222,12 +224,12 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
-      toast({ title: 'Versão removida!' });
+      toast({ title: t('toast.books.versionRemoved') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover versão',
+        title: t('toast.books.versionRemoveError'),
         description: error.message,
       });
     },
@@ -279,7 +281,7 @@ export function useBooks(libraryId?: string) {
         );
       }
 
-      toast({ title: 'Livro atualizado!' });
+      toast({ title: t('toast.books.updated') });
     },
     onError: (error, _variables, context) => {
       // Rollback to previous value on error using captured queryKey
@@ -290,7 +292,7 @@ export function useBooks(libraryId?: string) {
       queryClient.invalidateQueries({ queryKey: ['books'] });
       toast({
         variant: 'destructive',
-        title: 'Erro ao atualizar livro',
+        title: t('toast.books.updateError'),
         description: error.message,
       });
     },
@@ -319,7 +321,7 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
-      toast({ title: 'Livro removido!' });
+      toast({ title: t('toast.books.removed') });
       posthog.capture('book deleted', { book_id: id });
     },
     onError: (error, _id, context) => {
@@ -329,7 +331,7 @@ export function useBooks(libraryId?: string) {
       }
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover livro',
+        title: t('toast.books.removeError'),
         description: error.message,
       });
     },

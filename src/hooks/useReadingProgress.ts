@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 
 export type ReadingStatus = 'to_read' | 'reading' | 'read' | 'not_planned';
@@ -22,6 +23,7 @@ export interface ReadingProgress {
 export function useReadingProgress(bookId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const progressQuery = useQuery({
@@ -158,7 +160,7 @@ export function useReadingProgress(bookId?: string) {
       }
       toast({
         variant: 'destructive',
-        title: 'Erro ao atualizar progresso',
+        title: t('toast.progress.updateError'),
         description: error.message,
       });
     },
@@ -189,14 +191,14 @@ export function useReadingProgress(bookId?: string) {
       queryClient.invalidateQueries({ queryKey: ['reading-progress'] });
       queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       toast({
-        title: 'Data atualizada',
-        description: 'A data de conclusão foi atualizada com sucesso.',
+        title: t('toast.progress.dateUpdated'),
+        description: t('toast.progress.dateUpdatedDesc'),
       });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao atualizar data',
+        title: t('toast.progress.dateUpdateError'),
         description: error.message,
       });
     },
@@ -224,7 +226,7 @@ export function useReadingProgress(bookId?: string) {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao guardar ordem',
+        title: t('toast.progress.orderSaveError'),
         description: error.message,
       });
     },

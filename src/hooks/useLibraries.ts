@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 
 interface CreateLibraryInput {
@@ -17,6 +18,7 @@ export function useLibraries() {
   const { refetch } = useLibrary();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const createLibrary = useMutation({
     mutationFn: async (input: CreateLibraryInput) => {
@@ -61,8 +63,8 @@ export function useLibraries() {
     onSuccess: () => {
       refetch();
       toast({
-        title: 'Library updated',
-        description: 'Your library has been updated successfully.',
+        title: t('toast.libraries.updated'),
+        description: t('toast.libraries.updatedDesc'),
       });
     },
   });
@@ -76,7 +78,7 @@ export function useLibraries() {
         .eq('library_id', id);
 
       if (count && count > 0) {
-        throw new Error('Cannot delete library with books. Please delete or move books first.');
+        throw new Error(t('toast.libraries.cannotDeleteWithBooks'));
       }
 
       const { error } = await supabase
@@ -89,14 +91,14 @@ export function useLibraries() {
     onSuccess: () => {
       refetch();
       toast({
-        title: 'Library deleted',
-        description: 'Your library has been deleted successfully.',
+        title: t('toast.libraries.deleted'),
+        description: t('toast.libraries.deletedDesc'),
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete library',
+        title: t('toast.common.error'),
+        description: error instanceof Error ? error.message : t('toast.libraries.deleteErrorGeneric'),
         variant: 'destructive',
       });
     },

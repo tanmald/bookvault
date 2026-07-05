@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface OnboardingState {
   currentStep: number;
@@ -20,6 +21,7 @@ export function useOnboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [state, setState] = useState<OnboardingState>({
     currentStep: 0,
     totalSteps: 4,
@@ -136,8 +138,8 @@ export function useOnboarding() {
       console.error('Error completing onboarding:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to complete onboarding',
+        title: t('toast.common.error'),
+        description: t('toast.onboarding.completeError'),
       });
       return;
     }
@@ -149,7 +151,7 @@ export function useOnboarding() {
     }));
 
     navigate('/', { replace: true });
-  }, [user, navigate, toast]);
+  }, [user, navigate, toast, t]);
 
   const skipOnboarding = useCallback(async () => {
     if (!user) return;
@@ -223,12 +225,12 @@ export function useOnboarding() {
       console.error('Error joining library:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to join library. The invite may have expired.',
+        title: t('toast.common.error'),
+        description: t('toast.onboarding.joinError'),
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user, toast, t]);
 
   const createDemoBook = useCallback(async (libraryId: string) => {
     if (!user) return null;
@@ -295,12 +297,12 @@ export function useOnboarding() {
       console.error('Error creating demo book:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to add demo book',
+        title: t('toast.common.error'),
+        description: t('toast.onboarding.demoBookError'),
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user, toast, t]);
 
   return {
     ...state,
