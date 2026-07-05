@@ -565,6 +565,15 @@ export type Database = {
           friendship_id: string
         }[]
       }
+      get_invite_link_info: {
+        Args: { p_code: string }
+        Returns: {
+          valid: boolean
+          owner_display_name: string | null
+          expired: boolean
+          max_uses_reached: boolean
+        }[]
+      }
       get_library_friends_book_progress: {
         Args: { p_book_id: string; p_user_id: string }
         Returns: {
