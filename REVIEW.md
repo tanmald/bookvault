@@ -4,6 +4,18 @@
 > This document is a review; a companion migration in this same change closes the four most
 > serious security issues (see [§2](#2-security) and *Applied fixes* at the end).
 
+## ⏸️ Waiting on you: CI gate
+
+The one remaining item from the quick-wins backlog (§7) needs your input before it can be done:
+re-enabling `.github/workflows/test.yml.disabled`. Before flipping it on:
+1. You need to add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as GitHub Actions
+   secrets (Settings → Secrets and variables → Actions) — the workflow's `build` job reads them.
+2. The workflow's branch triggers say `develop`, but this repo's actual branch is `dev` — that
+   needs fixing so it triggers correctly.
+
+Once the secrets are in place, tell me to go ahead and I'll fix the branch name and rename the
+file to activate it. Everything else in this document (see *Applied fixes* at the end) is done.
+
 ---
 
 ## 1. Executive summary
