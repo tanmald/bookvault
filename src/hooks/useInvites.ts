@@ -19,9 +19,16 @@ export interface InviteLink {
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const codeLength = 8;
+  // Reject bytes beyond the largest multiple of chars.length to avoid modulo bias.
+  const maxValid = chars.length * Math.floor(256 / chars.length);
+  const byte = new Uint8Array(1);
   let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  while (code.length < codeLength) {
+    crypto.getRandomValues(byte);
+    if (byte[0] < maxValid) {
+      code += chars[byte[0] % chars.length];
+    }
   }
   return code;
 }

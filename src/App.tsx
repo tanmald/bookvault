@@ -26,7 +26,15 @@ const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResponsibleUse = lazy(() => import("./pages/ResponsibleUse"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Avoid refetching on every mount/window focus; data still stays
+      // reasonably fresh since most mutations invalidate their queries.
+      staleTime: 30 * 1000,
+    },
+  },
+});
 
 function RouteFallback() {
   return (

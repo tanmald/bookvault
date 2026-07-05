@@ -545,16 +545,6 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { user1: string; user2: string }; Returns: boolean }
-      debug_user_access: {
-        Args: never
-        Returns: {
-          auth_uid: string
-          book_count: number
-          library_count: number
-          membership_count: number
-          user_id: string
-        }[]
-      }
       get_friends_with_profiles: {
         Args: { p_user_id: string }
         Returns: {

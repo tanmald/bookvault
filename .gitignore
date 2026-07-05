@@ -25,4 +25,5 @@ dist-ssr
 .vercel
 .env*.local
 .env
+.env.test
 docs/enable-file-uploads.md

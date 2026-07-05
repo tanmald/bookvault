@@ -78,16 +78,19 @@ hook now calls `t()` instead of hardcoding strings.
 
 ### MEDIUM (recommended, not yet applied)
 
-- **M1 — `.env` / `.env.test` tracked in git.** Only the public Supabase anon key today (low
-  severity), but it exposes the project ref and creates a path to accidentally committing a
-  service-role or OpenAI key later. `git rm --cached .env .env.test` and rely on `.gitignore`.
+- **M1 — `.env` / `.env.test` were tracked in git [FIXED].** Only the public Supabase anon key
+  (low severity), but it exposed the project ref and created a path to accidentally committing a
+  service-role or OpenAI key later. Ran `git rm --cached .env .env.test` and added `.env.test` to
+  `.gitignore` (`.env` was already covered).
 - **M2 — Edge functions are unauthenticated, `CORS: *`, no rate limiting.** `extract-metadata`
   accepts 50 MB uploads and calls the **billed** OpenAI API on every request with no auth — an
   unauthenticated cost-drain / DoS. `fetch-cover` and `search-books` are abusable as free proxies.
   Add JWT verification (or a signed request/short-lived token) and basic per-IP/user rate limiting.
-- **M3 — Invite codes use `Math.random()`** (`src/hooks/useInvites.ts:19`), not a CSPRNG, and are
-  generated client-side. Move generation server-side and use `crypto.getRandomValues` /
-  `gen_random_bytes`.
+- **M3 — Invite codes used `Math.random()` [FIXED]** (`src/hooks/useInvites.ts`), not a CSPRNG.
+  Now generated with `crypto.getRandomValues` using rejection sampling to avoid modulo bias. Codes
+  are still generated client-side — the `code` column has a `UNIQUE` constraint, so a collision
+  fails the insert cleanly rather than causing an access-control issue; moving generation
+  server-side remains a nice-to-have, not a security requirement.
 
 ### LOW / informational
 
@@ -100,8 +103,9 @@ hook now calls `t()` instead of hardcoding strings.
   note that book *files* are correctly private/friend-gated.
 - **L4 — Password policy is client-side only** (`length >= 8`). Configure a server-side minimum in
   Supabase auth settings.
-- **L5 — `debug_user_access()` SECURITY DEFINER RPC shipped** in migrations. Low risk (scoped to
-  `auth.uid()`) but shouldn't be in production.
+- **L5 — `debug_user_access()` SECURITY DEFINER RPC shipped [FIXED]** in migrations. Was low risk
+  (scoped to `auth.uid()`), but diagnostic RPCs shouldn't ship to production — dropped via
+  `supabase/migrations/20260705010000_drop_debug_user_access.sql`.
 - **L6 — AuthContext logged the user's email to console [FIXED]** (`src/contexts/AuthContext.tsx`).
 
 **Clean:** no `eval`, no user-data `dangerouslySetInnerHTML` (the only one is shadcn's chart CSS,
@@ -129,9 +133,9 @@ committed anywhere in the repo.
 - **`LibraryContext` is hand-rolled `useState`** (with a side effect that migrates all of a user's
   books on first load, `src/contexts/LibraryContext.tsx:54`) while every other data domain uses
   React Query. Port it to React Query for consistency and cache coherence.
-- **React Query defaults everywhere** — no `staleTime`/`gcTime` is set, so data refetches
-  aggressively on every mount/focus; invalidations are coarse (whole `['books']` prefix). Set a
-  sensible `staleTime` in the `QueryClient` defaults and narrow invalidations.
+- **React Query had no default `staleTime` [PARTIALLY FIXED]** — data refetched aggressively on
+  every mount/focus. Set a global 30s `staleTime` default in `src/App.tsx`. Invalidations are still
+  coarse (whole `['books']` prefix) — narrowing those remains open.
 - **User-feedback toasts were hardcoded (mostly Portuguese) [FIXED]** across ~13 hook files (e.g.
   `useBooks.ts`, `useLibraryMembers.ts`, `useReadingProgress.ts`), bypassing the complete i18n.
   Now routed through a new `toast.*` translation namespace (see above). A ready-made
@@ -225,9 +229,16 @@ Roughly ordered by value-to-effort:
 ## 7. Quick wins backlog (low effort, high value)
 
 ~~Route toasts through `t()`~~ **[FIXED]** · ~~delete the dead files/`console.*` listed in §3~~
-**[FIXED]** · ~~add a top-level error boundary + lazy routes~~ **[FIXED]** · set a `QueryClient`
-`staleTime` · `git rm --cached` the `.env` files · swap `Math.random()` invite codes for a CSPRNG
-(server-side) · drop `debug_user_access()` · add a `typecheck` npm script and a CI gate.
+**[FIXED]** · ~~add a top-level error boundary + lazy routes~~ **[FIXED]** · ~~set a `QueryClient`
+`staleTime`~~ **[FIXED]** · ~~`git rm --cached` the `.env` files~~ **[FIXED]** · ~~swap
+`Math.random()` invite codes for a CSPRNG~~ **[FIXED, client-side]** · ~~drop
+`debug_user_access()`~~ **[FIXED]** · ~~add a `typecheck` npm script~~ **[FIXED]** — a CI gate to
+run it remains open (see note below).
+
+> A disabled CI workflow already exists at `.github/workflows/test.yml.disabled` covering lint,
+> `tsc --noEmit`, and a Supabase-backed test run. Re-enabling it (renaming off `.disabled`) would
+> close the CI-gate item, but that's a call for the repo owner — enabling/changing CI pipelines
+> wasn't done as part of this pass without an explicit go-ahead.
 
 ---
 
@@ -250,5 +261,14 @@ Roughly ordered by value-to-effort:
 - **New:** `src/components/ErrorBoundary.tsx` — top-level error boundary with a translated fallback
   UI (reload / go home). **Changed:** `src/App.tsx` — every page route now uses `React.lazy` behind
   a `Suspense` boundary, wrapped by the new `ErrorBoundary`.
+- **Changed:** `src/App.tsx` — `QueryClient` now sets a 30s default `staleTime`.
+- **Removed:** `.env` / `.env.test` untracked from git (`git rm --cached`); `.env.test` added to
+  `.gitignore` (`.env` was already covered).
+- **Changed:** `src/hooks/useInvites.ts` — invite codes now use `crypto.getRandomValues` with
+  rejection sampling instead of `Math.random()`.
+- **New:** `supabase/migrations/20260705010000_drop_debug_user_access.sql` — drops the unused
+  `debug_user_access()` diagnostic RPC; removed its now-stale entry from
+  `src/integrations/supabase/types.ts`.
+- **New:** `typecheck` npm script (`tsc --noEmit`) in `package.json`.
 
 Everything else in this document is left as prioritized recommendations, not code changes.
