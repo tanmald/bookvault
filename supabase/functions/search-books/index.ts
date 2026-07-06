@@ -1,10 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type";
+
+// CORS origin is restricted to the comma-separated ALLOWED_ORIGINS env var when
+// set; otherwise it falls back to "*" so unconfigured environments keep working.
+function corsHeaders(req: Request): Record<string, string> {
+  const configured = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const origin = req.headers.get("Origin") ?? "";
+  const allowOrigin =
+    configured.length === 0 ? "*" : configured.includes(origin) ? origin : configured[0];
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": ALLOW_HEADERS,
+    "Vary": "Origin",
+  };
+}
 
 interface BookResult {
   title: string;
@@ -36,8 +49,10 @@ function mapCategoryToGenreSlug(categories: string[] | undefined): string | null
 }
 
 serve(async (req) => {
+  const cors = corsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -45,7 +60,7 @@ serve(async (req) => {
 
     if (!query || query.trim().length < 2) {
       return new Response(JSON.stringify({ results: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -90,7 +105,7 @@ serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ results: items }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("search-books error:", error);
@@ -98,7 +113,7 @@ serve(async (req) => {
       JSON.stringify({ results: [], error: (error as Error).message }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   }

@@ -94,10 +94,17 @@ hook now calls `t()` instead of hardcoding strings.
   (low severity), but it exposed the project ref and created a path to accidentally committing a
   service-role or OpenAI key later. Ran `git rm --cached .env .env.test` and added `.env.test` to
   `.gitignore` (`.env` was already covered).
-- **M2 — Edge functions are unauthenticated, `CORS: *`, no rate limiting.** `extract-metadata`
-  accepts 50 MB uploads and calls the **billed** OpenAI API on every request with no auth — an
-  unauthenticated cost-drain / DoS. `fetch-cover` and `search-books` are abusable as free proxies.
-  Add JWT verification (or a signed request/short-lived token) and basic per-IP/user rate limiting.
+- **M2 — Edge functions unauthenticated, `CORS: *`, no rate limiting [PARTIALLY FIXED].** The
+  billed OpenAI call in `extract-metadata` (`detectWithAI`) is now gated to authenticated users:
+  the function still deploys `--no-verify-jwt` and still parses files for anyone, but it reads the
+  token the Supabase client already attaches and only calls OpenAI when a valid *user* token is
+  present — so anonymous/raw-anon-key callers can no longer drain the OpenAI budget. All three
+  functions also switched `Access-Control-Allow-Origin: *` to an `ALLOWED_ORIGINS` allowlist
+  (falls back to `*` when the env var is unset). **Still open:** `fetch-cover`/`search-books`
+  remain usable as unauthenticated Google-Books/OpenLibrary proxies (free APIs, no billing — lower
+  risk), and there's no true per-user request quota — the auth gate removes the anonymous
+  cost-drain vector but a determined authenticated user isn't rate-limited. A per-user quota
+  (KV/table) or Supabase-dashboard-level rate limiting would close the rest.
 - **M3 — Invite codes used `Math.random()` [FIXED]** (`src/hooks/useInvites.ts`), not a CSPRNG.
   Now generated with `crypto.getRandomValues` using rejection sampling to avoid modulo bias. Codes
   are still generated client-side — the `code` column has a `UNIQUE` constraint, so a collision
@@ -106,8 +113,11 @@ hook now calls `t()` instead of hardcoding strings.
 
 ### LOW / informational
 
-- **L1 — SSRF (low):** `fetch-cover` only hits a fixed host allow-list but follows redirects on
-  attacker-influenced URLs. Pin `redirect: "manual"` and re-check the final host.
+- **L1 — SSRF (low) [FIXED].** `fetch-cover`'s image fetches now go through a `safeFetch` helper
+  that validates the target host up front (https-only, rejects loopback/private/link-local
+  addresses) and re-validates the final resolved URL after redirects, so a redirect chain can't be
+  used to reach an internal service. (Deno's `redirect: "manual"` returns an opaque response, so we
+  follow normally and check `response.url` rather than inspecting each hop.)
 - **L2 — Prompt injection: contained.** `extract-metadata` feeds uploaded text to OpenAI but forces
   output through an `enum`-constrained function tool and re-validates against the genre/language
   allow-lists. No action needed.
@@ -282,5 +292,16 @@ run it remains open (see note below).
   `debug_user_access()` diagnostic RPC; removed its now-stale entry from
   `src/integrations/supabase/types.ts`.
 - **New:** `typecheck` npm script (`tsc --noEmit`) in `package.json`.
+- **Changed:** `supabase/functions/extract-metadata/index.ts` — gates the billed OpenAI call to
+  authenticated users (reads the client-attached token; parsing stays open, deployment stays
+  `--no-verify-jwt`). **Changed:** all three edge functions — `ALLOWED_ORIGINS` CORS allowlist.
+  **Changed:** `supabase/functions/fetch-cover/index.ts` — `safeFetch` SSRF guard. `CLAUDE.md`
+  updated to document the new `extract-metadata` auth-read exception and the `ALLOWED_ORIGINS` var.
+
+> **Edge-function deploy notes:** these are Deno functions, not covered by the app's
+> build/lint/typecheck (they were syntax-checked via esbuild only — there's no Deno in this
+> environment to run them). On deploy: (1) set the `ALLOWED_ORIGINS` secret to the app origin(s);
+> (2) redeploy all three with `--no-verify-jwt`; (3) smoke-test an upload while logged in (AI
+> genre/language should still populate) and confirm cover fetching still returns results.
 
 Everything else in this document is left as prioritized recommendations, not code changes.

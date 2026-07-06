@@ -1,12 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.93.3";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOW_HEADERS =
+  "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version";
+
+// CORS origin is restricted to the comma-separated ALLOWED_ORIGINS env var when
+// set; otherwise it falls back to "*" so unconfigured environments keep working.
+function corsHeaders(req: Request): Record<string, string> {
+  const configured = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const origin = req.headers.get("Origin") ?? "";
+  const allowOrigin =
+    configured.length === 0 ? "*" : configured.includes(origin) ? origin : configured[0];
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": ALLOW_HEADERS,
+    "Vary": "Origin",
+  };
+}
+
+// Returns true only when the request carries a valid *authenticated user* token.
+// The Supabase JS client automatically attaches the session's access token (or
+// the anon key when logged out); getUser() resolves a user only for a real
+// authenticated token, so anonymous callers and raw anon-key callers return false.
+async function isAuthenticatedUser(req: Request): Promise<boolean> {
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) return false;
+    const token = authHeader.slice("Bearer ".length);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) return false;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data, error } = await supabase.auth.getUser(token);
+    return !error && !!data.user;
+  } catch (_e) {
+    return false;
+  }
+}
 
 // Available genres with their slugs for AI matching
 const GENRES = [
@@ -273,7 +308,8 @@ async function extractTextSample(zip: JSZip, opfPath: string, opfContent: string
 }
 
 async function extractEpubMetadata(
-  fileBuffer: ArrayBuffer
+  fileBuffer: ArrayBuffer,
+  allowAI: boolean
 ): Promise<ExtractedMetadata> {
   const result: ExtractedMetadata = {
     title: null,
@@ -449,19 +485,20 @@ async function extractEpubMetadata(
     console.error("Error extracting EPUB metadata:", error);
   }
 
-  // Use AI to detect genre and language (if not found in metadata)
-  if (result.title || result.description || textSample) {
+  // Use AI to detect genre and language (if not found in metadata).
+  // Gated on allowAI so the billed OpenAI call only runs for authenticated users.
+  if (allowAI && (result.title || result.description || textSample)) {
     const aiResult = await detectWithAI(
       result.title,
       result.author,
       result.description,
       textSample
     );
-    
+
     if (aiResult.genreSlug) {
       result.genreSlug = aiResult.genreSlug;
     }
-    
+
     // Prefer AI-detected language if metadata didn't have one
     if (!result.detectedLanguage && aiResult.language) {
       result.detectedLanguage = aiResult.language;
@@ -472,7 +509,8 @@ async function extractEpubMetadata(
 }
 
 async function extractPdfMetadata(
-  fileBuffer: ArrayBuffer
+  fileBuffer: ArrayBuffer,
+  allowAI: boolean
 ): Promise<ExtractedMetadata> {
   const result: ExtractedMetadata = {
     title: null,
@@ -525,15 +563,16 @@ async function extractPdfMetadata(
     console.error("Error extracting PDF metadata:", error);
   }
 
-  // Use AI to detect genre and language
-  if (result.title || result.description) {
+  // Use AI to detect genre and language.
+  // Gated on allowAI so the billed OpenAI call only runs for authenticated users.
+  if (allowAI && (result.title || result.description)) {
     const aiResult = await detectWithAI(
       result.title,
       result.author,
       result.description,
       null
     );
-    
+
     if (aiResult.genreSlug) {
       result.genreSlug = aiResult.genreSlug;
     }
@@ -556,21 +595,27 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 serve(async (req) => {
+  const cors = corsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: cors });
   }
 
-  // NOTE: No auth required. This is a utility function (parses files, calls OpenAI).
-  // It does NOT access the database or user data. Do NOT add auth — it has caused
-  // recurring breakage. Deploy with: npx supabase functions deploy extract-metadata --no-verify-jwt
+  // Deployment is still --no-verify-jwt: the gateway never rejects, the client
+  // sets no manual auth headers, and anyone may parse a file. We only READ the
+  // token the Supabase client already attaches to gate the *billed* OpenAI call
+  // (detectWithAI) to authenticated users, so anonymous / raw-anon-key callers
+  // can no longer drain the OpenAI budget. Parsing behaviour is unchanged.
   try {
+    const allowAI = await isAuthenticatedUser(req);
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
       return new Response(JSON.stringify({ error: "No file provided" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -578,18 +623,18 @@ serve(async (req) => {
     if (file.size > MAX_FILE_SIZE) {
       return new Response(JSON.stringify({ error: "File too large. Maximum size is 50MB" }), {
         status: 413,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
     const fileName = file.name.toLowerCase();
-    
+
     // File extension validation
     const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
     if (!hasValidExtension) {
       return new Response(JSON.stringify({ error: "Invalid file type. Only EPUB and PDF files are allowed" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -597,7 +642,7 @@ serve(async (req) => {
     if (file.type && !ALLOWED_MIME_TYPES.includes(file.type)) {
       return new Response(JSON.stringify({ error: "Invalid file MIME type" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
@@ -606,9 +651,9 @@ serve(async (req) => {
     let metadata: ExtractedMetadata;
 
     if (fileName.endsWith(".epub")) {
-      metadata = await extractEpubMetadata(fileBuffer);
+      metadata = await extractEpubMetadata(fileBuffer, allowAI);
     } else if (fileName.endsWith(".pdf")) {
-      metadata = await extractPdfMetadata(fileBuffer);
+      metadata = await extractPdfMetadata(fileBuffer, allowAI);
     } else {
       metadata = {
         title: null,
@@ -622,13 +667,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(metadata), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error processing file:", error);
     return new Response(JSON.stringify({ error: "Failed to process file" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...cors, "Content-Type": "application/json" },
     });
   }
 });
