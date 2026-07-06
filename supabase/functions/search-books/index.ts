@@ -29,22 +29,30 @@ interface BookResult {
   genreSlug: string | null;
 }
 
+// Maps Google Books categories (English) to the canonical genre slugs stored in
+// the `genres` table. These slugs are Portuguese and MUST match that table (and
+// extract-metadata's GENRES list) — the client resolves genre_id by
+// `genres.find(g => g.slug === genreSlug)`, so any slug not present there is
+// silently dropped. Order matters: more specific patterns come first (e.g.
+// "science fiction" before "science", "non-fiction" before "fiction").
 function mapCategoryToGenreSlug(categories: string[] | undefined): string | null {
   if (!categories || categories.length === 0) return null;
   const combined = categories.join(" ").toLowerCase();
-  if (/science fiction|sci-fi|scifi|space opera|cyberpunk/.test(combined)) return "sci-fi";
-  if (/fantasy|magic|sword|sorcery/.test(combined)) return "fantasy";
-  if (/mystery|detective|crime|thriller|suspense/.test(combined)) return "mystery";
-  if (/romance|love story|chick lit/.test(combined)) return "romance";
+  if (/science fiction|sci-fi|scifi|space opera|cyberpunk/.test(combined)) return "ficcao-cientifica";
+  if (/fantasy|magic|sword|sorcery/.test(combined)) return "fantasia";
   if (/horror|ghost|supernatural/.test(combined)) return "horror";
-  if (/history|historical/.test(combined)) return "history";
-  if (/biography|autobiography|memoir/.test(combined)) return "biography";
-  if (/self-help|personal development|motivation|productivity/.test(combined)) return "self-help";
-  if (/business|economics|finance|management|entrepreneurship/.test(combined)) return "business";
-  if (/science|physics|chemistry|biology|mathematics/.test(combined)) return "science";
-  if (/philosophy|ethics|logic/.test(combined)) return "philosophy";
-  if (/psychology|mental health|behavior/.test(combined)) return "psychology";
-  if (/fiction|novel|literary/.test(combined)) return "fiction";
+  if (/thriller|suspense/.test(combined)) return "thriller";
+  if (/mystery|detective|crime|noir/.test(combined)) return "misterio";
+  if (/romance|love story|chick lit/.test(combined)) return "romance";
+  if (/poetry|poem/.test(combined)) return "poesia";
+  if (/drama|plays|theater|theatre/.test(combined)) return "drama";
+  if (/biography|autobiography|memoir/.test(combined)) return "biografia";
+  if (/history|historical/.test(combined)) return "historia";
+  if (/self-help|personal development|motivation|productivity/.test(combined)) return "autoajuda";
+  if (/technology|computers|programming|software|engineering/.test(combined)) return "tecnologia";
+  if (/science|physics|chemistry|biology|mathematics|astronomy/.test(combined)) return "ciencia";
+  if (/non-fiction|nonfiction|business|economics|finance|management|philosophy|psychology|essay|reference|politics|religion|health|cooking|travel/.test(combined)) return "nao-ficcao";
+  if (/fiction|novel|literary/.test(combined)) return "ficcao";
   return null;
 }
 

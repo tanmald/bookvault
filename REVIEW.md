@@ -191,9 +191,13 @@ committed anywhere in the repo.
   configured — so the threshold is illusory in CI. A genuine `typecheck` script now exists (see
   above); still recommended: add unit tests that don't need a DB, and wire lint+typecheck+test into
   CI (a disabled workflow already exists — see the callout at the top).
-- **Mismatched genre taxonomies:** `extract-metadata` emits Portuguese genre slugs
-  (`ficcao-cientifica`, `autoajuda`) while `search-books` emits English ones (`sci-fi`,
-  `self-help`). Unify against the `genres` table's canonical slugs.
+- **Mismatched genre taxonomies [FIXED].** `extract-metadata` emitted Portuguese slugs (matching
+  the `genres` table exactly) while `search-books` emitted English ones (`sci-fi`, `self-help`,
+  `business`, `philosophy`). Since the client resolves genre via `genres.find(g => g.slug ===
+  genreSlug)`, the English slugs never matched — so genre auto-fill from the external book search
+  (`UploadBook.tsx:302`) silently never worked. Rewrote `search-books`'s `mapCategoryToGenreSlug`
+  to emit the same 15 canonical Portuguese slugs (verified identical to both the `genres` seed and
+  `extract-metadata`'s list).
 - **`UploadBook.tsx` (~919 lines)** mixes file upload, metadata extraction, duplicate detection, and
   form state. Decompose `extractMetadata()` and `handleSubmit()` into focused units/hooks.
 
@@ -317,6 +321,8 @@ run it remains open (see note below).
   `--no-verify-jwt`). **Changed:** all three edge functions — `ALLOWED_ORIGINS` CORS allowlist.
   **Changed:** `supabase/functions/fetch-cover/index.ts` — `safeFetch` SSRF guard. `CLAUDE.md`
   updated to document the new `extract-metadata` auth-read exception and the `ALLOWED_ORIGINS` var.
+- **Changed:** `supabase/functions/search-books/index.ts` — `mapCategoryToGenreSlug` now emits the
+  canonical Portuguese genre slugs so external-search genre auto-fill actually resolves.
 
 > **Edge-function deploy notes:** these are Deno functions, not covered by the app's
 > build/lint/typecheck (they were syntax-checked via esbuild only — there's no Deno in this
