@@ -10,6 +10,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: "2024-01-01T00:00:00Z",
     finished_at: "2024-01-03T00:00:00Z",
     reading_time_days: 2,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
   {
     user_id: "admin-user-id",
@@ -20,6 +23,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: "2024-01-01T00:00:00Z",
     finished_at: "2024-01-05T00:00:00Z",
     reading_time_days: 4,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
   {
     user_id: "member-user-id",
@@ -30,6 +36,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: "2024-01-10T00:00:00Z",
     finished_at: null,
     reading_time_days: null,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
   {
     user_id: "slow-reader-id",
@@ -40,6 +49,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: "2024-01-10T00:00:00Z",
     finished_at: null,
     reading_time_days: null,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
   {
     user_id: "to-read-user-id",
@@ -50,6 +62,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: null,
     finished_at: null,
     reading_time_days: null,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
   {
     user_id: "another-to-read-id",
@@ -60,6 +75,9 @@ export const mockFriendProgress: FriendProgress[] = [
     started_at: null,
     finished_at: null,
     reading_time_days: null,
+    review_id: null,
+    review_rating: null,
+    review_text: null,
   },
 ];
 
@@ -79,5 +97,8 @@ export const createMockFriendProgress = (
   started_at: null,
   finished_at: null,
   reading_time_days: null,
+  review_id: null,
+  review_rating: null,
+  review_text: null,
   ...overrides,
 });

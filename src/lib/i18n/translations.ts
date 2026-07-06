@@ -7,6 +7,7 @@ export const translations = {
     'nav.addBook': 'Adicionar Livro',
     'nav.profile': 'Perfil',
     'nav.logout': 'Sair',
+    'nav.currentLibrary': 'Biblioteca atual',
     
     // Library
     'library.title': 'A Minha Biblioteca',
@@ -696,6 +697,7 @@ export const translations = {
     'nav.addBook': 'Add Book',
     'nav.profile': 'Profile',
     'nav.logout': 'Logout',
+    'nav.currentLibrary': 'Current library',
     
     // Library
     'library.title': 'My Library',

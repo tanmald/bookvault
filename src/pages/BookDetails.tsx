@@ -95,26 +95,26 @@ export default function BookDetails() {
 
   const isOwner = book?.owner_id === user?.id;
 
-  // Check if current user is admin of the book owner's library
+  // Check if current user is admin of the book's library
   const { data: isAdmin } = useQuery({
-    queryKey: ['is-admin', book?.owner_id, user?.id],
+    queryKey: ['is-admin', book?.library_id, book?.owner_id, user?.id],
     queryFn: async () => {
-      // Check if user is the owner (owners are always admins)
+      // Owners are always admins of their own book
       if (book?.owner_id === user?.id) return true;
-      
-      // Check library_members for admin role
+
+      // Check library_members for an admin role in the book's library
       const { data, error } = await supabase
         .from('library_members')
         .select('role')
-        .eq('library_owner_id', book!.owner_id)
+        .eq('library_id', book!.library_id)
         .eq('user_id', user!.id)
         .eq('role', 'admin')
         .maybeSingle();
-      
+
       if (error) return false;
       return !!data;
     },
-    enabled: !!book?.owner_id && !!user?.id,
+    enabled: !!book?.library_id && !!user?.id,
   });
   const { data: ownerProfile } = useQuery({
     queryKey: ['profile', book?.owner_id],

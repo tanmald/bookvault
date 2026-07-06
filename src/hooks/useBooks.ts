@@ -25,11 +25,13 @@ export interface BookFile {
 export interface Book {
   id: string;
   owner_id: string;
+  library_id: string;
   title: string;
   author: string | null;
   description: string | null;
   genre_id: string | null;
   year: number | null;
+  isbn: string | null;
   cover_url: string | null;
   file_url: string;
   file_type: string;

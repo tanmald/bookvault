@@ -110,7 +110,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [
@@ -135,7 +135,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [],
@@ -165,7 +165,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [
@@ -183,7 +183,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [
@@ -192,6 +192,7 @@ describe("Friends Page", () => {
             type: "reading",
             user_id: "friend-1",
             user_name: "Friend from Other Library",
+            avatar_url: null,
             book_id: "book-1",
             book_title: "Some Book",
             created_at: "2024-01-03",
@@ -226,7 +227,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [],
@@ -236,7 +237,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [
@@ -245,6 +246,7 @@ describe("Friends Page", () => {
             type: "reading",
             user_id: "user-1",
             user_name: "Alice",
+            avatar_url: null,
             book_id: "book-1",
             book_title: "The Great Book",
             created_at: "2024-01-03T10:00:00Z",
@@ -254,6 +256,7 @@ describe("Friends Page", () => {
             type: "finished",
             user_id: "user-2",
             user_name: "Bob",
+            avatar_url: null,
             book_id: "book-2",
             book_title: "Another Book",
             created_at: "2024-01-02T10:00:00Z",
@@ -289,7 +292,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [
@@ -314,7 +317,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [],
@@ -343,7 +346,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [
@@ -361,7 +364,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [],
@@ -391,7 +394,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [],
@@ -401,7 +404,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [],
@@ -430,7 +433,7 @@ describe("Friends Page", () => {
         refetch: vi.fn(),
         removeLibrary: vi.fn(),
         setCurrentLibrary: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useLibraryModule.useLibrary>);
 
       mockUseLibraryMembers.mockReturnValue({
         members: [
@@ -448,7 +451,7 @@ describe("Friends Page", () => {
         demoteMember: { mutate: vi.fn(), isPending: false },
         removeMember: { mutate: vi.fn(), isPending: false },
         leaveLibrary: { mutate: vi.fn(), isPending: false },
-      });
+      } as unknown as ReturnType<typeof useLibraryMembersModule.useLibraryMembers>);
 
       mockUseActivityFeed.mockReturnValue({
         activities: [],

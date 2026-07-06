@@ -143,10 +143,25 @@ committed anywhere in the repo.
 
 ## 3. Architecture & code quality
 
-- **TypeScript safety net is off.** `tsconfig.app.json` sets `strict:false`, `noImplicitAny:false`,
-  `strictNullChecks:false`; ESLint disables `@typescript-eslint/no-unused-vars`. Null-safety and
-  implicit-any go uncaught project-wide. Recommend enabling incrementally (start with
-  `strictNullChecks` on new/changed files).
+- **TypeScript safety net is off [PARTIALLY FIXED].** `tsconfig.app.json` still sets `strict:false`,
+  `noImplicitAny:false`, `strictNullChecks:false` (enabling those remains a larger follow-up). But a
+  bigger, subtler problem was found and fixed: **nothing was type-checking the code at all.** The
+  `typecheck` script ran `tsc --noEmit` against the root `tsconfig.json`, which has `"files": []`
+  and only project references — so it checked *zero files* and trivially passed. `vite build` uses
+  esbuild (no type-checking), so **75 latent type errors were invisible.** Fixed the script to
+  `tsc -b` (builds the referenced projects), and cleared all 75 errors — including three real
+  production bugs (see below). The type gate is now genuine and green.
+  - **Real bug — stale generated types:** `reading_goals` and `reading_sessions` (added by
+    migrations) were never added to `src/integrations/supabase/types.ts`, so every query against
+    them was untyped and errored. Added both tables.
+  - **Real bug — `nav.currentLibrary` i18n key missing:** `AppLayout` called `t('nav.currentLibrary')`
+    for a key that didn't exist, so the mobile library selector rendered the raw key string. Added
+    the pt/en key.
+  - **Real bug — `BookDetails` admin check queried a dropped column:** it filtered
+    `library_members` by `library_owner_id`, which the multi-library migration replaced with
+    `library_id`. The query silently failed, so non-owner library admins were denied admin actions.
+    Rewrote it to filter by the book's `library_id` (also added `library_id`/`isbn` to the `Book`
+    interface, which were selected via `*` but missing from the type).
 - **No error boundaries and no route lazy-loading [FIXED]** (`src/App.tsx`). Previously a render
   error in any route blanked the whole app, and every page shipped in one 1.23 MB (gzip 362 KB)
   bundle. Added a top-level `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) around the router
@@ -173,9 +188,9 @@ committed anywhere in the repo.
   rather than removing them now.
 - **Testing is thinner than it looks.** The Vitest config sets an 80% coverage threshold, but the 6
   test files are integration tests against a live Supabase that `skipIf` silently when no DB is
-  configured — so the threshold is illusory in CI. There is no `typecheck` script and no CI gate.
-  Add unit tests that don't need a DB, a `typecheck` npm script, and wire lint+typecheck+test into
-  CI.
+  configured — so the threshold is illusory in CI. A genuine `typecheck` script now exists (see
+  above); still recommended: add unit tests that don't need a DB, and wire lint+typecheck+test into
+  CI (a disabled workflow already exists — see the callout at the top).
 - **Mismatched genre taxonomies:** `extract-metadata` emits Portuguese genre slugs
   (`ficcao-cientifica`, `autoajuda`) while `search-books` emits English ones (`sci-fi`,
   `self-help`). Unify against the `genres` table's canonical slugs.
@@ -291,7 +306,12 @@ run it remains open (see note below).
 - **New:** `supabase/migrations/20260705010000_drop_debug_user_access.sql` — drops the unused
   `debug_user_access()` diagnostic RPC; removed its now-stale entry from
   `src/integrations/supabase/types.ts`.
-- **New:** `typecheck` npm script (`tsc --noEmit`) in `package.json`.
+- **New/fixed:** `typecheck` npm script now runs `tsc -b` (the previous `tsc --noEmit` checked zero
+  files because the root tsconfig has `"files": []`). Cleared all 75 latent type errors it surfaced:
+  added `reading_goals`/`reading_sessions` to the generated types, added `library_id`/`isbn` to the
+  `Book` interface, added the missing `nav.currentLibrary` i18n key, rewrote the `BookDetails` admin
+  query to use `library_id` (was querying the dropped `library_owner_id` column), and tightened the
+  test fixtures/mocks. Added `*.tsbuildinfo` to `.gitignore`.
 - **Changed:** `supabase/functions/extract-metadata/index.ts` — gates the billed OpenAI call to
   authenticated users (reads the client-attached token; parsing stays open, deployment stays
   `--no-verify-jwt`). **Changed:** all three edge functions — `ALLOWED_ORIGINS` CORS allowlist.
