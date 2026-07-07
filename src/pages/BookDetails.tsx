@@ -38,6 +38,7 @@ import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
+import { EditBookMetadataDialog } from '@/components/books/EditBookMetadataDialog';
 import { ReviewDialog } from '@/components/books/ReviewDialog';
 import { StartNextBookDialog } from '@/components/books/StartNextBookDialog';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -70,6 +71,7 @@ export default function BookDetails() {
   const { myReview, bookReviews } = useReviews(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isChangeCoverDialogOpen, setIsChangeCoverDialogOpen] = useState(false);
+  const [isEditMetadataDialogOpen, setIsEditMetadataDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [coverVersion, setCoverVersion] = useState(0);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
@@ -380,7 +382,20 @@ export default function BookDetails() {
         {/* Details */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-semibold mb-2">{book.title}</h1>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h1 className="text-3xl font-semibold">{book.title}</h1>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label={t('book.editDetails')}
+                  onClick={() => setIsEditMetadataDialogOpen(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             {book.author && (
               <p className="text-lg text-muted-foreground flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -633,6 +648,14 @@ export default function BookDetails() {
             cover_url: book.cover_url,
             isbn: book.isbn,
           }}
+        />
+      )}
+
+      {book && (
+        <EditBookMetadataDialog
+          isOpen={isEditMetadataDialogOpen}
+          onClose={() => setIsEditMetadataDialogOpen(false)}
+          book={book}
         />
       )}
 
