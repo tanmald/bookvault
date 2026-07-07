@@ -29,6 +29,7 @@ import {
 import { useBooks } from '@/hooks/useBooks';
 import type { Book } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
+import { useReviews } from '@/hooks/useReviews';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
@@ -54,6 +55,7 @@ import {
   Pencil,
   Calendar,
   Image,
+  Star,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -65,11 +67,13 @@ export default function BookDetails() {
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
   const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
   const { progress: allProgress } = useReadingProgress();
+  const { myReview, bookReviews } = useReviews(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isChangeCoverDialogOpen, setIsChangeCoverDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [coverVersion, setCoverVersion] = useState(0);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [reviewIntent, setReviewIntent] = useState<'markRead' | 'editReview'>('markRead');
   const [nextBookToSuggest, setNextBookToSuggest] = useState<Book | null>(null);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
@@ -138,6 +142,7 @@ export default function BookDetails() {
     if (!id) return;
 
     if (status === 'read') {
+      setReviewIntent('markRead');
       setIsReviewDialogOpen(true);
     } else {
       updateProgress.mutate(
@@ -155,8 +160,26 @@ export default function BookDetails() {
     }
   };
 
+  const handleEditReview = () => {
+    setReviewIntent('editReview');
+    setIsReviewDialogOpen(true);
+  };
+
   const handleReviewSubmit = () => {
     if (!id) return;
+
+    // Editing an existing review shouldn't touch reading status — the dialog
+    // already saved the review, so just acknowledge and close.
+    if (reviewIntent === 'editReview') {
+      setIsReviewDialogOpen(false);
+      toast({
+        title: t('common.success'),
+        description: t('book.reviewSaved'),
+        variant: 'success',
+      });
+      return;
+    }
+
     updateProgress.mutate(
       { bookId: id, status: 'read' },
       {
@@ -199,8 +222,28 @@ export default function BookDetails() {
     await deleteBookFile.mutateAsync(fileId);
   };
 
+  // Average rating across the reviews visible to the current user (library members)
+  const ratings = (bookReviews ?? []).map((r) => r.rating);
+  const ratingsCount = ratings.length;
+  const averageRating = ratingsCount > 0
+    ? ratings.reduce((sum, r) => sum + r, 0) / ratingsCount
+    : null;
+
+  const renderStars = (value: number, sizeClass = 'h-4 w-4') => (
+    <div className="flex gap-0.5" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`${sizeClass} ${
+            star <= Math.round(value) ? 'fill-accent text-accent' : 'text-muted-foreground'
+          }`}
+        />
+      ))}
+    </div>
+  );
+
   // Get files from book_files relation, fallback to legacy file fields
-  const bookFiles = book?.book_files && book.book_files.length > 0 
+  const bookFiles = book?.book_files && book.book_files.length > 0
     ? book.book_files 
     : book?.file_url 
       ? [{ 
@@ -473,6 +516,46 @@ export default function BookDetails() {
             </CardContent>
           </Card>
 
+          {/* My Review & Average Rating */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg">{t('book.myReviewTitle')}</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleEditReview}>
+                <Star className="mr-2 h-4 w-4" />
+                {myReview ? t('book.editReview') : t('book.addReview')}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Average rating summary */}
+              <div className="flex items-center gap-2 text-sm">
+                {averageRating !== null ? (
+                  <>
+                    {renderStars(averageRating)}
+                    <span className="font-medium">{averageRating.toFixed(1)}</span>
+                    <span className="text-muted-foreground">
+                      · {ratingsCount}{' '}
+                      {ratingsCount === 1 ? t('book.ratingSingular') : t('book.ratingPlural')}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">{t('book.noRatings')}</span>
+                )}
+              </div>
+
+              {/* The user's own review */}
+              {myReview && (
+                <div className="rounded-md border border-border p-3 space-y-2">
+                  {renderStars(myReview.rating)}
+                  {myReview.content && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {myReview.content}
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Friends Scoreboard */}
           <FriendsScoreboard bookId={id!} />
 
@@ -512,6 +595,12 @@ export default function BookDetails() {
                 <span className="text-muted-foreground">{t('book.addedOn')}</span>
                 <span>{formatDate(book.created_at)}</span>
               </div>
+              {book.isbn && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('book.isbn')}</span>
+                  <span className="font-mono">{book.isbn}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

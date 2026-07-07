@@ -220,10 +220,12 @@ committed anywhere in the repo.
 - **Missing conveniences:** no real pagination/infinite scroll (only "load first 100, then load
   all"); no PWA/offline; no undo on destructive actions (though confirm dialogs exist); no bulk
   actions; no export/import; no notifications.
-- **BookDetails gaps:** the owner's **own** review/rating is never shown (only friends' are); there's
-  no aggregate/average rating; no page-count or ISBN displayed; and there's no post-creation
-  metadata-edit UI even though a working `updateBook` mutation already exists (only cover editing is
-  wired).
+- **BookDetails gaps [PARTIALLY FIXED]:** the owner's own review/rating, an average rating, and the
+  ISBN are now shown — a new "My Review" card displays the user's own stars + text with an
+  add/edit button (independent of the mark-as-read flow), plus the average rating and count across
+  visible reviews; the Info card now lists the ISBN. Still open: no page-count, and no
+  post-creation metadata-edit UI for title/author/genre/year (the `updateBook` mutation exists but
+  only cover editing is wired).
 
 ---
 
@@ -245,9 +247,9 @@ committed anywhere in the repo.
 Benchmarked against Goodreads / StoryGraph / Bookshelf / Oku and what readers typically want.
 Roughly ordered by value-to-effort:
 
-1. **Surface the owner's own review + an average rating on BookDetails**, and wire the existing
-   `updateBook` mutation into a metadata-edit UI (title/author/genre/year). *Low effort, closes an
-   obvious gap.*
+1. ~~**Surface the owner's own review + an average rating on BookDetails**~~ **[DONE]** (see §4).
+   Still to do: wire the existing `updateBook` mutation into a metadata-edit UI
+   (title/author/genre/year) — only cover editing is currently wired.
 2. **Page-count + position tracking** (pages read, auto-deriving %), not just a percent slider —
    the single most-requested capability for reading trackers.
 3. **Re-read history / reading log** — allow multiple finish dates per book instead of overwriting.
