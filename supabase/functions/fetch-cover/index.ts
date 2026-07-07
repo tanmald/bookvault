@@ -1,10 +1,64 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type";
+
+// CORS origin is restricted to the comma-separated ALLOWED_ORIGINS env var when
+// set; otherwise it falls back to "*" so unconfigured environments keep working.
+function corsHeaders(req: Request): Record<string, string> {
+  const configured = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const origin = req.headers.get("Origin") ?? "";
+  const allowOrigin =
+    configured.length === 0 ? "*" : configured.includes(origin) ? origin : configured[0];
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": ALLOW_HEADERS,
+    "Vary": "Origin",
+  };
+}
+
+// SSRF guard: block requests to loopback / private / link-local addresses so a
+// redirect from an external image host can't be used to reach internal services.
+function isBlockedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal") || h.endsWith(".local")) {
+    return true;
+  }
+  if (h === "::1" || h === "::") return true; // IPv6 loopback / unspecified
+  if (/^f[cd][0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true; // IPv6 ULA / link-local
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const a = parseInt(m[1], 10);
+    const b = parseInt(m[2], 10);
+    if (a === 0 || a === 127 || a === 10) return true;
+    if (a === 169 && b === 254) return true; // link-local
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+  }
+  return false;
+}
+
+function assertSafeUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+  if (url.protocol !== "https:") throw new Error(`Non-https URL blocked: ${rawUrl}`);
+  if (isBlockedHost(url.hostname)) throw new Error(`Blocked host: ${url.hostname}`);
+  return url.toString();
+}
+
+// fetch() with SSRF guards. The initial target is validated up front, and the
+// final resolved URL is re-validated after redirects, so a redirect chain that
+// lands on an internal/private/non-https host is rejected before we use it.
+// (Deno's `redirect: "manual"` yields an opaque response, so we follow normally
+// and check `response.url` rather than inspecting each hop.)
+async function safeFetch(rawUrl: string, init: RequestInit = {}): Promise<Response> {
+  const start = assertSafeUrl(rawUrl);
+  const res = await fetch(start, { ...init, redirect: "follow" });
+  if (res.url) assertSafeUrl(res.url);
+  return res;
+}
 
 interface FetchCoverRequest {
   isbn?: string;
@@ -29,11 +83,8 @@ interface FetchCoverResponse {
 // Helper function to validate if a URL returns a valid image (not a placeholder)
 async function validateImageUrl(url: string, minSize: number = 1000): Promise<boolean> {
   try {
-    const response = await fetch(url, { 
-      method: "HEAD",
-      redirect: "follow"
-    });
-    
+    const response = await safeFetch(url, { method: "HEAD" });
+
     if (!response.ok) return false;
     
     const contentLength = response.headers.get("content-length");
@@ -53,9 +104,11 @@ async function validateImageUrl(url: string, minSize: number = 1000): Promise<bo
 }
 
 serve(async (req) => {
+  const cors = corsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: cors });
   }
 
   try {
@@ -105,8 +158,8 @@ serve(async (req) => {
           const openLibUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg`;
           
           // Actually fetch the image to validate it's not a placeholder
-          const response = await fetch(openLibUrl, { redirect: "follow" });
-          
+          const response = await safeFetch(openLibUrl);
+
           if (response.ok) {
             const blob = await response.blob();
             // Open Library returns a 1x1 pixel GIF for missing covers (~100 bytes)
@@ -281,7 +334,7 @@ serve(async (req) => {
         totalFound: uniqueCovers.length,
         offset: offset
       } as FetchCoverResponse),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...cors, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in fetch-cover function:", error);
@@ -294,7 +347,7 @@ serve(async (req) => {
       } as FetchCoverResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...cors, "Content-Type": "application/json" }
       }
     );
   }

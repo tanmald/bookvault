@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface ReadingGoal {
   id: string;
@@ -15,6 +16,7 @@ export interface ReadingGoal {
 export function useReadingGoal(year?: number) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const targetYear = year ?? new Date().getFullYear();
 
@@ -81,10 +83,10 @@ export function useReadingGoal(year?: number) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-goal'] });
-      toast({ title: 'Meta guardada', description: 'A tua meta de leitura foi atualizada.' });
+      toast({ title: t('toast.goal.saved'), description: t('toast.goal.savedDesc') });
     },
     onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao guardar meta', description: error.message });
+      toast({ variant: 'destructive', title: t('toast.goal.saveError'), description: error.message });
     },
   });
 
@@ -102,10 +104,10 @@ export function useReadingGoal(year?: number) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-goal'] });
-      toast({ title: 'Meta eliminada', description: 'A tua meta de leitura foi eliminada.' });
+      toast({ title: t('toast.goal.deleted'), description: t('toast.goal.deletedDesc') });
     },
     onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao eliminar meta', description: error.message });
+      toast({ variant: 'destructive', title: t('toast.goal.deleteError'), description: error.message });
     },
   });
 

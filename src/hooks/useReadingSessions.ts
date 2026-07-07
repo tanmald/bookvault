@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface ReadingSession {
   id: string;
@@ -22,6 +23,7 @@ export interface ReadingSessionWithBook extends ReadingSession {
 export function useReadingSessions() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const sessionsQuery = useQuery({
@@ -157,10 +159,10 @@ export function useReadingSessions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-sessions'] });
-      toast({ title: 'Sessão guardada', description: 'O teu tempo de leitura foi registado.' });
+      toast({ title: t('toast.sessions.saved'), description: t('toast.sessions.savedDesc') });
     },
     onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao guardar sessão', description: error.message });
+      toast({ variant: 'destructive', title: t('toast.sessions.saveError'), description: error.message });
     },
   });
 
@@ -193,10 +195,10 @@ export function useReadingSessions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-sessions'] });
-      toast({ title: 'Sessão atualizada', description: 'A sessão de leitura foi atualizada.' });
+      toast({ title: t('toast.sessions.updated'), description: t('toast.sessions.updatedDesc') });
     },
     onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao atualizar sessão', description: error.message });
+      toast({ variant: 'destructive', title: t('toast.sessions.updateError'), description: error.message });
     },
   });
 
@@ -214,10 +216,10 @@ export function useReadingSessions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reading-sessions'] });
-      toast({ title: 'Sessão eliminada', description: 'A sessão de leitura foi eliminada.' });
+      toast({ title: t('toast.sessions.deleted'), description: t('toast.sessions.deletedDesc') });
     },
     onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao eliminar sessão', description: error.message });
+      toast({ variant: 'destructive', title: t('toast.sessions.deleteError'), description: error.message });
     },
   });
 

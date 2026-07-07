@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface Profile {
   id: string;
@@ -17,6 +18,7 @@ export interface Profile {
 export function useProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const profileQuery = useQuery({
@@ -48,12 +50,12 @@ export function useProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast({ title: 'Perfil atualizado!' });
+      toast({ title: t('toast.profile.updated') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao atualizar perfil',
+        title: t('toast.profile.updateError'),
         description: error.message,
       });
     },

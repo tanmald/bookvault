@@ -10,21 +10,6 @@ import posthog from '@/lib/posthog';
 import { BookOpen, Loader2, Check, X, UserPlus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 
-// Type for the owner profile relation
-interface OwnerProfile {
-  display_name: string | null;
-}
-
-function parseOwnerProfile(owner: unknown): OwnerProfile | null {
-  if (!owner) return null;
-  // Handle both single object and array (Supabase relation types)
-  const profile = Array.isArray(owner) ? owner[0] : owner;
-  if (typeof profile === 'object' && profile !== null && 'display_name' in profile) {
-    return { display_name: (profile as OwnerProfile).display_name };
-  }
-  return null;
-}
-
 export default function JoinInvite() {
   const { code } = useParams<{ code: string }>();
   const { user, loading: authLoading } = useAuth();
@@ -44,37 +29,35 @@ export default function JoinInvite() {
 
     const checkInvite = async () => {
       try {
+        // Validate via a SECURITY DEFINER RPC that returns only minimal,
+        // non-sensitive info. invite_links is no longer directly readable, so
+        // active codes cannot be enumerated by anonymous visitors.
         const { data, error } = await supabase
-          .from('invite_links')
-          .select(`
-            *,
-            owner:profiles!owner_id(display_name)
-          `)
-          .eq('code', code)
-          .eq('is_active', true)
-          .single();
+          .rpc('get_invite_link_info', { p_code: code });
 
-        if (error || !data) {
+        const info = Array.isArray(data) ? data[0] : data;
+
+        if (error || !info || !info.valid) {
           setStatus('invalid');
           setError(t('joinInvite.notExist'));
           return;
         }
 
         // Check if expired
-        if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        if (info.expired) {
           setStatus('invalid');
           setError(t('joinInvite.expired'));
           return;
         }
 
         // Check max uses
-        if (data.max_uses && data.uses_count >= data.max_uses) {
+        if (info.max_uses_reached) {
           setStatus('invalid');
           setError(t('joinInvite.maxUses'));
           return;
         }
 
-        setInviteOwner(parseOwnerProfile(data.owner));
+        setInviteOwner({ display_name: info.owner_display_name ?? null });
         setStatus('valid');
       } catch (err) {
         setStatus('invalid');

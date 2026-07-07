@@ -48,11 +48,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
-      console.log('Fetched libraries:', data);
-
       // If no libraries exist, create a default one
       if (!data || data.length === 0) {
-        console.log('No libraries found, creating default library...');
         const { data: newLibrary, error: createError } = await supabase
           .from('libraries')
           .insert({
@@ -69,8 +66,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           throw createError;
         }
 
-        console.log('Created default library:', newLibrary);
-
         // Migrate any existing books without library_id or with invalid library_id to this library
         const { error: updateError } = await supabase
           .from('books')
@@ -79,8 +74,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
 
         if (updateError) {
           console.error('Error migrating books to library:', updateError);
-        } else {
-          console.log('Migrated existing books to default library');
         }
 
         setLibraries([newLibrary]);
@@ -97,7 +90,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const defaultLib = data?.find(lib => lib.is_default);
       const selected = stored || defaultLib || data?.[0] || null;
 
-      console.log('Selected library:', selected);
       setCurrentLibraryState(selected);
     } catch (error) {
       console.error('Error fetching libraries:', error);

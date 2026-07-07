@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface Friend {
   id: string;
@@ -14,6 +15,7 @@ export interface Friend {
 export function useFriends() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const friendsQuery = useQuery({
@@ -47,12 +49,12 @@ export function useFriends() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends'] });
-      toast({ title: 'Amizade removida' });
+      toast({ title: t('toast.friends.removed') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover amizade',
+        title: t('toast.friends.removeError'),
         description: error.message,
       });
     },

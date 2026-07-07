@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import posthog from '@/lib/posthog';
 
 export interface InviteLink {
@@ -18,9 +19,16 @@ export interface InviteLink {
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const codeLength = 8;
+  // Reject bytes beyond the largest multiple of chars.length to avoid modulo bias.
+  const maxValid = chars.length * Math.floor(256 / chars.length);
+  const byte = new Uint8Array(1);
   let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  while (code.length < codeLength) {
+    crypto.getRandomValues(byte);
+    if (byte[0] < maxValid) {
+      code += chars[byte[0] % chars.length];
+    }
   }
   return code;
 }
@@ -28,6 +36,7 @@ function generateCode(): string {
 export function useInvites(libraryId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const invitesQuery = useQuery({
@@ -56,7 +65,7 @@ export function useInvites(libraryId?: string) {
       maxUses?: number;
     }) => {
       if (!user || !user.id) {
-        throw new Error('Você precisa estar autenticado para criar um convite');
+        throw new Error(t('toast.invites.authRequired'));
       }
 
       if (!libraryId) throw new Error('No library selected');
@@ -69,7 +78,7 @@ export function useInvites(libraryId?: string) {
         .single();
 
       if (profileError || !profile) {
-        throw new Error('Perfil do usuário não encontrado. Por favor, tente fazer login novamente.');
+        throw new Error(t('toast.invites.profileNotFound'));
       }
 
       const expiresAt = expiresInDays
@@ -93,7 +102,7 @@ export function useInvites(libraryId?: string) {
     },
     onSuccess: (invite) => {
       queryClient.invalidateQueries({ queryKey: ['invites'] });
-      toast({ title: 'Link de convite criado!' });
+      toast({ title: t('toast.invites.created') });
       posthog.capture('invite created', {
         invite_id: invite.id,
         library_id: invite.library_id,
@@ -104,7 +113,7 @@ export function useInvites(libraryId?: string) {
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao criar convite',
+        title: t('toast.invites.createError'),
         description: error.message,
       });
     },
@@ -121,12 +130,12 @@ export function useInvites(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invites'] });
-      toast({ title: 'Convite removido' });
+      toast({ title: t('toast.invites.removed') });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
-        title: 'Erro ao remover convite',
+        title: t('toast.invites.removeError'),
         description: error.message,
       });
     },

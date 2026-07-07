@@ -433,6 +433,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reading_goals: {
+        Row: {
+          created_at: string | null
+          id: string
+          target: number
+          updated_at: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          target: number
+          updated_at?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          target?: number
+          updated_at?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       reading_progress: {
         Row: {
           book_id: string
@@ -473,6 +500,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reading_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_sessions: {
+        Row: {
+          book_id: string | null
+          created_at: string | null
+          date: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id?: string | null
+          created_at?: string | null
+          date?: string
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string | null
+          created_at?: string | null
+          date?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_sessions_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
             referencedRelation: "books"
@@ -545,16 +613,6 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { user1: string; user2: string }; Returns: boolean }
-      debug_user_access: {
-        Args: never
-        Returns: {
-          auth_uid: string
-          book_count: number
-          library_count: number
-          membership_count: number
-          user_id: string
-        }[]
-      }
       get_friends_with_profiles: {
         Args: { p_user_id: string }
         Returns: {
@@ -563,6 +621,15 @@ export type Database = {
           friend_user_id: string
           friendship_created_at: string
           friendship_id: string
+        }[]
+      }
+      get_invite_link_info: {
+        Args: { p_code: string }
+        Returns: {
+          valid: boolean
+          owner_display_name: string | null
+          expired: boolean
+          max_uses_reached: boolean
         }[]
       }
       get_library_friends_book_progress: {

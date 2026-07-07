@@ -27,9 +27,6 @@ export default function Library() {
   const { progress } = useReadingProgress();
   const { t } = useLanguage();
 
-  console.log('Current library:', currentLibrary);
-  console.log('Books count:', books.length);
-
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
   const [genreFilter, setGenreFilter] = useState<string | 'all'>('all');
