@@ -36,6 +36,8 @@ export interface Book {
   file_url: string;
   file_type: string;
   file_size: number | null;
+  series_name: string | null;
+  series_position: number | null;
   created_at: string;
   updated_at: string;
   genre?: { id: string; name: string; slug: string } | null;
@@ -55,6 +57,8 @@ export interface CreateBookInput {
   file_size?: number;
   language?: string;
   library_id: string;
+  series_name?: string;
+  series_position?: number;
 }
 
 export interface AddBookFileInput {
@@ -365,7 +369,7 @@ export interface DuplicateMatch {
   matchType: 'title' | 'author' | 'both';
 }
 
-function normalizeText(text: string): string {
+export function normalizeText(text: string): string {
   if (!text) return '';
   return text
     .toLowerCase()
@@ -376,7 +380,7 @@ function normalizeText(text: string): string {
     .trim();
 }
 
-function calculateSimilarity(str1: string, str2: string): number {
+export function calculateSimilarity(str1: string, str2: string): number {
   if (!str1 && !str2) return 1;
   if (!str1 || !str2) return 0;
   

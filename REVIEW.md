@@ -220,12 +220,12 @@ committed anywhere in the repo.
 - **Missing conveniences:** no real pagination/infinite scroll (only "load first 100, then load
   all"); no PWA/offline; no undo on destructive actions (though confirm dialogs exist); no bulk
   actions; no export/import; no notifications.
-- **BookDetails gaps [PARTIALLY FIXED]:** the owner's own review/rating, an average rating, and the
-  ISBN are now shown — a new "My Review" card displays the user's own stars + text with an
-  add/edit button (independent of the mark-as-read flow), plus the average rating and count across
-  visible reviews; the Info card now lists the ISBN. Still open: no page-count, and no
-  post-creation metadata-edit UI for title/author/genre/year (the `updateBook` mutation exists but
-  only cover editing is wired).
+- **BookDetails gaps [FIXED]:** the owner's own review/rating, an average rating, and the ISBN are
+  now shown — a new "My Review" card displays the user's own stars + text with an add/edit button
+  (independent of the mark-as-read flow), plus the average rating and count across visible
+  reviews; the Info card now lists the ISBN. A new `EditBookMetadataDialog` (pencil icon next to
+  the title, admin-only) wires the existing `updateBook` mutation to title/author/genre/year/ISBN
+  editing — previously only the cover was editable post-creation. Still open: no page-count field.
 
 ---
 
@@ -247,9 +247,8 @@ committed anywhere in the repo.
 Benchmarked against Goodreads / StoryGraph / Bookshelf / Oku and what readers typically want.
 Roughly ordered by value-to-effort:
 
-1. ~~**Surface the owner's own review + an average rating on BookDetails**~~ **[DONE]** (see §4).
-   Still to do: wire the existing `updateBook` mutation into a metadata-edit UI
-   (title/author/genre/year) — only cover editing is currently wired.
+1. ~~**Surface the owner's own review + an average rating on BookDetails, and wire `updateBook`
+   into a metadata-edit UI**~~ **[DONE]** (see §4).
 2. **Page-count + position tracking** (pages read, auto-deriving %), not just a percent slider —
    the single most-requested capability for reading trackers.
 3. **Re-read history / reading log** — allow multiple finish dates per book instead of overwriting.
@@ -266,6 +265,43 @@ Roughly ordered by value-to-effort:
 11. **PWA** — installable, offline shelf, `theme-color`/manifest.
 12. **"Currently reading" home widget** + quick "log session" straight from a book card (surfacing
     the `reading_sessions.notes` field that's currently written but never shown).
+13. **Series/saga detection & reading order [IMPLEMENTED]** (user-requested; detection is
+    **automatic** — never a manually-typed series name as the primary path). All three original
+    asks are covered:
+    - At upload (`UploadBook.tsx`), a `SeriesCard` renders automatically once a title is typed,
+      showing detected companions with an "Add" button for ones not yet owned.
+    - On `BookDetails.tsx`, the same `SeriesCard` groups the book's companions; owned volumes link
+      to their own page, unowned ones show an "Add" affordance next to their thumbnail.
+    - Reading order is automatic: sorted by `series_position` when known, falling back to
+      publication-year for un-positioned volumes.
+
+    **Pipeline** — new edge function `supabase/functions/find-series/index.ts` (same
+    CORS/no-auth shape as `search-books`/`fetch-cover`):
+    1. Query **OpenLibrary** `search.json?title=&author=&fields=...,series,...` — if the top match
+       has an explicit `series` array, re-query `search.json?series=<name>` to get all companions.
+       (Note: the original plan mentioned `/works/{id}.json`; the shipped implementation uses only
+       `search.json`, which already exposes the `series` field and needed one fewer round-trip.)
+    2. Position comes from a regex over each companion's title (`#\d+`, `Book \d+`, `Vol(?:ume)?
+       \d+`); OpenLibrary's search index doesn't expose position directly.
+    3. **Fallback when OpenLibrary has no series data:** Google Books author-search, keeping only
+       titles that share a run of ≥2 consecutive words with the query title. Returned only when
+       ≥2 plausible companions are found — a low-confidence single match is suppressed rather than
+       shown wrong.
+    - `books.series_name`/`series_position` (nullable, migration
+      `20260708000000_add_series_fields_to_books.sql`) are populated automatically at creation time
+      in `UploadBook.tsx` from the detection result — the user never types them. They exist purely
+      so `EditBookMetadataDialog` can offer a manual override when detection is wrong or misses an
+      obscure title.
+    - Matching a detected companion against the user's own library reuses the existing
+      Levenshtein-based `calculateSimilarity`/`normalizeText` helpers from `useBooks.ts` (now
+      exported), at the same 0.82 threshold already used for duplicate detection.
+
+    **Verification status:** `find-series` is a Deno edge function — not covered by the app's
+    build/lint/typecheck, and this environment has no Deno runtime and no outbound access to
+    `openlibrary.org`/`googleapis.com` to exercise it live (only syntax-checked via esbuild, like
+    the other edge functions). **Needs a real deploy + manual smoke test**: upload a book from a
+    known series (e.g. *A Court of Thorns and Roses*) and confirm companions appear with sane
+    covers/positions before relying on this in production.
 
 ---
 
@@ -325,6 +361,11 @@ run it remains open (see note below).
   updated to document the new `extract-metadata` auth-read exception and the `ALLOWED_ORIGINS` var.
 - **Changed:** `supabase/functions/search-books/index.ts` — `mapCategoryToGenreSlug` now emits the
   canonical Portuguese genre slugs so external-search genre auto-fill actually resolves.
+- **New (feature):** `src/pages/BookDetails.tsx` — a "My Review" card (own rating/review + average
+  rating and count) and an ISBN row in the Info card; reuses `useReviews`.
+- **New (feature):** `src/components/books/EditBookMetadataDialog.tsx` — admin-only pencil-icon
+  button next to the book title opens a dialog to edit title/author/genre/year/ISBN, wired to the
+  existing `updateBook` mutation.
 
 > **Edge-function deploy notes:** these are Deno functions, not covered by the app's
 > build/lint/typecheck (they were syntax-checked via esbuild only — there's no Deno in this

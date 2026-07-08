@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useBooks, checkDuplicateByIsbn, checkDuplicateByTitleAuthor, type DuplicateMatch } from '@/hooks/useBooks';
+import { useBooks, checkDuplicateByIsbn, checkDuplicateByTitleAuthor, calculateSimilarity, normalizeText, type DuplicateMatch } from '@/hooks/useBooks';
 import { SUPPORTED_LANGUAGES, getLanguageName } from '@/lib/languages';
 import { useGenres } from '@/hooks/useGenres';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +29,8 @@ import { Progress } from '@/components/ui/progress';
 import { DuplicateBookSelector } from '@/components/upload/DuplicateBookSelector';
 import { BookSearchDropdown } from '@/components/upload/BookSearchDropdown';
 import { useBookSearch } from '@/hooks/useBookSearch';
+import { useSeriesInfo } from '@/hooks/useSeriesInfo';
+import { SeriesCard } from '@/components/books/SeriesCard';
 import type { Book } from '@/hooks/useBooks';
 
 interface ExtractedMetadata {
@@ -84,6 +86,26 @@ export default function UploadBook() {
     genre_id: '',
     year: '',
   });
+
+  // Prefill title/author when arriving from a "series companion" add suggestion
+  // (SeriesCard links here with ?prefillTitle=&prefillAuthor=).
+  useEffect(() => {
+    const prefillTitle = searchParams.get('prefillTitle');
+    const prefillAuthor = searchParams.get('prefillAuthor');
+    if (prefillTitle) {
+      setFormData((prev) => ({
+        ...prev,
+        title: prefillTitle,
+        author: prefillAuthor || prev.author,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const { data: seriesInfo } = useSeriesInfo(
+    mode === 'new' ? formData.title : undefined,
+    formData.author
+  );
 
   // Book search state (manual entry mode only)
   const [bookSearchActive, setBookSearchActive] = useState(false);
@@ -548,6 +570,20 @@ export default function UploadBook() {
         }
       }
 
+      // If a series was auto-detected for this title, find this book's own
+      // entry in the companion list to capture its position (if known).
+      let ownSeriesPosition: number | undefined;
+      if (seriesInfo?.seriesName) {
+        const selfMatch = seriesInfo.books.find(
+          (candidate) =>
+            calculateSimilarity(
+              normalizeText(candidate.title),
+              normalizeText(formData.title)
+            ) >= 0.82
+        );
+        ownSeriesPosition = selfMatch?.position ?? undefined;
+      }
+
       // --- Create new book (with or without a file) ---
       await createBook.mutateAsync({
         title: formData.title.trim(),
@@ -562,6 +598,8 @@ export default function UploadBook() {
         cover_url: coverUrl,
         language: selectedLanguage,
         library_id: currentLibrary.id,
+        series_name: seriesInfo?.seriesName || undefined,
+        series_position: ownSeriesPosition,
       });
 
       navigate('/');
@@ -730,6 +768,14 @@ export default function UploadBook() {
                   </div>
                 </CardContent>
               </Card>
+
+              {seriesInfo && (
+                <SeriesCard
+                  currentBook={{ title: formData.title, author: formData.author || null }}
+                  seriesInfo={seriesInfo}
+                  libraryBooks={books}
+                />
+              )}
 
               <Card>
                 <CardHeader>
