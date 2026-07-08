@@ -226,17 +226,28 @@ function normalizeTitle(t: string): string {
 
 // OpenLibrary groups editions of the same book (including translations)
 // under one Work record, so a translated query title that the title+author
-// search can't match may still show up as one of a candidate's own edition
-// titles. Checking this directly identifies the queried book itself,
-// independent of language, instead of falling back to a popularity guess.
+// search can't match may still show up as one of a candidate's own editions.
+// Checking this directly identifies the queried book itself, independent of
+// language, instead of falling back to a popularity guess.
+//
+// Confirmed live (2026-07-08): translated editions often put the series name
+// in `title` and the actual translated book title in `subtitle` (e.g. the
+// Portuguese edition of "Heir of Fire" has title "Trono de Vidro", subtitle
+// "Herdeira do fogo (Vol. 3)") — so both fields need checking, and it's a
+// substring match rather than exact equality since the subtitle carries a
+// volume-number suffix the query title won't have.
 async function editionTitlesInclude(key: string, queryTitle: string): Promise<boolean> {
   try {
     const res = await fetch(`https://openlibrary.org${key}/editions.json?limit=50`);
     if (!res.ok) return false;
     const data = await res.json();
-    const entries = (data.entries ?? []) as Array<{ title?: string }>;
+    const entries = (data.entries ?? []) as Array<{ title?: string; subtitle?: string }>;
     const target = normalizeTitle(queryTitle);
-    return entries.some((e) => e.title && normalizeTitle(e.title) === target);
+    if (!target) return false;
+    return entries.some((e) => {
+      const combined = normalizeTitle(`${e.title ?? ""} ${e.subtitle ?? ""}`);
+      return combined.length > 0 && combined.includes(target);
+    });
   } catch {
     return false;
   }
