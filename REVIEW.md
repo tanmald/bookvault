@@ -291,22 +291,33 @@ Roughly ordered by value-to-effort:
       publication-year for un-positioned volumes.
 
     **Pipeline** — new edge function `supabase/functions/find-series/index.ts` (same
-    CORS/no-auth shape as `search-books`/`fetch-cover`):
-    1. Query **OpenLibrary** `search.json?title=&author=&fields=...,series,...` — if the top match
-       has an explicit `series` array, re-query `search.json?series=<name>` to get all companions.
-       (Note: the original plan mentioned `/works/{id}.json`; the shipped implementation uses only
-       `search.json`, which already exposes the `series` field and needed one fewer round-trip.)
-    2. **[FIXED — see incident below] Author-only fallback:** if the title+author search finds no
-       series tag, re-query OpenLibrary by `author` alone and take the series name only if it's
-       unambiguous (≥60% of that author's series-tagged works agree on one name — an author with
-       multiple series, e.g. Sarah J. Maas, must not have the wrong one guessed).
-    3. Position comes from a regex over each companion's title (`#\d+`, `Book \d+`, `Vol(?:ume)?
-       \d+`); OpenLibrary's search index doesn't expose position directly.
-    4. **Fallback when OpenLibrary has nothing at all:** Google Books author-search, keeping only
+    CORS/no-auth shape as `search-books`/`fetch-cover`). **Confirmed live against the real
+    OpenLibrary API (2026-07-08) that `search.json`'s per-doc `series` field is not reliably
+    populated** — an author search for a well-known, heavily-cataloged series author returned 20
+    docs, none with a `series` value. The shipped pipeline fetches each candidate Work's own JSON
+    instead, where the data does live:
+    1. Run a title+author search and an author-only search on OpenLibrary `search.json`; pool the
+       candidate Works (deduped by key).
+    2. Fetch each candidate's `/works/{key}.json` (capped at 25) and extract its series tag from
+       the `[series:Some_Series]` entry in `subjects` (confirmed present there — e.g. *Heir of
+       Fire*'s Work record carries `"[series:Throne_of_Glass]"`), with the structured
+       `series[].position` used for ordering when present, falling back to a regex over the title
+       (`#\d+`, `Book \d+`, `Vol(?:ume)? \d+`) otherwise.
+    3. Anchor on whichever candidate matches the title+author search — that's the queried book
+       itself, not a guess.
+    4. If the title+author search found nothing (translated/renamed edition), check each
+       candidate's own `/works/{key}/editions.json` for an edition title matching the query.
+       OpenLibrary groups translations under the same Work record, so this identifies the actual
+       book (e.g. finds "Herdeira do Fogo" as an edition of the *Heir of Fire* Work) without
+       depending on text similarity across languages.
+    5. Only if neither anchor resolves, fall back to a dominant-tag guess (≥60% of tagged
+       candidates must agree) — kept as a last resort because some authors (e.g. Sarah J. Maas:
+       Throne of Glass, ACOTAR, Crescent City) write several series of comparable size, where an
+       unqualified plurality isn't enough signal to avoid guessing wrong.
+    6. **Fallback when OpenLibrary has nothing at all:** Google Books author-search, keeping only
        titles that share a run of ≥2 consecutive words with the query title. Returned only when
        ≥2 plausible companions are found — a low-confidence single match is suppressed rather than
-       shown wrong. (Only useful when the query title shares words with the catalog — i.e. same
-       language as the candidates — which is exactly why step 2 exists.)
+       shown wrong.
     - `books.series_name`/`series_position` (nullable, migration
       `20260708000000_add_series_fields_to_books.sql`) are populated automatically at creation time
       in `UploadBook.tsx` from the detection result — the user never types them. They exist purely
@@ -316,23 +327,25 @@ Roughly ordered by value-to-effort:
       Levenshtein-based `calculateSimilarity`/`normalizeText` helpers from `useBooks.ts` (now
       exported), at the same 0.82 threshold already used for duplicate detection.
 
-    **Post-deploy incident (2026-07-08):** the user tested with a Portuguese-translated title
-    (*"Herdeira do Fogo"* / Sarah J. Maas, i.e. *Heir of Fire*) and got no `SeriesCard`. Confirmed
-    via DevTools that `find-series` returned `200 {"seriesName":null,"books":[]}` — not a
-    deploy/CORS bug, a real gap: the translated edition wasn't tagged with a series on OpenLibrary,
-    and the Google Books heuristic structurally can't match a Portuguese title against English
-    candidate titles (zero shared words by construction). Step 2 above (author-only fallback) was
-    added to fix this — it's language-independent since it keys on author identity, not title
-    text. **Still needs a live re-test** with the same repro case after redeploy (see Verification
-    status below); the dominant-series-name selection logic was unit-tested in isolation
-    (Node, no network) but the live OpenLibrary author-search behavior was not.
+    **Post-deploy incident (2026-07-08) — resolved:** the user tested with a Portuguese-translated
+    title (*"Herdeira do Fogo"* / Sarah J. Maas, i.e. *Heir of Fire*) and got no `SeriesCard`.
+    Two rounds of diagnosis were needed. First hypothesis (translated titles need an author-only
+    OpenLibrary fallback) was shipped but didn't fix it — live testing (the user fetching
+    OpenLibrary URLs directly and pasting the JSON back) showed the real cause: `search.json`
+    doesn't carry `series` data on any candidate at all, for any title, in any language. The
+    working data lives on each Work's own JSON record. The pipeline above (steps 2–4) was
+    rewritten around that finding and confirmed against the actual API responses for this book
+    before shipping.
 
     **Verification status:** `find-series` is a Deno edge function — not covered by the app's
     build/lint/typecheck, and this environment has no Deno runtime and no outbound access to
-    `openlibrary.org`/`googleapis.com` to exercise it live (only syntax-checked via esbuild, like
-    the other edge functions). **Needs a real deploy + manual smoke test**: retry *"Herdeira do
-    Fogo"* / Sarah J. Maas (should now show Throne of Glass companions) and also confirm a
-    genuinely obscure/unknown title still correctly shows nothing (no regression to the
+    `openlibrary.org`/`googleapis.com` to exercise it end-to-end (only syntax-checked via esbuild,
+    like the other edge functions). The redesigned pipeline's core assumptions — the
+    `[series:...]` subjects tag and the editions-list translation grouping — were confirmed
+    against live OpenLibrary responses for this exact repro case, but the full round-trip through
+    a live deploy has not yet been re-verified. **Needs a real deploy + manual smoke test**: retry
+    *"Herdeira do Fogo"* / Sarah J. Maas (should now show Throne of Glass companions) and also
+    confirm a genuinely obscure/unknown title still correctly shows nothing (no regression to the
     low-confidence-suppression behavior).
 
 ---

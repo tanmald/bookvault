@@ -87,14 +87,18 @@ async function openLibrarySearch(params: Record<string, string>): Promise<OpenLi
   return data.docs ?? [];
 }
 
-function docToResult(doc: OpenLibraryDoc, source: SeriesBookResult["source"]): SeriesBookResult {
+function docToResult(
+  doc: OpenLibraryDoc,
+  source: SeriesBookResult["source"],
+  positionOverride?: number | null
+): SeriesBookResult {
   return {
     title: doc.title,
     author: doc.author_name?.[0] ?? "",
     coverUrl: coverUrlFromId(doc.cover_i),
     isbn: doc.isbn?.[0] ?? null,
     year: doc.first_publish_year ? String(doc.first_publish_year) : null,
-    position: extractPosition(doc.title),
+    position: positionOverride ?? extractPosition(doc.title),
     source,
   };
 }
@@ -179,76 +183,183 @@ async function googleBooksHeuristic(title: string, author: string): Promise<Seri
   return results.length >= 2 ? results : [];
 }
 
-function firstSeriesName(docs: OpenLibraryDoc[]): string | null {
-  const withSeries = docs.find((d) => d.series && d.series.length > 0);
-  return withSeries?.series?.[0] ?? null;
+// OpenLibrary's search.json response does NOT reliably carry per-doc series
+// data (confirmed empirically: an author search for a well-known, heavily
+// cataloged series author returned 20 docs, zero with a populated `series`
+// field). The data does exist, but only on the individual Work record
+// (`/works/{key}.json`), either as a structured `series` array or, more
+// consistently, as a `[series:Some_Series]` tag inside `subjects`. So series
+// membership has to be resolved with a follow-up fetch per candidate work.
+interface OpenLibraryWorkDetail {
+  subjects?: string[];
+  series?: Array<{ series?: { key?: string }; position?: string }>;
 }
 
-// Picks a series name only when the author's results aren't ambiguous about
-// it — i.e. every series-tagged doc agrees, or one name clearly dominates
-// (>= 60% of the tagged docs). Authors who write multiple series (e.g. Sarah
-// J. Maas: Throne of Glass and A Court of Thorns and Roses) would otherwise
-// risk having an unrelated series guessed for their book, which is worse
-// than suppressing — same "suppress rather than show wrong" principle as the
-// Google Books heuristic below.
-function dominantSeriesName(docs: OpenLibraryDoc[]): string | null {
+const SUBJECT_SERIES_TAG = /^\[series:(.+)\]$/;
+
+function seriesTagFromSubjects(subjects: string[] | undefined): string | null {
+  for (const subject of subjects ?? []) {
+    const match = subject.match(SUBJECT_SERIES_TAG);
+    if (match) return match[1].replace(/_/g, " ").trim();
+  }
+  return null;
+}
+
+async function fetchWorkDetail(key: string): Promise<OpenLibraryWorkDetail | null> {
+  try {
+    const res = await fetch(`https://openlibrary.org${key}.json`);
+    if (!res.ok) return null;
+    return (await res.json()) as OpenLibraryWorkDetail;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeTitle(t: string): string {
+  return t
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// OpenLibrary groups editions of the same book (including translations)
+// under one Work record, so a translated query title that the title+author
+// search can't match may still show up as one of a candidate's own edition
+// titles. Checking this directly identifies the queried book itself,
+// independent of language, instead of falling back to a popularity guess.
+async function editionTitlesInclude(key: string, queryTitle: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://openlibrary.org${key}/editions.json?limit=50`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    const entries = (data.entries ?? []) as Array<{ title?: string }>;
+    const target = normalizeTitle(queryTitle);
+    return entries.some((e) => e.title && normalizeTitle(e.title) === target);
+  } catch {
+    return false;
+  }
+}
+
+interface Candidate {
+  doc: OpenLibraryDoc;
+  seriesTag: string | null;
+  position: number | null;
+}
+
+// Bounds how many Work-detail fetches a single findSeries() call can trigger.
+const MAX_CANDIDATES = 25;
+
+async function loadCandidates(docs: OpenLibraryDoc[]): Promise<Candidate[]> {
+  const settled = await Promise.allSettled(
+    docs.slice(0, MAX_CANDIDATES).map(async (doc) => {
+      const detail = await fetchWorkDetail(doc.key);
+      const seriesTag = seriesTagFromSubjects(detail?.subjects);
+      const structuredPosition = detail?.series?.[0]?.position
+        ? parseFloat(detail.series[0].position)
+        : NaN;
+      const position = !Number.isNaN(structuredPosition)
+        ? structuredPosition
+        : extractPosition(doc.title);
+      return { doc, seriesTag, position } as Candidate;
+    })
+  );
+  return settled
+    .filter((r): r is PromiseFulfilledResult<Candidate> => r.status === "fulfilled")
+    .map((r) => r.value);
+}
+
+// Same "suppress rather than guess wrong" principle as the Google Books
+// heuristic: only trust a dominant tag when it's unambiguous (>= 60% of the
+// tagged candidates agree). Needed as a fallback for authors whose queried
+// book itself doesn't turn up in the title+author search (e.g. very
+// obscure/translated editions), where we have no direct anchor.
+function dominantSeriesTag(candidates: Candidate[]): string | null {
   const counts = new Map<string, number>();
   let tagged = 0;
-  for (const doc of docs) {
-    const name = doc.series?.[0];
-    if (!name) continue;
+  for (const c of candidates) {
+    if (!c.seriesTag) continue;
     tagged++;
-    counts.set(name, (counts.get(name) ?? 0) + 1);
+    counts.set(c.seriesTag, (counts.get(c.seriesTag) ?? 0) + 1);
   }
   if (tagged === 0) return null;
 
   let best: string | null = null;
   let bestCount = 0;
-  for (const [name, count] of counts) {
+  for (const [tag, count] of counts) {
     if (count > bestCount) {
-      best = name;
+      best = tag;
       bestCount = count;
     }
   }
   return best && bestCount / tagged >= 0.6 ? best : null;
 }
 
-async function seriesCompanions(seriesName: string): Promise<SeriesBookResult[]> {
-  const companions = await openLibrarySearch({ series: seriesName });
-  return companions
-    .map((doc) => docToResult(doc, "openlibrary"))
-    .sort((a, b) => {
-      if (a.position !== null && b.position !== null) return a.position - b.position;
-      if (a.position !== null) return -1;
-      if (b.position !== null) return 1;
-      return (a.year ?? "9999").localeCompare(b.year ?? "9999");
-    });
+function sortCompanions(a: SeriesBookResult, b: SeriesBookResult): number {
+  if (a.position !== null && b.position !== null) return a.position - b.position;
+  if (a.position !== null) return -1;
+  if (b.position !== null) return 1;
+  return (a.year ?? "9999").localeCompare(b.year ?? "9999");
 }
 
 async function findSeries(title: string, author: string): Promise<FindSeriesResponse> {
-  const primaryMatches = await openLibrarySearch({
+  const primaryDocs = await openLibrarySearch({
     title,
     ...(author ? { author } : {}),
   });
+  const authorDocs = author ? await openLibrarySearch({ author }) : [];
 
-  let seriesName = firstSeriesName(primaryMatches);
-
-  // The title+author search above only finds a series if THIS specific
-  // edition/work is tagged with one. Translated editions are frequently
-  // cataloged on OpenLibrary without series metadata even when the original
-  // edition has it, and the query title then shares no words with the
-  // (usually English) catalog entries, which would also defeat the Google
-  // Books heuristic below. An author-only search sidesteps both: it's driven
-  // by author identity rather than title text, so it works regardless of
-  // what language the user's copy's title is in.
-  if (!seriesName && author) {
-    const authorMatches = await openLibrarySearch({ author });
-    seriesName = dominantSeriesName(authorMatches);
+  const seen = new Set<string>();
+  const pool: OpenLibraryDoc[] = [];
+  for (const doc of [...primaryDocs, ...authorDocs]) {
+    if (seen.has(doc.key)) continue;
+    seen.add(doc.key);
+    pool.push(doc);
   }
 
-  if (seriesName) {
-    const books = await seriesCompanions(seriesName);
-    return { seriesName, books };
+  if (pool.length > 0) {
+    const candidates = await loadCandidates(pool);
+
+    // Prefer the series tag found on whichever candidate actually matches
+    // the queried title+author — that's the book itself, not a popularity
+    // guess, so it correctly disambiguates authors who write multiple
+    // series regardless of what language the query title is in.
+    const primaryKeys = new Set(primaryDocs.map((d) => d.key));
+    const ownBook = candidates.find((c) => primaryKeys.has(c.doc.key) && c.seriesTag);
+    let seriesTag = ownBook?.seriesTag ?? null;
+
+    // The title+author search found nothing (typically a translated or
+    // renamed edition), so there's no direct anchor yet. Before falling
+    // back to a popularity guess — which is ambiguous for authors who write
+    // several series of comparable size — check whether the queried title
+    // shows up as one of each candidate's own editions. OpenLibrary groups
+    // translations under the same Work record, so this identifies the
+    // actual book even though its title never matched in search results.
+    if (!seriesTag && primaryDocs.length === 0 && candidates.some((c) => c.seriesTag)) {
+      const matches = await Promise.allSettled(
+        candidates.map((c) => editionTitlesInclude(c.doc.key, title))
+      );
+      const matchedCandidate = candidates.find((c, i) => {
+        const result = matches[i];
+        return c.seriesTag && result.status === "fulfilled" && result.value;
+      });
+      seriesTag = matchedCandidate?.seriesTag ?? null;
+    }
+
+    if (!seriesTag) {
+      seriesTag = dominantSeriesTag(candidates);
+    }
+
+    if (seriesTag) {
+      const books = candidates
+        .filter((c) => c.seriesTag === seriesTag)
+        .map((c) => docToResult(c.doc, "openlibrary", c.position))
+        .sort(sortCompanions);
+      if (books.length > 0) {
+        return { seriesName: seriesTag, books };
+      }
+    }
   }
 
   // No OpenLibrary series data — fall back to the Google Books heuristic.
