@@ -265,25 +265,38 @@ Roughly ordered by value-to-effort:
 11. **PWA** — installable, offline shelf, `theme-color`/manifest.
 12. **"Currently reading" home widget** + quick "log session" straight from a book card (surfacing
     the `reading_sessions.notes` field that's currently written but never shown).
-13. **Series/saga detection & reading order** (user-requested). Three tied asks:
-    - At upload, search for other books in the same series (e.g. adding *A Court of Thorns and
-      Roses* suggests *A Court of Mist and Fury*, etc.) and offer to add them.
+13. **Series/saga detection & reading order** (user-requested; detection must be **automatic** —
+    not a manually-typed series name). Three tied asks:
+    - At upload, automatically search for other books in the same series (e.g. adding *A Court of
+      Thorns and Roses* suggests *A Court of Mist and Fury*, etc.) and offer to add them.
     - On `BookDetails`, group the book's series companions; volumes not yet in the library get an
       "add" affordance next to their thumbnail — the same UX shape as `useAlternativeCovers`'
       candidate-picker (`ChangeCoverDialog`), just for whole books instead of cover images.
-    - Show a suggested reading order within the series.
+    - Show a suggested reading order within the series, derived automatically (not user-entered).
 
     *Feasibility note:* there's no series concept in the schema today, and Google Books'
     `volumeInfo` — the only external metadata source currently wired, via `search-books` and
     `fetch-cover` — doesn't expose a reliable series field; publishers encode it inconsistently in
-    the title/subtitle. Pragmatic path: add nullable `series_name`/`series_position` columns to
-    `books`, editable via the new `EditBookMetadataDialog` (`src/components/books/
-    EditBookMetadataDialog.tsx`); use them for same-library grouping and reading-order sort
-    immediately (no external dependency). Treat "auto-detect series from an external source" as a
-    stretch goal layered on top — OpenLibrary's Works API models series more reliably than Google
-    Books, or fall back to an author + title-prefix fuzzy-match heuristic (similar in spirit to the
-    existing duplicate-detection Levenshtein check in `useBooks.ts`) — rather than a hard
-    requirement for a first version.
+    the title/subtitle. A workable automatic pipeline, as a new edge function (same shape as
+    `search-books`/`fetch-cover`):
+    1. Query **OpenLibrary** (`openlibrary.org/search.json?author=...`, then `/works/{id}.json`)
+       for the same author — OpenLibrary editions carry an explicit `series` field (not universal,
+       but decent coverage and free/unauthenticated, unlike Hardcover/ISBNdb/Goodreads).
+    2. Cross-check with **Google Books** author search; parse `title`/`subtitle` with a regex for
+       ordinal patterns (`#\d+`, `Book \d+`, `Vol(?:ume)? \d+`) to recover a position when
+       OpenLibrary doesn't have one.
+    3. Cluster candidates by normalized series name + author, ranked by source confidence
+       (OpenLibrary explicit field > regex-derived ordinal > "same series, unknown order").
+       Low-confidence matches are suppressed rather than shown — a wrong suggestion is worse than
+       none — similar in spirit to the existing fuzzy-match confidence threshold in the
+       duplicate-detection check in `useBooks.ts`.
+    - Store the result in nullable `series_name`/`series_position` columns on `books`, populated by
+      this pipeline (not typed by the user). The `EditBookMetadataDialog`
+      (`src/components/books/EditBookMetadataDialog.tsx`) still exposes them as editable fields
+      purely as a correction/override path for when auto-detection gets it wrong or misses an
+      obscure title — the primary path is always automatic.
+    - Reading order sorts by `series_position` when known; falls back to publication-year order for
+      un-positioned volumes rather than asking the user to sequence them manually.
 
 ---
 
