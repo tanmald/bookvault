@@ -179,27 +179,75 @@ async function googleBooksHeuristic(title: string, author: string): Promise<Seri
   return results.length >= 2 ? results : [];
 }
 
+function firstSeriesName(docs: OpenLibraryDoc[]): string | null {
+  const withSeries = docs.find((d) => d.series && d.series.length > 0);
+  return withSeries?.series?.[0] ?? null;
+}
+
+// Picks a series name only when the author's results aren't ambiguous about
+// it — i.e. every series-tagged doc agrees, or one name clearly dominates
+// (>= 60% of the tagged docs). Authors who write multiple series (e.g. Sarah
+// J. Maas: Throne of Glass and A Court of Thorns and Roses) would otherwise
+// risk having an unrelated series guessed for their book, which is worse
+// than suppressing — same "suppress rather than show wrong" principle as the
+// Google Books heuristic below.
+function dominantSeriesName(docs: OpenLibraryDoc[]): string | null {
+  const counts = new Map<string, number>();
+  let tagged = 0;
+  for (const doc of docs) {
+    const name = doc.series?.[0];
+    if (!name) continue;
+    tagged++;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  if (tagged === 0) return null;
+
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [name, count] of counts) {
+    if (count > bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  }
+  return best && bestCount / tagged >= 0.6 ? best : null;
+}
+
+async function seriesCompanions(seriesName: string): Promise<SeriesBookResult[]> {
+  const companions = await openLibrarySearch({ series: seriesName });
+  return companions
+    .map((doc) => docToResult(doc, "openlibrary"))
+    .sort((a, b) => {
+      if (a.position !== null && b.position !== null) return a.position - b.position;
+      if (a.position !== null) return -1;
+      if (b.position !== null) return 1;
+      return (a.year ?? "9999").localeCompare(b.year ?? "9999");
+    });
+}
+
 async function findSeries(title: string, author: string): Promise<FindSeriesResponse> {
   const primaryMatches = await openLibrarySearch({
     title,
     ...(author ? { author } : {}),
   });
 
-  const withSeries = primaryMatches.find((d) => d.series && d.series.length > 0);
+  let seriesName = firstSeriesName(primaryMatches);
 
-  if (withSeries?.series?.[0]) {
-    const seriesName = withSeries.series[0];
-    const companions = await openLibrarySearch({ series: seriesName });
+  // The title+author search above only finds a series if THIS specific
+  // edition/work is tagged with one. Translated editions are frequently
+  // cataloged on OpenLibrary without series metadata even when the original
+  // edition has it, and the query title then shares no words with the
+  // (usually English) catalog entries, which would also defeat the Google
+  // Books heuristic below. An author-only search sidesteps both: it's driven
+  // by author identity rather than title text, so it works regardless of
+  // what language the user's copy's title is in.
+  if (!seriesName && author) {
+    const authorMatches = await openLibrarySearch({ author });
+    seriesName = dominantSeriesName(authorMatches);
+  }
 
-    const books = companions
-      .map((doc) => docToResult(doc, "openlibrary"))
-      .sort((a, b) => {
-        if (a.position !== null && b.position !== null) return a.position - b.position;
-        if (a.position !== null) return -1;
-        if (b.position !== null) return 1;
-        return (a.year ?? "9999").localeCompare(b.year ?? "9999");
-      });
-
+  if (seriesName) {
+    const books = await seriesCompanions(seriesName);
     return { seriesName, books };
   }
 
