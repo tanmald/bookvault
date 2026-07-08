@@ -44,6 +44,21 @@ RPC · client-trusted identity in the invite RPC.
 Ranked by severity. The four items marked **[FIXED]** are addressed by
 `supabase/migrations/20260705000000_fix_rls_security_regressions.sql` in this change.
 
+> **Post-deploy incident (2026-07-08):** applying that migration broke virtually every read
+> in the app (`books`, `reading_progress`, `library_members`, etc. all 500ing) with Postgres
+> error `42P17 infinite recursion detected in policy for relation "library_members"`. Root
+> cause: an old SELECT policy on `library_members` from
+> `20260207000000_fix_rls_recursion.sql` ("Users can view library members") directly
+> self-joins `library_members` from within its own policy body — a textbook RLS
+> self-reference. It was dormant because a later migration had disabled RLS on that table
+> entirely (the very regression C1 fixes); re-enabling RLS woke it back up, and the security
+> migration's `DROP POLICY` list didn't happen to include that specific stale policy name.
+> Fixed by `supabase/migrations/20260708010000_fix_library_members_rls_recursion.sql`
+> (drops the stale policy; also rewrites the `library_members`-querying SECURITY DEFINER
+> helpers as `plpgsql` as unrelated defense-in-depth). Verified against a real local
+> Postgres 16 instance: reproduced the exact 42P17 with an isolated repro of just the stale
+> policy, then confirmed dropping it alone resolves it.
+
 ### CRITICAL
 
 **C1 — Privilege escalation via `library_members` [FIXED].**
