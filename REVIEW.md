@@ -265,6 +265,25 @@ Roughly ordered by value-to-effort:
 11. **PWA** — installable, offline shelf, `theme-color`/manifest.
 12. **"Currently reading" home widget** + quick "log session" straight from a book card (surfacing
     the `reading_sessions.notes` field that's currently written but never shown).
+13. **Series/saga detection & reading order** (user-requested). Three tied asks:
+    - At upload, search for other books in the same series (e.g. adding *A Court of Thorns and
+      Roses* suggests *A Court of Mist and Fury*, etc.) and offer to add them.
+    - On `BookDetails`, group the book's series companions; volumes not yet in the library get an
+      "add" affordance next to their thumbnail — the same UX shape as `useAlternativeCovers`'
+      candidate-picker (`ChangeCoverDialog`), just for whole books instead of cover images.
+    - Show a suggested reading order within the series.
+
+    *Feasibility note:* there's no series concept in the schema today, and Google Books'
+    `volumeInfo` — the only external metadata source currently wired, via `search-books` and
+    `fetch-cover` — doesn't expose a reliable series field; publishers encode it inconsistently in
+    the title/subtitle. Pragmatic path: add nullable `series_name`/`series_position` columns to
+    `books`, editable via the new `EditBookMetadataDialog` (`src/components/books/
+    EditBookMetadataDialog.tsx`); use them for same-library grouping and reading-order sort
+    immediately (no external dependency). Treat "auto-detect series from an external source" as a
+    stretch goal layered on top — OpenLibrary's Works API models series more reliably than Google
+    Books, or fall back to an author + title-prefix fuzzy-match heuristic (similar in spirit to the
+    existing duplicate-detection Levenshtein check in `useBooks.ts`) — rather than a hard
+    requirement for a first version.
 
 ---
 
