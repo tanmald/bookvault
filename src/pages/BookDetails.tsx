@@ -30,12 +30,14 @@ import { useBooks } from '@/hooks/useBooks';
 import type { Book } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useReviews } from '@/hooks/useReviews';
+import { useSeriesInfo } from '@/hooks/useSeriesInfo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { getGenreTranslationKey } from '@/lib/i18n/translations';
 import { BookVersionsList } from '@/components/books/BookVersionsList';
 import { FriendsScoreboard } from '@/components/books/FriendsScoreboard';
+import { SeriesCard } from '@/components/books/SeriesCard';
 import { CopyBookDialog } from '@/components/books/CopyBookDialog';
 import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
 import { EditBookMetadataDialog } from '@/components/books/EditBookMetadataDialog';
@@ -81,6 +83,7 @@ export default function BookDetails() {
   const { toast } = useToast();
 
   const book = books.find((b) => b.id === id);
+  const { data: seriesInfo } = useSeriesInfo(book?.title, book?.author);
   const bookProgress = progress.find((p) => p.book_id === id);
   const currentStatus = bookProgress?.status ?? 'to_read';
   const currentProgress = bookProgress?.progress ?? 0;
@@ -570,6 +573,15 @@ export default function BookDetails() {
               )}
             </CardContent>
           </Card>
+
+          {/* Series / Saga */}
+          {seriesInfo && (
+            <SeriesCard
+              currentBook={{ title: book.title, author: book.author }}
+              seriesInfo={seriesInfo}
+              libraryBooks={books}
+            />
+          )}
 
           {/* Friends Scoreboard */}
           <FriendsScoreboard bookId={id!} />

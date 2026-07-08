@@ -113,10 +113,11 @@ The `extract-metadata` edge function uses OpenAI (gpt-4o-mini) for AI-powered bo
 - The Supabase JS client already sets Content-Type correctly per request type.
 
 ### Edge Function Deployment
-- **Utility functions** (no DB/user data access): deploy with `--no-verify-jwt`. Examples: `extract-metadata`, `fetch-cover`, `search-books`. The gateway must NOT verify the JWT (it breaks FormData uploads), and these functions must remain usable without requiring auth.
+- **Utility functions** (no DB/user data access): deploy with `--no-verify-jwt`. Examples: `extract-metadata`, `fetch-cover`, `search-books`, `find-series`. The gateway must NOT verify the JWT (it breaks FormData uploads), and these functions must remain usable without requiring auth.
 - **Exception — `extract-metadata` reads (but does not require) auth on purpose:** it must still deploy `--no-verify-jwt` and still parse files for anyone, but it now *reads* the token the Supabase client already attaches to gate the **billed OpenAI call** (`detectWithAI`) to authenticated users only. This prevents anonymous cost-drain. Do NOT "simplify" this back to always calling OpenAI, and do NOT flip the deployment to verify the JWT.
 - When calling edge functions with FormData, do NOT set manual `Authorization` headers — let the Supabase client handle auth automatically.
-- **CORS:** all three functions restrict `Access-Control-Allow-Origin` to the comma-separated `ALLOWED_ORIGINS` env var when set, falling back to `*` when unset. Set `ALLOWED_ORIGINS` (Supabase dashboard → Edge Functions → Secrets) to the app origin(s) in production.
+- **CORS:** all four functions restrict `Access-Control-Allow-Origin` to the comma-separated `ALLOWED_ORIGINS` env var when set, falling back to `*` when unset. Set `ALLOWED_ORIGINS` (Supabase dashboard → Edge Functions → Secrets) to the app origin(s) in production.
+- **`find-series`** (series/saga auto-detection): queries OpenLibrary's `series` field first, falls back to a Google Books author-search heuristic (title word-overlap) when OpenLibrary has no series data. Heuristic results are only returned when ≥2 plausible companions are found — suppress rather than show a low-confidence guess. Free/unauthenticated APIs only, no API key required.
 
 ---
 

@@ -102,6 +102,8 @@ export type Database = {
           isbn: string | null
           library_id: string
           owner_id: string
+          series_name: string | null
+          series_position: number | null
           title: string
           updated_at: string
           year: number | null
@@ -119,6 +121,8 @@ export type Database = {
           isbn?: string | null
           library_id: string
           owner_id: string
+          series_name?: string | null
+          series_position?: number | null
           title: string
           updated_at?: string
           year?: number | null
@@ -136,6 +140,8 @@ export type Database = {
           isbn?: string | null
           library_id?: string
           owner_id?: string
+          series_name?: string | null
+          series_position?: number | null
           title?: string
           updated_at?: string
           year?: number | null

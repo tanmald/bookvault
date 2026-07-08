@@ -36,6 +36,8 @@ export function EditBookMetadataDialog({ isOpen, onClose, book }: EditBookMetada
   const [genreId, setGenreId] = useState('');
   const [year, setYear] = useState('');
   const [isbn, setIsbn] = useState('');
+  const [seriesName, setSeriesName] = useState('');
+  const [seriesPosition, setSeriesPosition] = useState('');
   const [titleError, setTitleError] = useState(false);
 
   // Reset form to the book's current values whenever the dialog opens
@@ -46,6 +48,8 @@ export function EditBookMetadataDialog({ isOpen, onClose, book }: EditBookMetada
       setGenreId(book.genre_id ?? '');
       setYear(book.year ? String(book.year) : '');
       setIsbn(book.isbn ?? '');
+      setSeriesName(book.series_name ?? '');
+      setSeriesPosition(book.series_position !== null ? String(book.series_position) : '');
       setTitleError(false);
     }
   }, [isOpen, book]);
@@ -65,6 +69,8 @@ export function EditBookMetadataDialog({ isOpen, onClose, book }: EditBookMetada
         genre_id: genreId || null,
         year: year ? parseInt(year, 10) : null,
         isbn: isbn.trim() || null,
+        series_name: seriesName.trim() || null,
+        series_position: seriesPosition ? parseFloat(seriesPosition) : null,
       });
       toast({ title: t('book.detailsUpdated'), variant: 'success' });
       onClose();
@@ -147,6 +153,30 @@ export function EditBookMetadataDialog({ isOpen, onClose, book }: EditBookMetada
               value={isbn}
               onChange={(e) => setIsbn(e.target.value)}
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-book-series-name">{t('series.name')}</Label>
+              <Input
+                id="edit-book-series-name"
+                value={seriesName}
+                onChange={(e) => setSeriesName(e.target.value)}
+                placeholder={t('series.namePlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-book-series-position">{t('series.position')}</Label>
+              <Input
+                id="edit-book-series-position"
+                type="number"
+                step="0.1"
+                min="0"
+                className="w-24"
+                value={seriesPosition}
+                onChange={(e) => setSeriesPosition(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

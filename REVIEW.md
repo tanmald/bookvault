@@ -265,38 +265,43 @@ Roughly ordered by value-to-effort:
 11. **PWA** — installable, offline shelf, `theme-color`/manifest.
 12. **"Currently reading" home widget** + quick "log session" straight from a book card (surfacing
     the `reading_sessions.notes` field that's currently written but never shown).
-13. **Series/saga detection & reading order** (user-requested; detection must be **automatic** —
-    not a manually-typed series name). Three tied asks:
-    - At upload, automatically search for other books in the same series (e.g. adding *A Court of
-      Thorns and Roses* suggests *A Court of Mist and Fury*, etc.) and offer to add them.
-    - On `BookDetails`, group the book's series companions; volumes not yet in the library get an
-      "add" affordance next to their thumbnail — the same UX shape as `useAlternativeCovers`'
-      candidate-picker (`ChangeCoverDialog`), just for whole books instead of cover images.
-    - Show a suggested reading order within the series, derived automatically (not user-entered).
+13. **Series/saga detection & reading order [IMPLEMENTED]** (user-requested; detection is
+    **automatic** — never a manually-typed series name as the primary path). All three original
+    asks are covered:
+    - At upload (`UploadBook.tsx`), a `SeriesCard` renders automatically once a title is typed,
+      showing detected companions with an "Add" button for ones not yet owned.
+    - On `BookDetails.tsx`, the same `SeriesCard` groups the book's companions; owned volumes link
+      to their own page, unowned ones show an "Add" affordance next to their thumbnail.
+    - Reading order is automatic: sorted by `series_position` when known, falling back to
+      publication-year for un-positioned volumes.
 
-    *Feasibility note:* there's no series concept in the schema today, and Google Books'
-    `volumeInfo` — the only external metadata source currently wired, via `search-books` and
-    `fetch-cover` — doesn't expose a reliable series field; publishers encode it inconsistently in
-    the title/subtitle. A workable automatic pipeline, as a new edge function (same shape as
-    `search-books`/`fetch-cover`):
-    1. Query **OpenLibrary** (`openlibrary.org/search.json?author=...`, then `/works/{id}.json`)
-       for the same author — OpenLibrary editions carry an explicit `series` field (not universal,
-       but decent coverage and free/unauthenticated, unlike Hardcover/ISBNdb/Goodreads).
-    2. Cross-check with **Google Books** author search; parse `title`/`subtitle` with a regex for
-       ordinal patterns (`#\d+`, `Book \d+`, `Vol(?:ume)? \d+`) to recover a position when
-       OpenLibrary doesn't have one.
-    3. Cluster candidates by normalized series name + author, ranked by source confidence
-       (OpenLibrary explicit field > regex-derived ordinal > "same series, unknown order").
-       Low-confidence matches are suppressed rather than shown — a wrong suggestion is worse than
-       none — similar in spirit to the existing fuzzy-match confidence threshold in the
-       duplicate-detection check in `useBooks.ts`.
-    - Store the result in nullable `series_name`/`series_position` columns on `books`, populated by
-      this pipeline (not typed by the user). The `EditBookMetadataDialog`
-      (`src/components/books/EditBookMetadataDialog.tsx`) still exposes them as editable fields
-      purely as a correction/override path for when auto-detection gets it wrong or misses an
-      obscure title — the primary path is always automatic.
-    - Reading order sorts by `series_position` when known; falls back to publication-year order for
-      un-positioned volumes rather than asking the user to sequence them manually.
+    **Pipeline** — new edge function `supabase/functions/find-series/index.ts` (same
+    CORS/no-auth shape as `search-books`/`fetch-cover`):
+    1. Query **OpenLibrary** `search.json?title=&author=&fields=...,series,...` — if the top match
+       has an explicit `series` array, re-query `search.json?series=<name>` to get all companions.
+       (Note: the original plan mentioned `/works/{id}.json`; the shipped implementation uses only
+       `search.json`, which already exposes the `series` field and needed one fewer round-trip.)
+    2. Position comes from a regex over each companion's title (`#\d+`, `Book \d+`, `Vol(?:ume)?
+       \d+`); OpenLibrary's search index doesn't expose position directly.
+    3. **Fallback when OpenLibrary has no series data:** Google Books author-search, keeping only
+       titles that share a run of ≥2 consecutive words with the query title. Returned only when
+       ≥2 plausible companions are found — a low-confidence single match is suppressed rather than
+       shown wrong.
+    - `books.series_name`/`series_position` (nullable, migration
+      `20260708000000_add_series_fields_to_books.sql`) are populated automatically at creation time
+      in `UploadBook.tsx` from the detection result — the user never types them. They exist purely
+      so `EditBookMetadataDialog` can offer a manual override when detection is wrong or misses an
+      obscure title.
+    - Matching a detected companion against the user's own library reuses the existing
+      Levenshtein-based `calculateSimilarity`/`normalizeText` helpers from `useBooks.ts` (now
+      exported), at the same 0.82 threshold already used for duplicate detection.
+
+    **Verification status:** `find-series` is a Deno edge function — not covered by the app's
+    build/lint/typecheck, and this environment has no Deno runtime and no outbound access to
+    `openlibrary.org`/`googleapis.com` to exercise it live (only syntax-checked via esbuild, like
+    the other edge functions). **Needs a real deploy + manual smoke test**: upload a book from a
+    known series (e.g. *A Court of Thorns and Roses*) and confirm companions appear with sane
+    covers/positions before relying on this in production.
 
 ---
 
