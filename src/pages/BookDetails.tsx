@@ -43,6 +43,7 @@ import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
 import { EditBookMetadataDialog } from '@/components/books/EditBookMetadataDialog';
 import { ReviewDialog } from '@/components/books/ReviewDialog';
 import { StartNextBookDialog } from '@/components/books/StartNextBookDialog';
+import { BookDetailsSkeleton } from '@/components/books/BookDetailsSkeleton';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -52,7 +53,6 @@ import {
   BookOpen,
   User,
   Tag,
-  Loader2,
   Plus,
   Globe,
   Pencil,
@@ -264,9 +264,7 @@ export default function BookDetails() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <BookDetailsSkeleton />
       </AppLayout>
     );
   }
