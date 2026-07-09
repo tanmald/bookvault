@@ -337,6 +337,19 @@ Roughly ordered by value-to-effort:
     rewritten around that finding and confirmed against the actual API responses for this book
     before shipping.
 
+    **Second incident (2026-07-09) — hang, resolved:** after the Work-level rewrite deployed,
+    live browser debugging showed the `POST` to `find-series` never returned at all (preflight
+    OK, response never arrives) while OpenLibrary itself answered fast when called directly.
+    Cause: the rewrite's fan-out fired up to ~40 parallel fetches per request with no fetch
+    timeout (Deno's `fetch` waits forever) and no `User-Agent` — OpenLibrary's API policy
+    throttles anonymous burst traffic, and one stalled connection hung `Promise.allSettled`
+    and therefore the whole handler. Fix: `olFetch` (6s `AbortSignal.timeout` + identifying
+    `User-Agent`) on every upstream call, `mapWithConcurrency` batching (concurrency 4),
+    `MAX_CANDIDATES` 25→12, edition checks restricted to tagged candidates (cap 8, early exit
+    on first match), and a 20s `Promise.race` deadline in the handler so the client always
+    gets an answer. Batching/early-exit logic verified with stub-promise tests in Node
+    (including a hung-then-aborted fetch).
+
     **Verification status:** `find-series` is a Deno edge function — not covered by the app's
     build/lint/typecheck, and this environment has no Deno runtime and no outbound access to
     `openlibrary.org`/`googleapis.com` to exercise it end-to-end (only syntax-checked via esbuild,
@@ -346,7 +359,10 @@ Roughly ordered by value-to-effort:
     a live deploy has not yet been re-verified. **Needs a real deploy + manual smoke test**: retry
     *"Herdeira do Fogo"* / Sarah J. Maas (should now show Throne of Glass companions) and also
     confirm a genuinely obscure/unknown title still correctly shows nothing (no regression to the
-    low-confidence-suppression behavior).
+    low-confidence-suppression behavior). Also re-check the one unexplained observation from the
+    browser-extension session: the app page on localhost appeared to issue no `find-series`
+    request at all — likely masked by the server hang, but verify the request fires once the
+    function is healthy.
 
 ---
 
