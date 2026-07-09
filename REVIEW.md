@@ -188,6 +188,25 @@ committed anywhere in the repo.
 - **React Query had no default `staleTime` [PARTIALLY FIXED]** — data refetched aggressively on
   every mount/focus. Set a global 30s `staleTime` default in `src/App.tsx`. Invalidations are still
   coarse (whole `['books']` prefix) — narrowing those remains open.
+- **BookDetails request count + retry-storm duration [PARTIALLY FIXED, 2026-07-09]:** live
+  browser debugging found `/book/:id` firing ~9 parallel Supabase calls on load, several
+  genuinely redundant. Fixed: `BookDetails.tsx` fetched `reading_progress` twice (once
+  id-filtered, once unfiltered for the "suggest next book" list) — now derives the id-filtered
+  result from the unfiltered one, one request removed. `useReviews.ts` fetched a user's own
+  review and a book's full review list as two separate requests where the first was always a
+  subset of the second (and the `.single()` on the first produced stray 406s on "no review
+  yet") — now derives `myReview` from the book-reviews list, one request removed. Separately,
+  `QueryClient`'s `retry` (`src/App.tsx`) was left at React Query's default of 3 with
+  exponential backoff (~7s cumulative per query); during a transient run of Supabase 503s, since
+  a page only finishes once its slowest query settles, ~9 independently-retrying queries
+  stretched a normal load to ~25-30s. Lowered to `retry: 2` (~3s backoff) — still resilient to a
+  brief blip, without the long tail. **Not fixed:** the `books` list query (`useBooks()`, no
+  `libraryId`) still fetches up to 101 rows with `genre`+`book_files` joins even on a
+  single-book detail page, because `firstToReadBook` (`BookDetails.tsx`) genuinely needs the
+  full library's books to compute the "suggest next book" prompt. Splitting "fetch this one
+  book" from "fetch to-read candidates (id+title only)" and deferring the latter to the moment
+  a book is actually marked read would fix this properly but is a larger change — flagged here,
+  not implemented.
 - **User-feedback toasts were hardcoded (mostly Portuguese) [FIXED]** across ~13 hook files (e.g.
   `useBooks.ts`, `useLibraryMembers.ts`, `useReadingProgress.ts`), bypassing the complete i18n.
   Now routed through a new `toast.*` translation namespace (see above). A ready-made
