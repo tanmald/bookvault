@@ -73,6 +73,40 @@ function coverUrlFromId(coverId: number | undefined): string | null {
   return coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null;
 }
 
+// Every upstream fetch MUST go through this helper. Deno's fetch has no
+// default timeout, so a single throttled connection would otherwise hang the
+// whole handler (confirmed in production: the gateway accepted the request
+// and never answered). The User-Agent is required by OpenLibrary's API
+// policy — anonymous bulk clients get throttled/stalled, which is exactly
+// the failure mode this function's fan-out triggered.
+const FETCH_TIMEOUT_MS = 6000;
+const USER_AGENT = "BookVault/1.0 (https://github.com/tanmald/bookvault)";
+
+function olFetch(url: string): Promise<Response> {
+  return fetch(url, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: { "User-Agent": USER_AGENT },
+  });
+}
+
+// Runs fn over items with at most `limit` in flight, preserving order.
+// Failed items resolve to null rather than rejecting the whole batch.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<Array<R | null>> {
+  const results: Array<R | null> = new Array(items.length).fill(null);
+  for (let start = 0; start < items.length; start += limit) {
+    const batch = items.slice(start, start + limit);
+    const settled = await Promise.allSettled(batch.map(fn));
+    settled.forEach((r, i) => {
+      if (r.status === "fulfilled") results[start + i] = r.value;
+    });
+  }
+  return results;
+}
+
 async function openLibrarySearch(params: Record<string, string>): Promise<OpenLibraryDoc[]> {
   const url = `https://openlibrary.org/search.json?${new URLSearchParams({
     ...params,
@@ -80,11 +114,15 @@ async function openLibrarySearch(params: Record<string, string>): Promise<OpenLi
     limit: "20",
   })}`;
 
-  const res = await fetch(url);
-  if (!res.ok) return [];
+  try {
+    const res = await olFetch(url);
+    if (!res.ok) return [];
 
-  const data = (await res.json()) as OpenLibrarySearchResponse;
-  return data.docs ?? [];
+    const data = (await res.json()) as OpenLibrarySearchResponse;
+    return data.docs ?? [];
+  } catch {
+    return [];
+  }
 }
 
 function docToResult(
@@ -131,10 +169,14 @@ async function googleBooksHeuristic(title: string, author: string): Promise<Seri
     `inauthor:${author}`
   )}&maxResults=20`;
 
-  const res = await fetch(url);
-  if (!res.ok) return [];
-
-  const data = await res.json();
+  let data;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) return [];
+    data = await res.json();
+  } catch {
+    return [];
+  }
   interface GoogleItem {
     volumeInfo?: {
       title?: string;
@@ -190,6 +232,11 @@ async function googleBooksHeuristic(title: string, author: string): Promise<Seri
 // (`/works/{key}.json`), either as a structured `series` array or, more
 // consistently, as a `[series:Some_Series]` tag inside `subjects`. So series
 // membership has to be resolved with a follow-up fetch per candidate work.
+//
+// That per-candidate fan-out is also why every fetch here is bounded: an
+// unbounded burst of parallel requests got throttled by OpenLibrary in
+// production and, with no fetch timeouts, hung the handler indefinitely.
+// See olFetch/mapWithConcurrency/MAX_CANDIDATES and the deadline in serve().
 interface OpenLibraryWorkDetail {
   subjects?: string[];
   series?: Array<{ series?: { key?: string }; position?: string }>;
@@ -207,7 +254,7 @@ function seriesTagFromSubjects(subjects: string[] | undefined): string | null {
 
 async function fetchWorkDetail(key: string): Promise<OpenLibraryWorkDetail | null> {
   try {
-    const res = await fetch(`https://openlibrary.org${key}.json`);
+    const res = await olFetch(`https://openlibrary.org${key}.json`);
     if (!res.ok) return null;
     return (await res.json()) as OpenLibraryWorkDetail;
   } catch {
@@ -238,7 +285,7 @@ function normalizeTitle(t: string): string {
 // volume-number suffix the query title won't have.
 async function editionTitlesInclude(key: string, queryTitle: string): Promise<boolean> {
   try {
-    const res = await fetch(`https://openlibrary.org${key}/editions.json?limit=50`);
+    const res = await olFetch(`https://openlibrary.org${key}/editions.json?limit=50`);
     if (!res.ok) return false;
     const data = await res.json();
     const entries = (data.entries ?? []) as Array<{ title?: string; subtitle?: string }>;
@@ -260,11 +307,17 @@ interface Candidate {
 }
 
 // Bounds how many Work-detail fetches a single findSeries() call can trigger.
-const MAX_CANDIDATES = 25;
+// Kept small on purpose: the candidate pool can reach 40 docs after merging
+// the two searches, and search results are relevance-ordered, so an author's
+// principal works (the ones that carry series tags) sit at the top anyway.
+const MAX_CANDIDATES = 12;
+const FETCH_CONCURRENCY = 4;
 
 async function loadCandidates(docs: OpenLibraryDoc[]): Promise<Candidate[]> {
-  const settled = await Promise.allSettled(
-    docs.slice(0, MAX_CANDIDATES).map(async (doc) => {
+  const loaded = await mapWithConcurrency(
+    docs.slice(0, MAX_CANDIDATES),
+    FETCH_CONCURRENCY,
+    async (doc) => {
       const detail = await fetchWorkDetail(doc.key);
       const seriesTag = seriesTagFromSubjects(detail?.subjects);
       const structuredPosition = detail?.series?.[0]?.position
@@ -274,11 +327,9 @@ async function loadCandidates(docs: OpenLibraryDoc[]): Promise<Candidate[]> {
         ? structuredPosition
         : extractPosition(doc.title);
       return { doc, seriesTag, position } as Candidate;
-    })
+    }
   );
-  return settled
-    .filter((r): r is PromiseFulfilledResult<Candidate> => r.status === "fulfilled")
-    .map((r) => r.value);
+  return loaded.filter((c): c is Candidate => c !== null);
 }
 
 // Same "suppress rather than guess wrong" principle as the Google Books
@@ -347,15 +398,19 @@ async function findSeries(title: string, author: string): Promise<FindSeriesResp
     // shows up as one of each candidate's own editions. OpenLibrary groups
     // translations under the same Work record, so this identifies the
     // actual book even though its title never matched in search results.
-    if (!seriesTag && primaryDocs.length === 0 && candidates.some((c) => c.seriesTag)) {
-      const matches = await Promise.allSettled(
-        candidates.map((c) => editionTitlesInclude(c.doc.key, title))
-      );
-      const matchedCandidate = candidates.find((c, i) => {
-        const result = matches[i];
-        return c.seriesTag && result.status === "fulfilled" && result.value;
-      });
-      seriesTag = matchedCandidate?.seriesTag ?? null;
+    // Only tagged candidates are worth checking (an edition match on an
+    // untagged one can't be accepted anyway), capped and batched so this
+    // stage can't fan out into the request burst that OpenLibrary throttles.
+    if (!seriesTag && primaryDocs.length === 0) {
+      const tagged = candidates.filter((c) => c.seriesTag).slice(0, 8);
+      for (let start = 0; start < tagged.length && !seriesTag; start += FETCH_CONCURRENCY) {
+        const batch = tagged.slice(start, start + FETCH_CONCURRENCY);
+        const matches = await mapWithConcurrency(batch, FETCH_CONCURRENCY, (c) =>
+          editionTitlesInclude(c.doc.key, title)
+        );
+        const matched = batch.find((_, i) => matches[i] === true);
+        seriesTag = matched?.seriesTag ?? null;
+      }
     }
 
     if (!seriesTag) {
@@ -401,7 +456,16 @@ serve(async (req) => {
       });
     }
 
-    const result = await findSeries(title.trim(), (author ?? "").trim());
+    // Hard deadline: the client must always get an answer. Per-fetch
+    // timeouts bound each stage, but this caps the whole pipeline even if
+    // every stage runs to its individual limit on a bad OpenLibrary day.
+    const deadline = new Promise<FindSeriesResponse>((resolve) =>
+      setTimeout(() => resolve({ seriesName: null, books: [] }), 20000)
+    );
+    const result = await Promise.race([
+      findSeries(title.trim(), (author ?? "").trim()),
+      deadline,
+    ]);
 
     return new Response(JSON.stringify(result), {
       headers: { ...cors, "Content-Type": "application/json" },
