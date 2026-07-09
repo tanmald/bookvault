@@ -8,11 +8,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Book } from '@/hooks/useBooks';
+import type { BookIdentity } from '@/hooks/useBooks';
 
 interface StartNextBookDialogProps {
   open: boolean;
-  book: Book | null;
+  book: BookIdentity | null;
   onConfirm: () => void;
   onDismiss: () => void;
 }

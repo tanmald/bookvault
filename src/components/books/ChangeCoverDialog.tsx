@@ -33,7 +33,9 @@ interface ChangeCoverDialogProps {
 export function ChangeCoverDialog({ isOpen, onClose, book }: ChangeCoverDialogProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { updateBook } = useBooks();
+  // This dialog only ever edits an already-known book (passed in via
+  // props), so it doesn't need useBooks()'s list query -- just the mutation.
+  const { updateBook } = useBooks(undefined, { enabled: false });
 
   // Upload mode state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
