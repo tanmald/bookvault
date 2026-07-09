@@ -32,6 +32,13 @@ const queryClient = new QueryClient({
       // Avoid refetching on every mount/window focus; data still stays
       // reasonably fresh since most mutations invalidate their queries.
       staleTime: 30 * 1000,
+      // Default retry (3, exponential backoff) means every one of a page's
+      // parallel queries independently burns ~7s of backoff on a transient
+      // 503 before succeeding/failing; since a page only finishes once its
+      // slowest query settles, that compounds badly under real load. 2
+      // retries (~3s backoff) keeps resilience for a brief blip without the
+      // long tail.
+      retry: 2,
     },
   },
 });

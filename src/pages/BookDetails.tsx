@@ -68,8 +68,7 @@ export default function BookDetails() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
-  const { progress, updateProgress, updateFinishedDate } = useReadingProgress(id);
-  const { progress: allProgress } = useReadingProgress();
+  const { progress: allProgress, updateProgress, updateFinishedDate } = useReadingProgress();
   const { myReview, bookReviews } = useReviews(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isChangeCoverDialogOpen, setIsChangeCoverDialogOpen] = useState(false);
@@ -84,7 +83,7 @@ export default function BookDetails() {
 
   const book = books.find((b) => b.id === id);
   const { data: seriesInfo } = useSeriesInfo(book?.title, book?.author);
-  const bookProgress = progress.find((p) => p.book_id === id);
+  const bookProgress = allProgress.find((p) => p.book_id === id);
   const currentStatus = bookProgress?.status ?? 'to_read';
   const currentProgress = bookProgress?.progress ?? 0;
 

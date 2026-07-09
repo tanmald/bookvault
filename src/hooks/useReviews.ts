@@ -21,26 +21,9 @@ export function useReviews(bookId?: string) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
 
-  // Query to get the current user's review for a specific book
-  const myReviewQuery = useQuery({
-    queryKey: ['my-review', user?.id, bookId],
-    queryFn: async () => {
-      if (!user || !bookId) return null;
-
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('book_id', bookId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
-      return data as Review | null;
-    },
-    enabled: !!user && !!bookId,
-  });
-
-  // Query to get all reviews for a book
+  // Query to get all reviews for a book. The current user's own review (if
+  // any) is always a member of this set, so it's derived below instead of
+  // being fetched with its own separate request.
   const bookReviewsQuery = useQuery({
     queryKey: ['book-reviews', bookId],
     queryFn: async () => {
@@ -90,7 +73,6 @@ export function useReviews(bookId?: string) {
       return data as Review;
     },
     onSuccess: (review) => {
-      queryClient.invalidateQueries({ queryKey: ['my-review'] });
       queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       posthog.capture('review submitted', {
@@ -122,7 +104,6 @@ export function useReviews(bookId?: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-review'] });
       queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
       queryClient.invalidateQueries({ queryKey: ['friends-book-progress'] });
       toast({
@@ -139,9 +120,11 @@ export function useReviews(bookId?: string) {
     },
   });
 
+  const myReview = bookReviewsQuery.data?.find((r) => r.user_id === user?.id) ?? null;
+
   return {
-    myReview: myReviewQuery.data,
-    isMyReviewLoading: myReviewQuery.isLoading,
+    myReview,
+    isMyReviewLoading: bookReviewsQuery.isLoading,
     bookReviews: bookReviewsQuery.data,
     isBookReviewsLoading: bookReviewsQuery.isLoading,
     upsertReview,
