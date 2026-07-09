@@ -64,39 +64,53 @@ export function SeriesCard({ currentBook, seriesInfo, libraryBooks }: SeriesCard
             const owned = findOwnedMatch(candidate, libraryBooks);
             const key = `${candidate.title}-${candidate.author}`;
 
-            const thumbnail = (
-              <div className="w-20 shrink-0 space-y-1.5">
-                <div className="aspect-[2/3] overflow-hidden rounded-md bg-muted relative">
-                  {candidate.coverUrl ? (
-                    <img
-                      src={candidate.coverUrl}
-                      alt={candidate.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-secondary">
-                      <BookOpen className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  {candidate.position !== null && (
-                    <Badge
-                      variant="secondary"
-                      className="absolute top-1 left-1 h-5 min-w-5 px-1 text-[10px]"
-                    >
-                      {candidate.position}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs leading-tight line-clamp-2" title={candidate.title}>
+            const cover = (
+              <div className="relative aspect-[2/3] overflow-hidden bg-muted">
+                {candidate.coverUrl ? (
+                  <img
+                    src={candidate.coverUrl}
+                    alt={candidate.title}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-muted to-secondary p-2">
+                    <BookOpen className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-center text-[10px] font-medium leading-tight text-muted-foreground line-clamp-3">
+                      {candidate.title}
+                    </span>
+                  </div>
+                )}
+                {candidate.position !== null && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute top-1.5 left-1.5 h-5 min-w-5 px-1 text-[10px]"
+                  >
+                    {candidate.position}
+                  </Badge>
+                )}
+              </div>
+            );
+
+            const info = (
+              <CardContent className="p-2">
+                <p className="text-xs font-medium leading-tight line-clamp-2" title={candidate.title}>
                   {candidate.title}
                 </p>
-              </div>
+                {candidate.author && (
+                  <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">
+                    {candidate.author}
+                  </p>
+                )}
+              </CardContent>
             );
 
             if (owned) {
               return (
-                <Link key={key} to={`/book/${owned.id}`} className="hover:opacity-80">
-                  {thumbnail}
+                <Link key={key} to={`/book/${owned.id}`} className="w-28 shrink-0">
+                  <Card className="group overflow-hidden transition-all hover:shadow-md cursor-pointer">
+                    {cover}
+                    {info}
+                  </Card>
                 </Link>
               );
             }
@@ -107,20 +121,18 @@ export function SeriesCard({ currentBook, seriesInfo, libraryBooks }: SeriesCard
             });
 
             return (
-              <div key={key} className="space-y-1.5">
-                {thumbnail}
-                <Button
-                  asChild
-                  size="sm"
-                  variant="outline"
-                  className="w-20 h-7 px-0 text-xs"
-                >
-                  <Link to={`/upload?${prefillParams.toString()}`}>
-                    <Plus className="h-3 w-3 mr-1" />
-                    {t('series.add')}
-                  </Link>
-                </Button>
-              </div>
+              <Card key={key} className="group w-28 shrink-0 overflow-hidden transition-all hover:shadow-md">
+                {cover}
+                {info}
+                <CardContent className="p-2 pt-0">
+                  <Button asChild size="sm" variant="outline" className="w-full h-7 px-0 text-xs">
+                    <Link to={`/upload?${prefillParams.toString()}`}>
+                      <Plus className="h-3 w-3 mr-1" />
+                      {t('series.add')}
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
