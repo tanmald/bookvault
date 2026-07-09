@@ -28,7 +28,9 @@ interface EditBookMetadataDialogProps {
 export function EditBookMetadataDialog({ isOpen, onClose, book }: EditBookMetadataDialogProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { updateBook } = useBooks();
+  // This dialog only ever edits an already-known book (passed in via
+  // props), so it doesn't need useBooks()'s list query -- just the mutation.
+  const { updateBook } = useBooks(undefined, { enabled: false });
   const { data: genres } = useGenres();
 
   const [title, setTitle] = useState('');

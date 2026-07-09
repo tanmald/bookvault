@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { calculateSimilarity, normalizeText } from '@/hooks/useBooks';
-import type { Book } from '@/hooks/useBooks';
+import type { BookIdentity } from '@/hooks/useBooks';
 import type { SeriesBook, SeriesInfo } from '@/hooks/useSeriesInfo';
 
 const MATCH_THRESHOLD = 0.82;
 
-function findOwnedMatch(candidate: SeriesBook, libraryBooks: Book[]): Book | null {
+function findOwnedMatch(candidate: SeriesBook, libraryBooks: BookIdentity[]): BookIdentity | null {
   for (const book of libraryBooks) {
     const titleSimilarity = calculateSimilarity(
       normalizeText(book.title || ''),
@@ -34,7 +34,7 @@ function findOwnedMatch(candidate: SeriesBook, libraryBooks: Book[]): Book | nul
 interface SeriesCardProps {
   currentBook: { title: string; author: string | null };
   seriesInfo: SeriesInfo;
-  libraryBooks: Book[];
+  libraryBooks: BookIdentity[];
 }
 
 export function SeriesCard({ currentBook, seriesInfo, libraryBooks }: SeriesCardProps) {

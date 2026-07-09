@@ -44,6 +44,17 @@ export interface Book {
   book_files?: BookFile[];
 }
 
+// Lean projection of Book used where only identity/ownership matching is
+// needed (SeriesCard's "already owned" check, the "suggest next book"
+// lookup) -- avoids paying for the genre/book_files joins on every book in
+// the library just to compare titles.
+export interface BookIdentity {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+}
+
 export interface CreateBookInput {
   title: string;
   author?: string;
@@ -69,7 +80,7 @@ export interface AddBookFileInput {
   file_size?: number;
 }
 
-export function useBooks(libraryId?: string) {
+export function useBooks(libraryId?: string, options?: { enabled?: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -104,7 +115,10 @@ export function useBooks(libraryId?: string) {
       if (error) throw error;
       return data as Book[];
     },
-    enabled: !!user,
+    // Callers that only need the mutations below (e.g. a dialog that edits
+    // one already-known book) can pass { enabled: false } to skip this
+    // query entirely rather than paying for the full list.
+    enabled: !!user && (options?.enabled ?? true),
   });
 
   // Check if there are more books beyond the initial limit
@@ -169,6 +183,7 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: (book) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
+      queryClient.invalidateQueries({ queryKey: ['book-identities'] });
       toast({ title: t('toast.books.added') });
       posthog.capture('book created', {
         book_id: book.id,
@@ -207,8 +222,9 @@ export function useBooks(libraryId?: string) {
       if (error) throw error;
       return data as BookFile;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
+      queryClient.invalidateQueries({ queryKey: ['book', variables.book_id] });
       toast({ title: t('toast.books.versionAdded') });
     },
     onError: (error) => {
@@ -230,6 +246,10 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
+      // mutationFn only receives the file id, not which book it belonged to,
+      // so invalidate broadly by prefix -- cheap, since this only refetches
+      // useBook() instances that are actually mounted.
+      queryClient.invalidateQueries({ queryKey: ['book'] });
       toast({ title: t('toast.books.versionRemoved') });
     },
     onError: (error) => {
@@ -285,6 +305,20 @@ export function useBooks(libraryId?: string) {
             return old.map((book) => (book.id === data.id ? data : book));
           }
         );
+        // useBook(id) and useLibraryBookIdentities() use separate cache
+        // keys (not prefixed by 'books'), so they need their own writes.
+        queryClient.setQueryData(['book', data.id], data);
+        queryClient.setQueriesData<BookIdentity[]>(
+          { queryKey: ['book-identities'] },
+          (old) => {
+            if (!old) return old;
+            return old.map((b) =>
+              b.id === data.id
+                ? { id: data.id, title: data.title, author: data.author, cover_url: data.cover_url }
+                : b
+            );
+          }
+        );
       }
 
       toast({ title: t('toast.books.updated') });
@@ -327,6 +361,11 @@ export function useBooks(libraryId?: string) {
     },
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
+      queryClient.removeQueries({ queryKey: ['book', id] });
+      queryClient.setQueriesData<BookIdentity[]>(
+        { queryKey: ['book-identities'] },
+        (old) => old?.filter((b) => b.id !== id)
+      );
       toast({ title: t('toast.books.removed') });
       posthog.capture('book deleted', { book_id: id });
     },
@@ -359,6 +398,48 @@ export function useBooks(libraryId?: string) {
     checkDuplicateByIsbn,
     checkDuplicateByTitleAuthor,
   };
+}
+
+// Single-row fetch for pages that only need one book (e.g. BookDetails)
+// instead of the full library list.
+export function useBook(id: string | undefined) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['book', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('books')
+        .select(`
+          *,
+          genre:genres(id, name, slug),
+          book_files(id, book_id, language, file_url, file_type, file_size, created_at)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data as Book;
+    },
+    enabled: !!user && !!id,
+  });
+}
+
+// Lean, no-join fetch of every book the current user can see (RLS-scoped),
+// for callers that only need to compare titles/authors or link to a book's
+// id rather than render its full detail (see BookIdentity above).
+export function useLibraryBookIdentities() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['book-identities', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('books').select('id, title, author, cover_url');
+      if (error) throw error;
+      return data as BookIdentity[];
+    },
+    enabled: !!user,
+  });
 }
 
 // Duplicate detection functions

@@ -26,8 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useBooks } from '@/hooks/useBooks';
-import type { Book } from '@/hooks/useBooks';
+import { useBooks, useBook, useLibraryBookIdentities } from '@/hooks/useBooks';
+import type { BookIdentity } from '@/hooks/useBooks';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
 import { useReviews } from '@/hooks/useReviews';
 import { useSeriesInfo } from '@/hooks/useSeriesInfo';
@@ -67,7 +67,9 @@ export default function BookDetails() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const { books, isLoading, deleteBook, deleteBookFile } = useBooks();
+  const { data: book, isLoading } = useBook(id);
+  const { deleteBook, deleteBookFile } = useBooks(undefined, { enabled: false });
+  const { data: libraryBookIdentities = [] } = useLibraryBookIdentities();
   const { progress: allProgress, updateProgress, updateFinishedDate } = useReadingProgress();
   const { myReview, bookReviews } = useReviews(id);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
@@ -77,11 +79,10 @@ export default function BookDetails() {
   const [coverVersion, setCoverVersion] = useState(0);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [reviewIntent, setReviewIntent] = useState<'markRead' | 'editReview'>('markRead');
-  const [nextBookToSuggest, setNextBookToSuggest] = useState<Book | null>(null);
+  const [nextBookToSuggest, setNextBookToSuggest] = useState<BookIdentity | null>(null);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
-  const book = books.find((b) => b.id === id);
   const { data: seriesInfo } = useSeriesInfo(book?.title, book?.author);
   const bookProgress = allProgress.find((p) => p.book_id === id);
   const currentStatus = bookProgress?.status ?? 'to_read';
@@ -89,7 +90,7 @@ export default function BookDetails() {
 
   const firstToReadBook = (() => {
     const progressByBookId = new Map(allProgress.map(p => [p.book_id, p]));
-    const toReadBooks = books.filter(b => b.id !== id && (progressByBookId.get(b.id)?.status ?? 'to_read') === 'to_read');
+    const toReadBooks = libraryBookIdentities.filter(b => b.id !== id && (progressByBookId.get(b.id)?.status ?? 'to_read') === 'to_read');
     toReadBooks.sort((a, b) => {
       const ra = progressByBookId.get(a.id)?.sort_order ?? null;
       const rb = progressByBookId.get(b.id)?.sort_order ?? null;
@@ -576,7 +577,7 @@ export default function BookDetails() {
             <SeriesCard
               currentBook={{ title: book.title, author: book.author }}
               seriesInfo={seriesInfo}
-              libraryBooks={books}
+              libraryBooks={libraryBookIdentities}
             />
           )}
 
