@@ -14,7 +14,7 @@ interface SwipeableBookCardProps {
   progress?: ReadingProgress;
   compact?: boolean;
   mini?: boolean;
-  onMovedToRead?: () => void;
+  onMovedToRead?: (book: Book) => void;
 }
 
 const THRESHOLD = 80;
@@ -74,7 +74,7 @@ export function SwipeableBookCard({ book, progress, compact, mini, onMovedToRead
     setDragging(false);
     if (translateX >= THRESHOLD && nextStatus) {
       updateProgress.mutate({ bookId: book.id, status: nextStatus });
-      if (nextStatus === 'read') onMovedToRead?.();
+      if (nextStatus === 'read') onMovedToRead?.(book);
     } else if (translateX <= -THRESHOLD && prevStatus) {
       updateProgress.mutate({ bookId: book.id, status: prevStatus });
     }

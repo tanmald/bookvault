@@ -43,6 +43,7 @@ import { ChangeCoverDialog } from '@/components/books/ChangeCoverDialog';
 import { EditBookMetadataDialog } from '@/components/books/EditBookMetadataDialog';
 import { ReviewDialog } from '@/components/books/ReviewDialog';
 import { StartNextBookDialog } from '@/components/books/StartNextBookDialog';
+import { ShareBookCardDialog } from '@/components/share/ShareBookCardDialog';
 import { BookDetailsSkeleton } from '@/components/books/BookDetailsSkeleton';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
@@ -59,6 +60,7 @@ import {
   Calendar,
   Image,
   Star,
+  Share2,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -80,6 +82,8 @@ export default function BookDetails() {
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [reviewIntent, setReviewIntent] = useState<'markRead' | 'editReview'>('markRead');
   const [nextBookToSuggest, setNextBookToSuggest] = useState<BookIdentity | null>(null);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [pendingNextBookSuggestion, setPendingNextBookSuggestion] = useState(false);
   const { currentLibrary } = useLibrary();
   const { toast } = useToast();
 
@@ -195,10 +199,21 @@ export default function BookDetails() {
             description: t('book.progressSaved'),
             variant: 'success',
           });
-          if (firstToReadBook) setNextBookToSuggest(firstToReadBook);
+          // Offer the share card first; the next-book suggestion is queued
+          // and fires when the share dialog closes.
+          setPendingNextBookSuggestion(true);
+          setIsShareDialogOpen(true);
         },
       }
     );
+  };
+
+  const handleShareDialogChange = (open: boolean) => {
+    setIsShareDialogOpen(open);
+    if (!open && pendingNextBookSuggestion) {
+      setPendingNextBookSuggestion(false);
+      if (firstToReadBook) setNextBookToSuggest(firstToReadBook);
+    }
   };
 
   const handleProgressChange = (value: number[]) => {
@@ -529,6 +544,17 @@ export default function BookDetails() {
                   </Popover>
                 </div>
               )}
+
+              {currentStatus === 'read' && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsShareDialogOpen(true)}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  {t('shareCard.buttonLabel')}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -685,6 +711,14 @@ export default function BookDetails() {
         }}
         onDismiss={() => setNextBookToSuggest(null)}
       />
+
+      {book && (
+        <ShareBookCardDialog
+          open={isShareDialogOpen}
+          onOpenChange={handleShareDialogChange}
+          book={book}
+        />
+      )}
     </AppLayout>
   );
 }
