@@ -17,6 +17,7 @@ import { SortableBookCard } from './SortableBookCard';
 import { DroppableColumn } from './DroppableColumn';
 import { BookCard } from './BookCard';
 import { StartNextBookDialog } from './StartNextBookDialog';
+import { ShareBookCardDialog } from '@/components/share/ShareBookCardDialog';
 import { LibraryEmptyState } from '@/components/library/LibraryEmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useReadingProgress, ReadingStatus } from '@/hooks/useReadingProgress';
@@ -44,6 +45,8 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
   const [localOrder, setLocalOrder] = useState<Map<string, string[]>>(new Map());
   const [suppressTransitions, setSuppressTransitions] = useState(false);
   const [nextBookToSuggest, setNextBookToSuggest] = useState<Book | null>(null);
+  const [bookToShare, setBookToShare] = useState<Book | null>(null);
+  const [queuedNextBook, setQueuedNextBook] = useState<Book | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -175,7 +178,15 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
       updateProgress.mutate({ bookId, status: targetStatus });
       if (targetStatus === 'read') {
         const firstToRead = booksByStatus.to_read[0] ?? null;
-        if (firstToRead) setNextBookToSuggest(firstToRead);
+        const finishedBook = books.find(b => b.id === bookId) ?? null;
+        if (finishedBook) {
+          // Offer the share card first; the next-book suggestion is queued
+          // and fires when the share dialog closes.
+          setBookToShare(finishedBook);
+          setQueuedNextBook(firstToRead);
+        } else if (firstToRead) {
+          setNextBookToSuggest(firstToRead);
+        }
       }
       return;
     }
@@ -199,7 +210,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
         setLocalOrder(prev => { const n = new Map(prev); n.delete(currentStatus); return n; });
       },
     });
-  }, [booksByStatus, progressMap, updateProgress, updateRanks]);
+  }, [books, booksByStatus, progressMap, updateProgress, updateRanks]);
 
   if (books.length === 0) {
     return <LibraryEmptyState />;
@@ -238,7 +249,7 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
                 >
                   {booksByStatus[column.status].map((book) =>
                     isTouchDevice
-                      ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} onMovedToRead={() => { const firstToRead = booksByStatus.to_read[0] ?? null; if (firstToRead) setNextBookToSuggest(firstToRead); }} />
+                      ? <SwipeableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} compact={true} mini={compact} onMovedToRead={(movedBook) => { setBookToShare(movedBook); setQueuedNextBook(booksByStatus.to_read[0] ?? null); }} />
                       : <SortableBookCard key={book.id} book={book} progress={progressMap.get(book.id)} mini={compact} suppressTransitions={suppressTransitions} />
                   )}
                 </SortableContext>
@@ -269,6 +280,20 @@ export function BookKanban({ books, progressMap, showNotPlanned = true, compact 
         }}
         onDismiss={() => setNextBookToSuggest(null)}
       />
+
+      {bookToShare && (
+        <ShareBookCardDialog
+          open={!!bookToShare}
+          onOpenChange={(open) => {
+            if (!open) {
+              setBookToShare(null);
+              if (queuedNextBook) setNextBookToSuggest(queuedNextBook);
+              setQueuedNextBook(null);
+            }
+          }}
+          book={bookToShare}
+        />
+      )}
     </DndContext>
   );
 }
